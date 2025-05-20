@@ -1,0 +1,695 @@
+﻿@{
+ViewData["Title"] = "Đăng Ký Tài Khoản";
+Layout = "_AuthLayout";
+}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Đăng Ký Tài Khoản</h1>
+            <p class="auth-subtitle">Tạo tài khoản mới để trải nghiệm dịch vụ của chúng tôi</p>
+        </div>
+    <div class="registration-progress">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-steps">
+            <div class="step active" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-label">Xác thực SĐT</div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-label">Nhập OTP</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">3</div>
+                <div class="step-label">Hoàn tất</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="registration-form">
+        <div id="phoneNumberSection" class="register-step active">
+            <h2 class="step-title">Xác thực số điện thoại</h2>
+            <p class="step-description">Chúng tôi sẽ gửi mã OTP đến số điện thoại của bạn</p>
+            
+            <div class="form-floating mb-3">
+                <input type="tel" id="phoneNumberInput" class="form-control" placeholder="Nhập số điện thoại">
+                <label for="phoneNumberInput">Số điện thoại</label>
+                <div class="form-text">Nhập số điện thoại bắt đầu bằng 0 hoặc +84</div>
+                <div id="phoneNumberError" class="invalid-feedback"></div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="button" id="sendOtpButton" class="btn btn-primary btn-lg" disabled>
+                    <span class="button-text">Gửi Mã OTP</span>
+                    <div id="loader" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                        <span class="visually-hidden">Đang xử lý...</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div id="otpSection" class="register-step">
+            <h2 class="step-title">Nhập mã xác thực</h2>
+            <p class="step-description">Mã OTP đã được gửi đến <strong id="phoneNumberDisplay"></strong></p>
+            
+            <div class="otp-container mb-3">
+                <input type="text" class="otp-input" maxlength="1" data-index="1">
+                <input type="text" class="otp-input" maxlength="1" data-index="2">
+                <input type="text" class="otp-input" maxlength="1" data-index="3">
+                <input type="text" class="otp-input" maxlength="1" data-index="4">
+                <input type="text" class="otp-input" maxlength="1" data-index="5">
+                <input type="text" class="otp-input" maxlength="1" data-index="6">
+                <input type="hidden" id="otpInput">
+            </div>
+            <div id="otpError" class="text-danger text-center mb-3"></div>
+            
+            <div class="otp-timer text-center mb-3">
+                <span>Mã xác thực còn hiệu lực trong: <span id="otpTimer">02:00</span></span>
+            </div>
+            
+            <div class="d-grid gap-2 mb-3">
+                <button type="button" id="verifyOtpButton" class="btn btn-primary btn-lg">
+                    <span class="button-text">Xác Nhận</span>
+                    <div id="otpLoader" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                        <span class="visually-hidden">Đang xác thực...</span>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <button type="button" id="resendOtpButton" class="btn btn-link" disabled>Gửi lại mã</button>
+                <button type="button" id="cancelOtpButton" class="btn btn-link">Thay đổi SĐT</button>
+            </div>
+        </div>
+
+        <div id="passwordSection" class="register-step">
+            <h2 class="step-title">Hoàn tất thông tin</h2>
+            <p class="step-description">Tạo tài khoản cho số điện thoại <strong id="verifiedPhoneNumberDisplay"></strong></p>
+            
+            <div class="form-floating mb-3">
+                <input type="text" id="fullNameInput" class="form-control" placeholder="Nhập họ và tên">
+                <label for="fullNameInput">Họ và tên</label>
+                <div id="fullNameError" class="invalid-feedback"></div>
+            </div>
+            
+            <div class="form-floating mb-3 password-container">
+                <input type="password" id="passwordInput" class="form-control" placeholder="Nhập mật khẩu">
+                <label for="passwordInput">Mật khẩu</label>
+                <button type="button" class="password-toggle" data-target="passwordInput">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <div class="form-text">Mật khẩu phải có ít nhất 6 ký tự</div>
+                <div id="passwordError" class="invalid-feedback"></div>
+            </div>
+            
+            <div class="form-floating mb-4 password-container">
+                <input type="password" id="confirmPasswordInput" class="form-control" placeholder="Nhập lại mật khẩu">
+                <label for="confirmPasswordInput">Xác nhận mật khẩu</label>
+                <button type="button" class="password-toggle" data-target="confirmPasswordInput">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <div id="confirmPasswordError" class="invalid-feedback"></div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="button" id="completeRegistrationButton" class="btn btn-primary btn-lg">
+                    <span class="button-text">Hoàn Tất Đăng Ký</span>
+                    <div id="registrationLoader" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
+                        <span class="visually-hidden">Đang đăng ký...</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="authStatus" class="alert mt-3" role="alert" style="display: none;"></div>
+    
+    <div class="auth-footer">
+        <p>Đã có tài khoản? <a asp-action="Login" asp-controller="Account">Đăng nhập ngay</a></p>
+    </div>
+</div>
+</div>
+@section Scripts {
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyAd6hCJJg56qOxgA5HiCYFU4gIHxL2AnCk",
+        authDomain: "sportsync-8e9da.firebaseapp.com",
+        projectId: "sportsync-8e9da",
+        storageBucket: "sportsync-8e9da.appspot.com",
+        messagingSenderId: "288059783978",
+        appId: "1:288059783978:web:c035d57cb22ea32b81bc53"
+    };
+
+    try {
+        firebase.initializeApp(firebaseConfig);
+    } catch (e) {
+        console.error("Lỗi khởi tạo Firebase App:", e);
+    }
+
+    const auth = firebase.auth();
+
+    // DOM Elements
+    const phoneNumberInput = document.getElementById('phoneNumberInput');
+    const sendOtpButton = document.getElementById('sendOtpButton');
+    const loader = document.getElementById('loader');
+    const authStatus = document.getElementById('authStatus');
+    const phoneNumberError = document.getElementById('phoneNumberError');
+    const phoneNumberSection = document.getElementById('phoneNumberSection');
+    const otpSection = document.getElementById('otpSection');
+    const phoneNumberDisplay = document.getElementById('phoneNumberDisplay');
+    const otpInput = document.getElementById('otpInput');
+    const verifyOtpButton = document.getElementById('verifyOtpButton');
+    const cancelOtpButton = document.getElementById('cancelOtpButton');
+    const resendOtpButton = document.getElementById('resendOtpButton');
+    const otpLoader = document.getElementById('otpLoader');
+    const otpError = document.getElementById('otpError');
+    const passwordSection = document.getElementById('passwordSection');
+    const verifiedPhoneNumberDisplay = document.getElementById('verifiedPhoneNumberDisplay');
+    const fullNameInput = document.getElementById('fullNameInput');
+    const fullNameError = document.getElementById('fullNameError');
+    const passwordInput = document.getElementById('passwordInput');
+    const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+    const completeRegistrationButton = document.getElementById('completeRegistrationButton');
+    const registrationLoader = document.getElementById('registrationLoader');
+    const passwordError = document.getElementById('passwordError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
+    const progressFill = document.getElementById('progressFill');
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    const otpTimer = document.getElementById('otpTimer');
+    const otpInputs = document.querySelectorAll('.otp-input');
+
+    window.confirmationResult = null;
+    window.recaptchaVerifier = null;
+    let verifiedPhoneNumberGlobally = null;
+    let firebaseIdTokenGlobally = null;
+    let otpTimerInterval = null;
+    let remainingTime = 120; // 2 minutes in seconds
+
+    // OTP Input Handling
+    otpInputs.forEach((input) => {
+        input.addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value) {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                if (index < 6) {
+                    const nextInput = document.querySelector(`.otp-input[data-index="${index + 1}"]`);
+                    if (nextInput) nextInput.focus();
+                }
+            }
+            updateOtpValue();
+        });
+
+        input.addEventListener('keydown', (e) => {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            if (e.key === 'Backspace' && !e.target.value) {
+                if (index > 1) {
+                    const prevInput = document.querySelector(`.otp-input[data-index="${index - 1}"]`);
+                    if (prevInput) {
+                        prevInput.focus();
+                        prevInput.value = '';
+                    }
+                }
+            }
+        });
+    });
+
+    function updateOtpValue() {
+        let otp = '';
+        otpInputs.forEach((input) => {
+            otp += input.value;
+        });
+        otpInput.value = otp;
+
+        // Auto verify when all digits are entered
+        if (otp.length === 6) {
+            setTimeout(() => verifyOtpButton.click(), 300);
+        }
+    }
+
+    // Password Toggle
+    document.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const passwordField = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+
+    // OTP Timer Function
+    function startOtpTimer() {
+        clearInterval(otpTimerInterval);
+        remainingTime = 120; // Reset to 2 minutes
+        updateOtpTimerDisplay();
+
+        resendOtpButton.disabled = true;
+
+        otpTimerInterval = setInterval(() => {
+            remainingTime--;
+            updateOtpTimerDisplay();
+
+            if (remainingTime <= 0) {
+                clearInterval(otpTimerInterval);
+                resendOtpButton.disabled = false;
+            }
+        }, 1000);
+    }
+
+    function updateOtpTimerDisplay() {
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = remainingTime % 60;
+        otpTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    // Progress Steps Update
+    function updateProgress(step) {
+        // Update progress bar with smooth transition
+        const progressPercentage = (step - 1) * 50; // 0%, 50%, 100%
+        progressFill.style.transition = 'width 0.3s ease-in-out';
+        progressFill.style.width = `${progressPercentage}%`;
+
+        // Update step indicators
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'completed'));
+
+        for (let i = 1; i < step; i++) {
+            document.getElementById(`step${i}`).classList.add('completed');
+        }
+        document.getElementById(`step${step}`).classList.add('active');
+
+        // Show active section with fade effect
+        document.querySelectorAll('.register-step').forEach(section => {
+            section.style.opacity = '0';
+            section.style.display = 'none';
+            section.classList.remove('active');
+        });
+
+        const activeSection = step === 1 ? phoneNumberSection : step === 2 ? otpSection : passwordSection;
+        activeSection.classList.add('active');
+        activeSection.style.display = 'block';
+        setTimeout(() => activeSection.style.opacity = '1', 50);
+    }
+
+    // Helper Functions
+    function showStatus(message, type = 'info') {
+        authStatus.textContent = message;
+        authStatus.className = `alert alert-${type} mt-3`;
+        authStatus.style.display = 'block';
+
+        // Auto hide success or info messages after 5 seconds
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                if (authStatus.classList.contains(`alert-${type}`)) {
+                    authStatus.style.display = 'none';
+                }
+            }, 5000);
+        }
+    }
+
+    function clearStatus() {
+        authStatus.textContent = '';
+        authStatus.style.display = 'none';
+        phoneNumberError.textContent = '';
+        otpError.textContent = '';
+        passwordError.textContent = '';
+        confirmPasswordError.textContent = '';
+        fullNameError.textContent = '';
+
+        // Remove invalid class from inputs
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+    }
+
+    function showInputError(inputElement, errorElement, message) {
+        inputElement.classList.add('is-invalid');
+        errorElement.textContent = message;
+    }
+
+    function formatPhoneNumberToE164(phoneNumber) {
+        let cleaned = phoneNumber.replace(/\D/g, '');
+        if (cleaned.startsWith("84")) {
+            if (cleaned.length > 9 && cleaned.length < 12) {
+                return "+" + cleaned;
+            }
+        } else if (cleaned.startsWith("0")) {
+            if (cleaned.length === 10) {
+                return "+84" + cleaned.substring(1);
+            }
+        } else if (cleaned.length === 9 && !phoneNumber.startsWith("+")) {
+            return "+84" + cleaned;
+        }
+        if (phoneNumber.startsWith("+84") && phoneNumber.length > 10) {
+            return phoneNumber;
+        }
+        return null;
+    }
+
+    function initializeRecaptcha() {
+        clearStatus();
+        sendOtpButton.disabled = true;
+        console.log("Register: Attempting to initialize reCAPTCHA verifier...");
+        try {
+            if (window.recaptchaVerifier) {
+                try {
+                    window.recaptchaVerifier.clear();
+                    console.log("Register: Previous reCAPTCHA verifier cleared.");
+                } catch(e) {
+                    console.warn("Register: Could not clear previous reCAPTCHA verifier:", e);
+                }
+                window.recaptchaVerifier = null;
+            }
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(sendOtpButton, {
+                'size': 'invisible',
+                'callback': (response) => {
+                    console.log("Register: Invisible reCAPTCHA solved (callback).");
+                },
+                'expired-callback': () => {
+                    showStatus('Phiên reCAPTCHA đã hết hạn.', 'warning');
+                    initializeRecaptcha();
+                }
+            });
+            console.log("Register: Invisible reCAPTCHA verifier initialized.");
+            sendOtpButton.disabled = false;
+        } catch (error) {
+            console.error("Register: Lỗi khởi tạo RecaptchaVerifier:", error);
+            showStatus('Lỗi reCAPTCHA: ' + error.message, 'danger');
+            sendOtpButton.disabled = true;
+        }
+    }
+
+    function resetForNewOtpAttempt() {
+        clearStatus();
+        updateProgress(1);
+        clearInterval(otpTimerInterval);
+
+        // Reset all inputs
+        phoneNumberInput.value = '';
+        otpInputs.forEach(input => input.value = '');
+        otpInput.value = '';
+        passwordInput.value = '';
+        confirmPasswordInput.value = '';
+        fullNameInput.value = '';
+
+        window.confirmationResult = null;
+        verifiedPhoneNumberGlobally = null;
+        firebaseIdTokenGlobally = null;
+
+        phoneNumberInput.focus();
+
+        if (window.recaptchaVerifier) {
+            try {
+                window.recaptchaVerifier.clear();
+            } catch(e) {}
+        }
+
+        initializeRecaptcha();
+    }
+
+    // Phone Number Input Validation
+    phoneNumberInput.addEventListener('input', function() {
+        const rawPhoneNumber = this.value.trim();
+        const formattedNumber = formatPhoneNumberToE164(rawPhoneNumber);
+
+        if (formattedNumber) {
+            this.classList.remove('is-invalid');
+            phoneNumberError.textContent = '';
+            sendOtpButton.disabled = false;
+        } else if (rawPhoneNumber.length > 0) {
+            showInputError(this, phoneNumberError, 'Số điện thoại không hợp lệ');
+            sendOtpButton.disabled = true;
+        } else {
+            this.classList.remove('is-invalid');
+            phoneNumberError.textContent = '';
+            sendOtpButton.disabled = true;
+        }
+    });
+
+    // Window Load Event
+    window.addEventListener('load', function() {
+        if (!window.recaptchaVerifier) {
+            initializeRecaptcha();
+        }
+
+        // Reset to first step
+        updateProgress(1);
+
+        auth.onAuthStateChanged(function(user) {
+            // Handle auth state change if needed
+        });
+    });
+
+    // Send OTP Button Click
+    sendOtpButton.addEventListener('click', async function () {
+        clearStatus();
+        const rawPhoneNumber = phoneNumberInput.value.trim();
+        verifiedPhoneNumberGlobally = formatPhoneNumberToE164(rawPhoneNumber);
+
+        if (!verifiedPhoneNumberGlobally) {
+            showInputError(phoneNumberInput, phoneNumberError, 'Số điện thoại không hợp lệ');
+            phoneNumberInput.focus();
+            return;
+        }
+
+        // Check if phone number exists
+        sendOtpButton.disabled = true;
+        loader.style.display = 'inline-block';
+        try {
+            const checkResponse = await fetch(`/Account/CheckPhoneNumberExistence?phoneNumber=${encodeURIComponent(verifiedPhoneNumberGlobally)}`);
+            const checkData = await checkResponse.json();
+
+            if (checkResponse.ok && checkData.exists) {
+                showStatus(checkData.message || 'Số điện thoại này đã được đăng ký.', 'warning');
+                sendOtpButton.disabled = false;
+                loader.style.display = 'none';
+                return;
+            } else if (!checkResponse.ok) {
+                showStatus('Không thể kiểm tra SĐT: ' + (checkData.message || 'Lỗi không xác định'), 'danger');
+                sendOtpButton.disabled = false;
+                loader.style.display = 'none';
+                return;
+            }
+        } catch (error) {
+            console.error("Lỗi khi kiểm tra SĐT:", error);
+            showStatus('Lỗi kết nối khi kiểm tra SĐT. Vui lòng thử lại.', 'danger');
+            sendOtpButton.disabled = false;
+            loader.style.display = 'none';
+            return;
+        }
+
+        // Send OTP
+        if (!window.recaptchaVerifier) {
+            showStatus('reCAPTCHA chưa sẵn sàng.', 'warning');
+            initializeRecaptcha();
+            loader.style.display = 'none';
+            return;
+        }
+
+        auth.signInWithPhoneNumber(verifiedPhoneNumberGlobally, window.recaptchaVerifier)
+            .then((confirmationResult) => {
+                console.log("OTP sent to", verifiedPhoneNumberGlobally);
+                showStatus('Mã OTP đã gửi đến ' + verifiedPhoneNumberGlobally, 'success');
+                window.confirmationResult = confirmationResult;
+
+                phoneNumberDisplay.textContent = verifiedPhoneNumberGlobally;
+                updateProgress(2);
+
+                // Reset OTP inputs and start timer
+                otpInputs.forEach(input => input.value = '');
+                otpInput.value = '';
+                otpInputs[0].focus();
+                startOtpTimer();
+            })
+            .catch((error) => {
+                console.error("Lỗi gửi OTP:", error);
+                let msg = 'Lỗi gửi OTP: ' + error.message;
+                showStatus(msg, 'danger');
+                resetForNewOtpAttempt();
+            })
+            .finally(() => {
+                loader.style.display = 'none';
+            });
+    });
+
+    // Resend OTP Button Click
+    resendOtpButton.addEventListener('click', function() {
+        // Reset OTP s
+        otpInputs.forEach(input => input.value = '');
+        otpInput.value = '';
+        otpError.textContent = '';
+
+        // Use the same process as sendOtpButton but reuse the phone number
+        if (!window.recaptchaVerifier) {
+            initializeRecaptcha();
+        }
+
+        resendOtpButton.disabled = true;
+
+        auth.signInWithPhoneNumber(verifiedPhoneNumberGlobally, window.recaptchaVerifier)
+            .then((confirmationResult) => {
+                window.confirmationResult = confirmationResult;
+                showStatus('Mã OTP mới đã được gửi', 'success');
+                startOtpTimer();
+                otpInputs[0].focus();
+            })
+            .catch((error) => {
+                console.error("Lỗi gửi lại OTP:", error);
+                showStatus('Lỗi gửi lại OTP: ' + error.message, 'danger');
+                resendOtpButton.disabled = false;
+            });
+    });
+
+    // Verify OTP Button Click
+    verifyOtpButton.addEventListener('click', function () {
+        clearStatus();
+        const code = otpInput.value.trim();
+
+        if (!code || code.length !== 6) {
+            otpError.textContent = 'OTP phải có 6 chữ số.';
+            otpInputs[0].focus();
+            return;
+        }
+
+        if (!window.confirmationResult) {
+            showStatus('Lỗi xác thực. Vui lòng thử lại SĐT.', 'danger');
+            return;
+        }
+
+        verifyOtpButton.disabled = true;
+        otpLoader.style.display = 'inline-block';
+
+        window.confirmationResult.confirm(code)
+            .then((result) => {
+                const user = result.user;
+                console.log("OTP verified for user:", user.uid, user.phoneNumber);
+                verifiedPhoneNumberGlobally = user.phoneNumber;
+                showStatus('Xác thực OTP thành công!', 'success');
+                return user.getIdToken(true);
+            })
+            .then(function(idToken) {
+                firebaseIdTokenGlobally = idToken;
+                console.log("Firebase ID Token obtained for registration.");
+
+                updateProgress(3);
+                verifiedPhoneNumberDisplay.textContent = verifiedPhoneNumberGlobally;
+
+                // Clear previous values and focus on the first field
+                fullNameInput.value = '';
+                passwordInput.value = '';
+                confirmPasswordInput.value = '';
+                fullNameInput.focus();
+            })
+            .catch((error) => {
+                console.error("Lỗi xác thực OTP:", error);
+                otpError.textContent = 'Mã OTP không chính xác';
+                showStatus('Lỗi xác thực: ' + error.message, 'danger');
+            })
+            .finally(() => {
+                verifyOtpButton.disabled = false;
+                otpLoader.style.display = 'none';
+            });
+    });
+
+    // Cancel OTP Button Click
+    cancelOtpButton.addEventListener('click', function() {
+        resetForNewOtpAttempt();
+    });
+
+    // Complete Registration Button Click
+    completeRegistrationButton.addEventListener('click', async function() {
+        clearStatus();
+        const fullName = fullNameInput.value.trim();
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+
+        let isValid = true;
+        if (!fullName) {
+            showInputError(fullNameInput, fullNameError, 'Vui lòng nhập họ và tên');
+            fullNameInput.focus();
+            isValid = false;
+        }
+
+        if (!password || password.length < 6) {
+            showInputError(passwordInput, passwordError, 'Mật khẩu phải có ít nhất 6 ký tự');
+            if (isValid) passwordInput.focus();
+            isValid = false;
+        }
+
+        if (password !== confirmPassword) {
+            showInputError(confirmPasswordInput, confirmPasswordError, 'Mật khẩu xác nhận không khớp');
+            if (isValid) confirmPasswordInput.focus();
+            isValid = false;
+        }
+
+        if (!firebaseIdTokenGlobally || !verifiedPhoneNumberGlobally) {
+            showStatus('Lỗi: Thông tin xác thực SĐT bị thiếu. Vui lòng làm lại từ Bước 1.', 'danger');
+            resetForNewOtpAttempt();
+            return;
+        }
+
+        if (!isValid) return;
+
+        completeRegistrationButton.disabled = true;
+        registrationLoader.style.display = 'inline-block';
+        showStatus('Đang hoàn tất đăng ký...', 'info');
+
+        try {
+            const response = await fetch('/Account/CompleteRegistration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    PhoneNumber: verifiedPhoneNumberGlobally,
+                    FirebaseIdToken: firebaseIdTokenGlobally,
+                    FullName: fullName,
+                    Password: password,
+                    ConfirmPassword: confirmPassword
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showStatus('Đăng ký thành công! Đang chuyển hướng...', 'success');
+
+                // Hiệu ứng hoàn thành
+                document.querySelectorAll('.step').forEach(s => {
+                    s.classList.remove('active');
+                    s.classList.add('completed');
+                });
+                progressFill.style.width = '100%';
+
+                // Redirect after a short delay
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || '/';
+                }, 1500);
+            } else {
+                throw new Error(data.message || 'Lỗi không xác định từ máy chủ');
+            }
+        } catch (error) {
+            console.error("Lỗi khi hoàn tất đăng ký:", error);
+            showStatus(`Lỗi đăng ký: ${error.message}`, 'danger');
+        } finally {
+            completeRegistrationButton.disabled = false;
+            registrationLoader.style.display = 'none';
+        }
+    });
+    </script>
+}

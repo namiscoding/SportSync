@@ -1,0 +1,53 @@
+﻿@model SportSync.Web.Models.ViewModels.Account.LoginWithPasswordViewModel
+@{
+    ViewData["Title"] = "Đăng Nhập";
+    Layout = "_AuthLayout"; // Sử dụng layout chung với Register
+}
+
+<div class="auth-content">
+    <h4 class="auth-title">Sử dụng tài khoản của bạn để đăng nhập</h4>
+    <p class="auth-subtitle">Đăng nhập để trải nghiệm dịch vụ của chúng tôi</p>
+    <hr />
+
+    <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+        <div class="form-floating mb-3">
+            <input asp-for="PhoneNumber" class="form-control" autocomplete="username" aria-required="true" placeholder="Số điện thoại" />
+            <label asp-for="PhoneNumber" class="form-label"></label>
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <div class="form-floating mb-3">
+            <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Mật khẩu" />
+            <label asp-for="Password" class="form-label"></label>
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <div class="form-check">
+                <label asp-for="RememberMe" class="form-check-label">
+                    <input class="form-check-input" asp-for="RememberMe" />
+                    @Html.DisplayNameFor(m => m.RememberMe)
+                </label>
+            </div>
+        </div>
+
+        <div>
+            <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Đăng Nhập</button>
+        </div>
+
+        <div class="mt-3 text-center">
+            <p>
+                <a asp-action="ForgotPassword" class="btn-link">Quên mật khẩu?</a>
+            </p>
+            <p>
+                <a asp-action="Register" class="btn-link">Đăng ký tài khoản mới</a>
+            </p>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,503 @@
+﻿/* Reset mặc định để giao diện nhất quán */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', 'Noto Sans', 'Arial', sans-serif;
+}
+
+/* Body của trang Auth */
+.auth-body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f7fa;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Container chính */
+.auth-container {
+    display: flex;
+    width: 100%;
+    position: relative;
+    align-items: center; /* Đảm bảo căn giữa theo chiều dọc */
+}
+
+/* Phần wrapper chứa nội dung chính */
+.auth-wrapper {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Căn giữa nội dung theo chiều dọc */
+    align-items: center;
+    width: 100%;
+    max-width: 450px; /* Giới hạn chiều rộng */
+    margin: 20px auto; /* Thêm margin để không dính mép trên/dưới */
+    padding: 30px 30px 15px; /* Giảm padding-bottom để giảm khoảng trống dưới cùng */
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    height: auto; /* Chiều cao tự động dựa trên nội dung */
+    overflow-y: auto; /* Thêm cuộn nếu nội dung dài */
+}
+
+    .auth-wrapper:hover {
+        transform: translateY(-5px);
+    }
+
+/* Logo và tiêu đề của layout */
+.auth-header {
+    margin-bottom: 30px;
+    text-align: center; /* Đảm bảo căn giữa tiêu đề và phụ đề */
+}
+
+.auth-logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .auth-logo i {
+        font-size: 32px;
+    }
+
+    .auth-logo .text-primary {
+        color: #007bff;
+    }
+
+.auth-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center; /* Căn giữa tiêu đề */
+}
+
+.auth-subtitle {
+    font-size: 15px;
+    color: #666;
+    text-align: center; /* Căn giữa phụ đề */
+}
+
+/* Nội dung chính của layout */
+.auth-content {
+    width: 100%;
+    text-align: center; /* Đảm bảo nội dung bên trong cũng căn giữa */
+}
+
+/* Footer của layout */
+.auth-footer {
+    margin-top: 15px; /* Giảm margin-top để thu hẹp khoảng cách */
+    text-align: center;
+}
+
+    .auth-footer p {
+        font-size: 13px;
+        color: #666;
+    }
+
+    .auth-footer a {
+        font-size: 13px;
+        color: #007bff;
+        margin: 0 5px;
+        transition: color 0.3s ease;
+    }
+
+        .auth-footer a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+/* Background thể thao */
+.auth-background {
+    position: fixed; /* Sử dụng fixed để cố định so với viewport */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh; /* Đảm bảo chiều cao phủ kín toàn bộ viewport */
+    background: url('/assets/sportsync-background.png') no-repeat center center/cover;
+    z-index: 1;
+}
+
+.auth-overlay {
+    position: fixed; /* Đồng bộ với auth-background */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh; /* Đảm bảo lớp phủ cũng phủ kín toàn bộ viewport */
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+/* Thanh tiến trình (Register.cshtml) */
+.registration-progress {
+    margin-bottom: 30px;
+    text-align: center; /* Căn giữa thanh tiến trình */
+}
+
+.progress-bar {
+    background: #e9ecef;
+    border-radius: 5px;
+    height: 8px;
+    overflow: hidden;
+    margin: 0 auto 20px; /* Căn giữa thanh tiến trình */
+    width: 80%; /* Giới hạn chiều rộng */
+}
+
+.progress-fill {
+    background: #007bff;
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: center; /* Căn giữa các bước */
+    gap: 20px; /* Khoảng cách giữa các bước */
+}
+
+.step {
+    text-align: center;
+    flex: 0 0 auto;
+}
+
+.step-number {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #666;
+    margin: 0 auto 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-size: 14px;
+    color: #666;
+}
+
+.step.active .step-number {
+    background: #007bff;
+    color: #fff;
+}
+
+.step.completed .step-number {
+    background: #28a745;
+    color: #fff;
+}
+
+/* Các bước đăng ký (Register.cshtml) */
+.register-step {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    text-align: center; /* Căn giữa nội dung của từng bước */
+}
+
+    .register-step.active {
+        display: block;
+        opacity: 1;
+    }
+
+.step-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+/* Form inputs (Register.cshtml, Login.cshtml, ResetPassword.cshtml, ForgotPassword.cshtml) */
+.form-floating {
+    position: relative;
+    margin-bottom: 20px;
+    text-align: left; /* Giữ căn trái cho input, nhưng container vẫn căn giữa */
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 12px 15px;
+    font-size: 16px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        outline: none;
+    }
+
+.form-floating > label {
+    padding: 12px 15px;
+    color: #666;
+}
+
+.form-text {
+    font-size: 13px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.invalid-feedback {
+    font-size: 13px;
+    color: #dc3545;
+    display: block;
+    margin-top: 5px;
+}
+
+/* Form group for ForgotPassword */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-size: 15px;
+    color: #333;
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* Checkbox cho Login */
+.form-check {
+    display: flex;
+    align-items: center;
+}
+
+.form-check-input {
+    margin-right: 10px;
+}
+
+.form-check-label {
+    font-size: 15px;
+    color: #333;
+}
+
+/* OTP Input (Register.cshtml & ForgotPassword.cshtml) */
+.otp-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.otp-input {
+    width: 45px;
+    height: 50px;
+    text-align: center;
+    font-size: 18px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .otp-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        outline: none;
+    }
+
+.otp-timer {
+    font-size: 14px;
+    color: #666;
+}
+
+#otpTimer {
+    font-weight: 600;
+    color: #007bff;
+}
+
+/* Password Toggle (Register.cshtml) */
+.password-container {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+}
+
+    .password-toggle i {
+        font-size: 18px;
+    }
+
+/* Buttons (Register.cshtml, Login.cshtml, ResetPassword.cshtml, ForgotPassword.cshtml) */
+.btn-primary {
+    background: #007bff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.3s ease, transform 0.2s ease;
+    width: 100%; /* Đảm bảo nút chiếm toàn bộ chiều rộng container */
+}
+
+    .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+        background: #b0c4de;
+        cursor: not-allowed;
+    }
+
+.btn-success {
+    background: #28a745;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+    .btn-success:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+
+    .btn-success:disabled {
+        background: #9acd9a;
+        cursor: not-allowed;
+    }
+
+.btn-outline-secondary {
+    background: transparent;
+    border: 1px solid #6c757d;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #6c757d;
+    transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+    .btn-outline-secondary:hover {
+        border-color: #5a6268;
+        color: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .btn-outline-secondary:disabled {
+        border-color: #ced4da;
+        color: #ced4da;
+        cursor: not-allowed;
+    }
+
+.spinner-border {
+    vertical-align: middle;
+}
+
+.btn-link {
+    font-size: 14px;
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+    .btn-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    .btn-link:disabled {
+        color: #b0c4de;
+        cursor: not-allowed;
+    }
+
+/* Alert (Register.cshtml, Login.cshtml, ResetPassword.cshtml, ForgotPassword.cshtml) */
+.alert {
+    border-radius: 8px;
+    font-size: 14px;
+    padding: 12px;
+    margin-bottom: 20px;
+    text-align: center; /* Căn giữa thông báo */
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .auth-wrapper {
+        max-width: 100%;
+        padding: 20px;
+        border-radius: 0;
+        margin: 10px auto; /* Giảm margin trên mobile */
+    }
+
+    .auth-logo {
+        font-size: 24px;
+    }
+
+        .auth-logo i {
+            font-size: 28px;
+        }
+
+    .auth-title {
+        font-size: 22px;
+    }
+
+    .auth-subtitle {
+        font-size: 14px;
+    }
+
+    .auth-footer p,
+    .auth-footer a {
+        font-size: 12px;
+    }
+
+    .step-title {
+        font-size: 20px;
+    }
+
+    .otp-input {
+        width: 40px;
+        height: 45px;
+        font-size: 16px;
+    }
+
+    .btn-primary, .btn-success, .btn-outline-secondary {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .progress-bar {
+        width: 90%; /* Tăng chiều rộng thanh tiến trình trên mobile */
+    }
+}

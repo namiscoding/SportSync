@@ -1,0 +1,30 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SportSync.Web.Models.ViewModels.Account
+{
+    public class CompleteRegistrationViewModel
+    {
+        [Required(ErrorMessage = "Số điện thoại là bắt buộc.")]
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
+        public string PhoneNumber { get; set; }
+
+        [Required(ErrorMessage = "Cần có token xác thực từ Firebase.")]
+        public string FirebaseIdToken { get; set; } // ID Token từ Firebase sau khi OTP thành công
+
+        [Required(ErrorMessage = "Họ và Tên là bắt buộc.")]
+        [StringLength(100, ErrorMessage = "Họ và Tên không được vượt quá 100 ký tự.")]
+        [Display(Name = "Họ và Tên")]
+        public string FullName { get; set; } // Thêm trường Họ và Tên
+
+        [Required(ErrorMessage = "Mật khẩu là bắt buộc.")]
+        [StringLength(100, ErrorMessage = "{0} phải có ít nhất {2} và tối đa {1} ký tự.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu")]
+        public string Password { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Xác nhận mật khẩu")]
+        [Compare("Password", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp.")]
+        public string ConfirmPassword { get; set; }
+    }
+}

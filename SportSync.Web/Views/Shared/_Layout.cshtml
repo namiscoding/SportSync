@@ -1,0 +1,214 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using SportSync.Data.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SportSync</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Google Fonts - Poppins -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans:wght@300;400;500;700&display=swap">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow fixed-top">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-running text-primary me-2 fa-lg"></i>
+                    <span class="fw-bold fs-4">Sport<span class="text-primary">Sync</span></span>
+                </a>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                               asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home me-1"></i>Trang chủ
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Search" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                               asp-controller="Search" asp-action="Index">
+                                <i class="fas fa-search me-1"></i>Tìm sân
+                            </a>
+                        </li>
+
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtComplex" && ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")"
+                                   asp-controller="CourtComplex" asp-action="Create">
+                                    <i class="fas fa-plus-circle me-1"></i>Thêm sân của bạn
+                                </a>
+                            </li>
+
+                            @if (User.IsInRole("CourtOwner"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtComplex" && ViewContext.RouteData.Values["action"]?.ToString() == "MyComplexes" ? "active" : "")"
+                                       asp-controller="CourtComplex" asp-action="MyComplexes">
+                                        <i class="fas fa-landmark me-1"></i>Khu sân của tôi
+                                    </a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminDashboard" ? "active" : "")"
+                                       asp-controller="AdminDashboard" asp-action="Index">
+                                        <i class="fas fa-tachometer-alt me-1"></i>Quản trị
+                                    </a>
+                                </li>
+                            }
+                        }
+                    </ul>
+
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            var currentUser = await UserManager.GetUserAsync(User);
+                            var userNameForAvatar = UserManager.GetUserName(User);
+
+                            <li class="nav-item me-2 d-none d-lg-block">
+                                <a class="nav-link position-relative" href="#" title="Thông báo">
+                                    <i class="fas fa-bell fs-5"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        2 <span class="visually-hidden">unread messages</span>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownUserLink"
+                                   role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="avatar-circle-sm me-2 bg-primary text-white">
+                                        @if (!string.IsNullOrEmpty(userNameForAvatar))
+                                        {
+                                            @userNameForAvatar.Substring(0, 1).ToUpper()
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-user"></i>
+                                        }
+                                    </div>
+                                    <span class="d-none d-md-inline">Tài khoản</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdownUserLink">
+                                    <li class="dropdown-header text-center">
+                                        <strong>@UserManager.GetUserName(User)</strong>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Profile" asp-action="Index">
+                                            <i class="fas fa-user-circle me-2"></i>Hồ sơ cá nhân
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Booking" asp-action="MyBookings">
+                                            <i class="fas fa-calendar-check me-2"></i>Đặt sân của tôi
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link btn btn-outline-primary rounded-pill mx-1 px-3 py-2" asp-controller="Account" asp-action="Login">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link btn btn-primary text-white rounded-pill mx-1 px-3 py-2" asp-controller="Account" asp-action="Register">
+                                    <i class="fas fa-user-plus me-1"></i>Đăng ký
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="content-wrapper flex-grow-1">
+        <main role="main" class="container py-4 page-content-top-margin">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer mt-auto py-4 bg-dark text-white">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
+                    <h5 class="text-uppercase mb-3 fw-bold">Sport<span class="text-primary">Sync</span></h5>
+                    <p class="small text-white-50">Nền tảng kết nối yêu thích cho người chơi thể thao và chủ sân, giúp quản lý đặt sân dễ dàng và hiệu quả.</p>
+                    <div class="social-icons mt-3">
+                        <a href="#" class="text-white-50 me-3 fs-5"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white-50 me-3 fs-5"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white-50 me-3 fs-5"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white-50 fs-5"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
+                    <h5 class="text-uppercase mb-3 fw-bold">Liên kết</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none footer-link"><i class="fas fa-angle-right me-2"></i>Về chúng tôi</a></li>
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none footer-link"><i class="fas fa-angle-right me-2"></i>Dịch vụ</a></li>
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none footer-link"><i class="fas fa-angle-right me-2"></i>Hỗ trợ</a></li>
+                        <li class="mb-2"><a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none footer-link"><i class="fas fa-angle-right me-2"></i>Chính sách</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                    <h5 class="text-uppercase mb-3 fw-bold">Liên hệ</h5>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Hòa Lạc, Thạch Thất, Hà Nội</li>
+                        <li class="mb-2"><i class="fas fa-envelope me-2 text-primary"></i>info@sportsync.com</li>
+                        <li class="mb-2"><i class="fas fa-phone me-2 text-primary"></i>0823281223</li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="text-uppercase mb-3 fw-bold">Thanh toán</h5>
+                    <div class="payment-icons">
+                        <i class="fab fa-cc-visa fa-2x me-2 text-white-50"></i>
+                        <i class="fab fa-cc-mastercard fa-2x me-2 text-white-50"></i>
+                        <i class="fab fa-cc-paypal fa-2x me-2 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 bg-secondary">
+            <div class="text-center text-white-50 small">
+                © @DateTime.Now.Year SportSync. Đã đăng ký Bản quyền.
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

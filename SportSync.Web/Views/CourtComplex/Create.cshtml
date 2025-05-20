@@ -1,0 +1,255 @@
+﻿@model SportSync.Web.Models.ViewModels.CourtComplex.CourtComplexViewModel
+
+@{
+    ViewData["Title"] = "Thêm Khu Phức Hợp Sân Mới";
+}
+
+@* Tùy chọn: Thêm CSS tùy chỉnh nếu cần. Có thể đặt trong file CSS riêng. *@
+<style>
+    .image-preview-container {
+        margin-top: 10px;
+        width: 100%; /* Hoặc một kích thước cố định */
+        min-height: 150px;
+        border: 2px dashed #ddd;
+        border-radius: .25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        overflow: hidden; /* Để ảnh không tràn ra ngoài */
+    }
+
+        .image-preview-container img {
+            max-width: 100%;
+            max-height: 250px; /* Giới hạn chiều cao ảnh preview */
+            display: none; /* Ẩn ban đầu */
+        }
+
+        .image-preview-container .placeholder-text {
+            color: #6c757d;
+            text-align: center;
+        }
+
+    /* Custom file input styling */
+    .custom-file-input-group {
+        display: flex;
+        align-items: center;
+    }
+
+        .custom-file-input-group .form-control[type="file"] {
+            /* Có thể ẩn input gốc và tạo kiểu cho label như một button */
+        }
+
+    .file-name-display {
+        margin-left: 10px;
+        font-style: italic;
+        color: #6c757d;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-md-10">
+            @* Điều chỉnh độ rộng cho phù hợp *@
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"> <i class="fas fa-plus-circle me-2"></i>@ViewData["Title"]</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted mb-4">Điền đầy đủ các thông tin dưới đây để đăng ký khu phức hợp sân của bạn.</p>
+
+                    <form asp-action="Create" method="post" enctype="multipart/form-data" id="createCourtComplexForm">
+                        @* Validation Summary - Hiển thị lỗi tổng quát *@
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert">
+                            <h5 class="alert-heading"> <i class="fas fa-exclamation-triangle me-2"></i>Lỗi!</h5>
+                            <p>Vui lòng kiểm tra lại các thông tin bạn đã nhập:</p>
+                            <hr>
+                            @Html.ValidationSummary(false, "", new { @class = "mb-0" })
+                        </div>
+
+                        @if (TempData["InfoMessage"] != null)
+                        {
+                            <div class="alert alert-info">@TempData["InfoMessage"]</div>
+                        }
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                        }
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                        }
+
+
+                        <h5 class="mb-3 mt-4 fw-bold text-primary border-bottom pb-2">Thông Tin Cơ Bản</h5>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label"> <i class="fas fa-file-signature me-1"></i>Tên Khu Phức Hợp</label>
+                            <input asp-for="Name" class="form-control form-control-lg" placeholder="Ví dụ: Khu liên hợp thể thao ABC" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"> <i class="fas fa-align-left me-1"></i>Mô Tả Chi Tiết</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Mô tả các tiện ích, loại sân, không gian, quy định đặc biệt (nếu có)..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <h5 class="mb-3 mt-4 fw-bold text-primary border-bottom pb-2">Địa Chỉ</h5>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label"> <i class="fas fa-map-marker-alt me-1"></i>Địa Chỉ Cụ Thể (Số nhà, tên đường)</label>
+                            <input asp-for="Address" class="form-control" placeholder="Ví dụ: 123 Đường Lê Lợi" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="City" class="form-label"> <i class="fas fa-city me-1"></i>Tỉnh/Thành Phố</label>
+                                <input asp-for="City" class="form-control" placeholder="Ví dụ: TP. Hồ Chí Minh" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="District" class="form-label"> <i class="fas fa-map-signs me-1"></i>Quận/Huyện</label>
+                                <input asp-for="District" class="form-control" placeholder="Ví dụ: Quận 1" />
+                                <span asp-validation-for="District" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Ward" class="form-label"> <i class="fas fa-location-arrow me-1"></i>Phường/Xã</label>
+                                <input asp-for="Ward" class="form-control" placeholder="Ví dụ: Phường Bến Nghé" />
+                                <span asp-validation-for="Ward" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 mt-4 fw-bold text-primary border-bottom pb-2">Thông Tin Liên Hệ & Hoạt Động</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ContactPhoneNumber" class="form-label"> <i class="fas fa-phone-alt me-1"></i>Số Điện Thoại Liên Hệ</label>
+                                <input asp-for="ContactPhoneNumber" class="form-control" placeholder="Ví dụ: 0912345678" />
+                                <span asp-validation-for="ContactPhoneNumber" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ContactEmail" class="form-label"> <i class="fas fa-envelope me-1"></i>Email Liên Hệ</label>
+                                <input asp-for="ContactEmail" type="email" class="form-control" placeholder="Ví dụ: lienhe@khusana.com" />
+                                <span asp-validation-for="ContactEmail" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DefaultOpeningTime" class="form-label"> <i class="far fa-clock me-1"></i>Giờ Mở Cửa Mặc Định</label>
+                                <input asp-for="DefaultOpeningTime" type="time" class="form-control" />
+                                <span asp-validation-for="DefaultOpeningTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DefaultClosingTime" class="form-label"> <i class="fas fa-clock me-1"></i>Giờ Đóng Cửa Mặc Định</label>
+                                <input asp-for="DefaultClosingTime" type="time" class="form-control" />
+                                <span asp-validation-for="DefaultClosingTime" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 mt-4 fw-bold text-primary border-bottom pb-2">Hình Ảnh Đại Diện</h5>
+                        <div class="mb-3">
+                            <label asp-for="MainImageFile" class="form-label"> <i class="fas fa-image me-1"></i>Chọn Ảnh Đại Diện</label>
+                            <div class="custom-file-input-group">
+                                <input asp-for="MainImageFile" type="file" class="form-control" id="mainImageInput" accept="image/png, image/jpeg, image/gif" onchange="previewAndDisplayFileName(event, 'imagePreview', 'fileNameDisplay')" />
+                                <span id="fileNameDisplay" class="file-name-display">Chưa chọn file nào</span>
+                            </div>
+                            <small class="form-text text-muted">Ảnh nên có chất lượng tốt, rõ nét. Định dạng: JPG, PNG, GIF. Kích thước tối đa: 5MB.</small>
+                            <span asp-validation-for="MainImageFile" class="text-danger d-block mt-1"></span>
+                            <div class="image-preview-container mt-2">
+                                <img id="imagePreview" src="#" alt="Xem trước ảnh" />
+                                <span class="placeholder-text" id="imagePreviewPlaceholder"> <i class="fas fa-camera fa-3x mb-2"></i> <br /> Xem trước ảnh đại diện tại đây</span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="MyComplexes" class="btn btn-outline-secondary btn-lg"> <i class="fas fa-times me-1"></i>Hủy Bỏ</a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitButton">
+                                <span id="buttonText"> <i class="fas fa-save me-1"></i>Tạo Mới Khu Phức Hợp</span>
+                                <span class="spinner-border spinner-border-sm d-none ms-2" id="loadingSpinner" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewAndDisplayFileName(event, previewElementId, fileNameElementId) {
+            const file = event.target.files[0];
+            const imagePreview = document.getElementById(previewElementId);
+            const imagePreviewPlaceholder = document.getElementById(previewElementId + 'Placeholder');
+            const fileNameDisplay = document.getElementById(fileNameElementId);
+
+            if (file) {
+                // Check file type (basic check)
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Loại file không hợp lệ. Vui lòng chọn file ảnh (JPG, PNG, GIF).');
+                    event.target.value = ''; // Reset file input
+                    fileNameDisplay.textContent = 'Chưa chọn file nào';
+                    imagePreview.style.display = 'none';
+                    if (imagePreviewPlaceholder) imagePreviewPlaceholder.style.display = 'flex'; // Show placeholder
+                    return;
+                }
+
+                // Check file size (e.g., 5MB)
+                const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+                if (file.size > maxSizeInBytes) {
+                    alert('Kích thước file quá lớn. Vui lòng chọn file nhỏ hơn 5MB.');
+                    event.target.value = ''; // Reset file input
+                    fileNameDisplay.textContent = 'Chưa chọn file nào';
+                    imagePreview.style.display = 'none';
+                    if (imagePreviewPlaceholder) imagePreviewPlaceholder.style.display = 'flex';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    if (imagePreviewPlaceholder) imagePreviewPlaceholder.style.display = 'none'; // Hide placeholder
+                }
+                reader.readAsDataURL(file);
+                fileNameDisplay.textContent = file.name;
+            } else {
+                fileNameDisplay.textContent = 'Chưa chọn file nào';
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none';
+                if (imagePreviewPlaceholder) imagePreviewPlaceholder.style.display = 'flex';
+            }
+        }
+
+        // Loading state for submit button
+        const form = document.getElementById('createCourtComplexForm');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        if (form && submitButton && buttonText && loadingSpinner) {
+            form.addEventListener('submit', function (e) {
+                // Optional: Client-side validation check before showing spinner
+                // if (!form.checkValidity()) {
+                //     e.preventDefault(); // Stop submission if form is invalid
+                //     return;
+                // }
+
+                submitButton.disabled = true;
+                buttonText.classList.add('d-none'); // Hide text
+                loadingSpinner.classList.remove('d-none'); // Show spinner
+            });
+        }
+    </script>
+@*
+        Để sử dụng Font Awesome icons, bạn cần thêm link CDN vào _Layout.cshtml trong thẻ <head>
+        hoặc cuối trang này. Ví dụ:
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        *@
+}

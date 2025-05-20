@@ -1,0 +1,343 @@
+﻿/* SportSync - Tệp CSS riêng - styles.css */
+
+/* === COMMON STYLES === */
+:root {
+    --primary-color: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary-color: #64748b;
+    --light-color: #f8fafc;
+    --dark-color: #0f172a;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --border-radius: 8px;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --transition-speed: 0.3s;
+}
+
+body {
+    font-family: 'Roboto', 'Noto Sans', 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #334155;
+    background-color: #f1f5f9;
+}
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* === HERO SECTION === */
+.home-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.hero-section {
+    position: relative;
+    height: 500px;
+    border-radius: var(--border-radius);
+    margin-bottom: 3rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: url('/assets/sportsync-background.png') no-repeat center center/cover;
+}
+
+.hero-content {
+    padding: 2rem;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    max-width: 800px;
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    color: #064e3b; /* Xanh lá đậm */
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: #0e7490; /* Xanh dương đậm */
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+}
+
+    .hero-buttons .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-radius: var(--border-radius);
+        transition: all var(--transition-speed);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1.2;
+        height: 50px;
+    }
+
+.btn-primary {
+    background-color: #0284c7; /* Xanh dương sáng */
+    border-color: #0284c7;
+    color: white;
+}
+
+    .btn-primary:hover {
+        background-color: #0369a1; /* Xanh dương đậm hơn */
+        border-color: #0369a1;
+        transform: translateY(-2px);
+    }
+
+.btn-outline-dark {
+    color: #1e293b; /* Màu tối */
+    border-color: #1e293b;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+    .btn-outline-dark:hover {
+        background-color: #1e293b;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+/* === SECTION STYLES === */
+.section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+    .section-title h2 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .section-title p {
+        font-size: 1.25rem;
+        color: var(--secondary-color);
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+/* === SPORT CARDS === */
+.sport-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+
+.sport-card {
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-speed);
+}
+
+    .sport-card:hover {
+        transform: translateY(-5px);
+    }
+
+.card-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+    .card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform var(--transition-speed);
+    }
+
+.sport-card:hover .card-image img {
+    transform: scale(1.05);
+}
+
+.card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(17, 24, 39, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-speed);
+}
+
+.sport-card:hover .card-overlay {
+    opacity: 1;
+}
+
+.card-link {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 30px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition-speed);
+}
+
+    .card-link:hover {
+        background-color: var(--primary-dark);
+        transform: scale(1.05);
+    }
+
+.card-content {
+    padding: 1.5rem;
+}
+
+    .card-content h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--dark-color);
+    }
+
+    .card-content p {
+        color: var(--secondary-color);
+        margin-bottom: 0;
+    }
+
+/* === ADVANTAGES SECTION === */
+.advantages-section {
+    background-color: #fff;
+    padding: 4rem 2rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 4rem;
+}
+
+.advantages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.advantage-item {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    transition: all var(--transition-speed);
+}
+
+    .advantage-item:hover {
+        background-color: #f8fafc;
+        transform: translateY(-5px);
+    }
+
+.advantage-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    background-color: #dbeafe;
+    color: var(--primary-color);
+    border-radius: 50%;
+    margin-bottom: 1.25rem;
+    font-size: 1.75rem;
+}
+
+.advantage-item h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--dark-color);
+}
+
+.advantage-item p {
+    color: var(--secondary-color);
+    margin-bottom: 0;
+}
+
+/* === RESPONSIVE STYLES === */
+@media (max-width: 992px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        height: 400px;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+        .hero-buttons .btn {
+            width: 100%;
+        }
+
+    .advantages-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        height: 350px;
+    }
+
+    .section-title h2 {
+        font-size: 1.75rem;
+    }
+
+    .section-title p {
+        font-size: 1rem;
+    }
+}

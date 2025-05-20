@@ -1,0 +1,169 @@
+﻿@model SportSync.Web.Models.ViewModels.Profile.ManageProfileViewModel
+@{
+    ViewData["Title"] = "Quản Lý Thông Tin Cá Nhân";
+}
+
+@* CSS Tùy Chỉnh (Có thể đặt trong file .css riêng) *@
+<style>
+    .profile-card-header {
+        background-color: #f8f9fa; /* Màu nền nhẹ cho header card */
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .profile-readonly-field {
+        background-color: #e9ecef; /* Màu nền cho trường chỉ đọc */
+        cursor: not-allowed;
+    }
+
+    .options-list .list-group-item {
+        border-left: 0;
+        border-right: 0;
+    }
+
+        .options-list .list-group-item:first-child {
+            border-top: 0;
+        }
+
+        .options-list .list-group-item:last-child {
+            border-bottom: 0;
+        }
+
+        .options-list .list-group-item i.option-icon {
+            width: 20px; /* Đảm bảo icon thẳng hàng */
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+
+        .options-list .list-group-item .action-indicator {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">@ViewData["Title"]</h1>
+        <p class="lead text-muted">Cập nhật thông tin cá nhân và quản lý các cài đặt tài khoản của bạn.</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        var statusMessageClass = Model.StatusMessage.ToLower().Contains("lỗi") || Model.StatusMessage.ToLower().Contains("thất bại") ? "danger" : "success";
+        var iconClass = statusMessageClass == "success" ? "check-circle" : "exclamation-triangle";
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-8 col-lg-7">
+                <div class="alert alert-@statusMessageClass alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-@iconClass me-2"></i>
+                    @Model.StatusMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4 justify-content-center">
+        @* Cột cập nhật thông tin *@
+        <div class="col-lg-7 col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header profile-card-header">
+                    <h5 class="mb-0"> <i class="fas fa-user-edit me-2 text-primary"></i>Cập Nhật Thông Tin Của Bạn</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" asp-action="Index" asp-controller="Profile" id="updateProfileForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-2" role="alert">
+                            Vui lòng kiểm tra và sửa các lỗi dưới đây:
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label fw-semibold"> <i class="fas fa-mobile-alt me-1"></i>Số Điện Thoại</label>
+                            <input asp-for="PhoneNumber" class="form-control profile-readonly-field" readonly />
+                            <small class="form-text text-muted mt-1">Số điện thoại được dùng để xác thực và không thể thay đổi tại đây.</small>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="FullName" class="form-control" placeholder="Nhập họ và tên của bạn" />
+                            <label asp-for="FullName"> <i class="fas fa-user-tag me-1"></i>Họ và Tên</label>
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        @*
+                        // (Tùy chọn) Nếu bạn thêm trường Email
+                        <div class="form-floating mb-3">
+                            <input asp-for="Email" class="form-control" placeholder="name@example.com" />
+                            <label asp-for="Email"><i class="fas fa-envelope me-1"></i>Địa chỉ Email</label>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        *@
+
+                        <button type="submit" class="w-100 btn btn-primary btn-lg mt-4" id="saveProfileButton">
+                            <span id="saveButtonText"><i class="fas fa-save me-2"></i>Lưu Thay Đổi</span>
+                            <span class="spinner-border spinner-border-sm d-none ms-2" id="saveLoadingSpinner" role="status" aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* Cột tùy chọn khác *@
+        <div class="col-lg-5 col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header profile-card-header">
+                    <h5 class="mb-0"> <i class="fas fa-cogs me-2 text-primary"></i>Tùy Chọn Tài Khoản</h5>
+                </div>
+                <div class="list-group list-group-flush options-list">
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" asp-action="ChangePassword" asp-controller="Manage">
+                        <span><i class="fas fa-key option-icon text-warning"></i>Đổi Mật Khẩu</span>
+                        <i class="fas fa-chevron-right action-indicator"></i>
+                    </a>
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" asp-controller="CourtComplex" asp-action="MyComplexes">
+                        <span><i class="fas fa-store-alt option-icon text-success"></i>Khu Phức Hợp Của Tôi</span>
+                        <i class="fas fa-chevron-right action-indicator"></i>
+                    </a>
+                    @* Thêm các tùy chọn quản lý khác ở đây nếu cần. Ví dụ:
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" asp-action="TwoFactorAuthentication" asp-controller="Manage">
+                        <span><i class="fas fa-shield-alt option-icon text-info"></i>Xác Thực Hai Yếu Tố</span>
+                        <i class="fas fa-chevron-right action-indicator"></i>
+                    </a>
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" asp-action="PersonalData" asp-controller="Manage">
+                        <span><i class="fas fa-database option-icon text-danger"></i>Dữ Liệu Cá Nhân</span>
+                        <i class="fas fa-chevron-right action-indicator"></i>
+                    </a>
+                     *@
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const profileForm = document.getElementById('updateProfileForm');
+                const saveProfileButton = document.getElementById('saveProfileButton');
+                const saveButtonText = document.getElementById('saveButtonText');
+                const saveLoadingSpinner = document.getElementById('saveLoadingSpinner');
+
+                if (profileForm && saveProfileButton && saveButtonText && saveLoadingSpinner) {
+                    profileForm.addEventListener('submit', function (e) {
+                        // Optional: Client-side validation check before showing spinner
+                        // if (!profileForm.checkValidity()) {
+                        //     e.preventDefault(); // Stop submission if form is invalid
+                        //     // Trigger Bootstrap's native validation UI
+                        //     profileForm.classList.add('was-validated');
+                        //     return;
+                        // }
+
+                        saveProfileButton.disabled = true;
+                        if (saveButtonText) saveButtonText.classList.add('d-none'); // Hide text
+                        if (saveLoadingSpinner) saveLoadingSpinner.classList.remove('d-none'); // Show spinner
+                    });
+                }
+            });
+        </script>
+    @*
+        Để sử dụng Font Awesome icons, bạn cần thêm link CDN vào _Layout.cshtml trong thẻ <head>
+        hoặc ở cuối trang này (trong @section Scripts). Ví dụ:
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        *@
+    }
