@@ -1,0 +1,146 @@
+﻿@{
+    ViewBag.Title = "Tìm sân";
+}
+
+<link rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" />
+<style>
+    #map {
+        height: 420px;
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .card-slot {
+        margin: .15rem;
+        display: inline-block
+    }
+</style>
+
+<h2 class="mb-3">Tìm sân</h2>
+
+<form id="filterForm" class="row g-3 mb-2">
+    <div class="col-md-3">
+        <label class="form-label">Loại sân</label>
+        <select class="form-select" name="SportTypeId">
+            <option value="">-- Tất cả --</option>
+            @foreach (var t in (IEnumerable<dynamic>)ViewBag.SportTypes)
+            {
+                <option value="@t.SportTypeId">@t.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Thành phố</label>
+        <input class="form-control" name="City" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Quận/Huyện</label>
+        <input class="form-control" name="District" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Ngày</label>
+        <input type="date" class="form-control" name="Date"
+               value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Từ</label>
+        <input type="time" class="form-control" name="FromTime" value="07:00" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Đến</label>
+        <input type="time" class="form-control" name="ToTime" value="09:00" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Bán kính (km)</label>
+        <input type="number" class="form-control" name="RadiusKm" value="5" step="0.5" />
+    </div>
+
+    <!-- GPS tự điền -->
+    <input type="hidden" name="UserLat" id="UserLat" />
+    <input type="hidden" name="UserLng" id="UserLng" />
+
+    <div class="col-md-2 align-self-end">
+        <button type="submit" class="btn btn-primary w-100">Tìm</button>
+    </div>
+</form>
+
+<div id="map"></div>
+
+<!-- danh sách kết quả -->
+<div id="resultList"></div>
+
+@section Scripts {
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ';
+        let map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [105.84713, 21.030653],
+            zoom: 12
+        });
+
+        // Lấy GPS
+        navigator.geolocation?.getCurrentPosition(pos => {
+            const {latitude:lat, longitude:lng} = pos.coords;
+            document.getElementById('UserLat').value = lat;
+            document.getElementById('UserLng').value = lng;
+            new mapboxgl.Marker({color:'#0d6efd'}).setLngLat([lng,lat])
+                .setPopup(new mapboxgl.Popup().setHTML("Bạn ở đây")).addTo(map);
+            map.flyTo({center:[lng,lat], zoom:13});
+        });
+
+        let markers=[];
+
+        document.getElementById('filterForm').addEventListener('submit', async e=>{
+            e.preventDefault();
+            clearMarkers();
+            document.getElementById('resultList').innerHTML = '<p>Đang tải…</p>';
+
+            const qs = new URLSearchParams(new FormData(e.target));
+            const res = await fetch('/api/v1/courts/search?'+qs);
+            const data = await res.json();
+            if (!data.length){ document.getElementById('resultList').innerHTML='<p>Không tìm thấy sân.</p>'; return;}
+
+            renderList(data);
+            data.forEach(addMarker);
+        });
+
+        function addMarker(c){
+            if (c.latitude==null||c.longitude==null) return;
+            const mk=new mapboxgl.Marker()
+               .setLngLat([c.longitude,c.latitude])
+               .setPopup(new mapboxgl.Popup().setHTML(`<b>${c.name}</b><br>${c.address}`))
+               .addTo(map);
+            markers.push(mk);
+        }
+        function clearMarkers(){markers.forEach(m=>m.remove());markers=[];}
+
+        function renderList(data){
+          const container=document.getElementById('resultList');
+          container.innerHTML='';
+          data.forEach(c=>{
+             const card=document.createElement('div');
+             card.className='card mb-3 shadow-sm';
+             card.innerHTML=`
+               <div class="card-header bg-light">
+                  <h5 class="mb-0">${c.name}</h5>
+                  <small class="text-muted">${c.address}</small>
+               </div>
+               <div class="card-body p-2">
+                 ${c.courts.map(co=>`
+                   <h6>${co.name} <span class="badge bg-success">${co.minPrice.toLocaleString()} đ</span></h6>
+                   <div>${co.amenities.join(', ')}</div>
+                   <div>${co.availableSlots.map(s=>`<span class="badge bg-primary card-slot">
+                           ${s.start.substring(0,5)}-${s.end.substring(0,5)}
+                         </span>`).join('')}
+                   </div>`).join('')}
+               </div>`;
+             container.appendChild(card);
+          });
+        }
+    </script>
+}

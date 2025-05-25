@@ -10,6 +10,9 @@ using SportSync.Business.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services
+        .AddScoped<ICourtSearchService, CourtSearchService>();
+
 var firebaseCredentialPath = builder.Configuration["FirebaseAdminSdk:CredentialPath"]; 
 if (string.IsNullOrEmpty(firebaseCredentialPath))
 {
