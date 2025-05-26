@@ -71,6 +71,8 @@ namespace SportSync.Business.Dtos
 
         /// <summary>Khoảng cách đến vị trí người dùng (km). Null nếu không lọc theo GPS.</summary>
         public double? DistanceKm { get; init; }
+        public decimal? Latitude { get; set; } // NULL, DECIMAL(9,6)
+        public decimal? Longitude { get; set; } // NULL, DECIMAL(9,6)
 
         /// <summary>Danh sách sân con có ít nhất 1 slot trống.</summary>
         public IEnumerable<CourtWithSlotsDto> Courts { get; init; } = [];

@@ -33,17 +33,33 @@ public class CourtsController : Controller
         return View();
     }
 
-    /* ---------- API JSON ---------- */
-    [HttpGet("api/v1/courts/search")]           
+    [HttpGet("api/v1/courts/search")]
     [ProducesResponseType(typeof(IEnumerable<CourtComplexResultDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search(
-        [FromQuery] CourtSearchRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Search([FromQuery] CourtSearchRequest request, CancellationToken cancellationToken = default)
     {
-        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
         var result = await _svc.SearchAsync(request, cancellationToken);
-        return Ok(result);                         
+        return Ok(result);
+    }
+
+    [HttpGet("api/v1/courts/nearby")]
+    [ProducesResponseType(typeof(IEnumerable<CourtComplexResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SearchNearby([FromQuery] CourtSearchRequest request,
+                                                  [FromQuery] double userLat,
+                                                  [FromQuery] double userLng,
+                                                  [FromQuery] double radiusKm = 10,
+                                                  CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        // Có thể validate thêm userLat, userLng ở đây (ví dụ: không được 0)
+
+        var result = await _svc.SearchNearbyAsync(userLat, userLng, radiusKm, request, cancellationToken);
+        return Ok(result);
     }
 }

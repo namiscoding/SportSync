@@ -17,57 +17,50 @@ namespace SportSync.Business.Services
         public CourtSearchService(ApplicationDbContext db) => _db = db;
 
         // ---------------------------------------------------  Haversine (km)
-        private static double DistanceKm(
-            double lat1, double lon1,
-            double lat2, double lon2)
-        {
-            const double R = 6371.0;
-            var dLat = (lat2 - lat1) * Math.PI / 180;
-            var dLon = (lon2 - lon1) * Math.PI / 180;
 
-            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                    Math.Cos(lat1 * Math.PI / 180) *
-                    Math.Cos(lat2 * Math.PI / 180) *
-                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
 
-            return 2 * R * Math.Asin(Math.Sqrt(a));
-        }
-
-        // ---------------------------------------------------  MAIN
         public async Task<IReadOnlyList<CourtComplexResultDto>> SearchAsync(
-            CourtSearchRequest rq, CancellationToken ct = default)
+    CourtSearchRequest rq, CancellationToken ct = default)
         {
             int dow = (int)rq.Date.DayOfWeek;
 
-            // ------------ base filter CourtComplex
+            // Lọc CourtComplex theo trạng thái, City, District
             var complexesQ = _db.CourtComplexes
                 .AsNoTracking()
-                .Include(c => c.Courts) // cần Courts để join tiếp
+                .Include(c => c.Courts)
                 .Where(c => c.ApprovalStatus == ApprovalStatus.Approved &&
                             c.IsActiveByOwner && c.IsActiveByAdmin);
 
             if (!string.IsNullOrWhiteSpace(rq.City))
-                complexesQ = complexesQ.Where(c => c.City == rq.City);
+            {
+                var city = rq.City.Trim().ToLower();
+                complexesQ = complexesQ.Where(c =>
+                    c.City != null &&
+                    EF.Functions.Like(c.City.ToLower(), $"%{city}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(rq.District))
-                complexesQ = complexesQ.Where(c => c.District == rq.District);
+            {
+                var district = rq.District.Trim().ToLower();
+                complexesQ = complexesQ.Where(c =>
+                    c.District != null &&
+                    EF.Functions.Like(c.District.ToLower(), $"%{district}%"));
+            }   
 
-            // ------------ materialize tối thiểu field cần (để tính distance)
+            // Lấy dữ liệu court + slots
             var raw = await complexesQ
                 .Select(cpx => new
                 {
                     cpx.CourtComplexId,
                     cpx.Name,
                     cpx.Address,
-                    cpx.Latitude,
-                    cpx.Longitude,
                     cpx.MainImageCloudinaryUrl,
-
+                    cpx.Longitude,
+                    cpx.Latitude,
                     Courts = cpx.Courts
                         .Where(co => co.IsActiveByAdmin &&
                                      co.StatusByOwner == CourtStatusByOwner.Available &&
-                                     (!rq.SportTypeId.HasValue ||
-                                       co.SportTypeId == rq.SportTypeId))
+                                     (!rq.SportTypeId.HasValue || co.SportTypeId == rq.SportTypeId))
                         .Select(co => new
                         {
                             co.CourtId,
@@ -83,13 +76,13 @@ namespace SportSync.Business.Services
                                              (ts.DayOfWeek == null || (int)ts.DayOfWeek == dow) &&
                                              ts.StartTime >= (rq.FromTime ?? TimeOnly.MinValue) &&
                                              ts.EndTime <= (rq.ToTime ?? TimeOnly.MaxValue))
-                                // --- chưa block
+                                // Chưa block
                                 .Where(ts => !_db.BlockedCourtSlots.Any(b =>
                                              b.CourtId == co.CourtId &&
                                              b.BlockDate == rq.Date &&
                                              b.StartTime < ts.EndTime &&
                                              b.EndTime > ts.StartTime))
-                                // --- chưa booking confirmed
+                                // Chưa booking confirmed
                                 .Where(ts => !_db.BookedSlots.Any(bs =>
                                              bs.TimeSlotId == ts.TimeSlotId &&
                                              bs.SlotDate == rq.Date &&
@@ -105,30 +98,20 @@ namespace SportSync.Business.Services
                 })
                 .ToListAsync(ct);
 
-            // ------------ distance + bán kính & mapping
+            // Bỏ lọc khoảng cách và bán kính (UserLat, UserLng không dùng)
             var list = raw
-                .Select(c =>
+                .Select(c => new CourtComplexResultDto
                 {
-                    double? dist = (rq.UserLat is null || c.Latitude is null)
-                        ? null
-                        : DistanceKm(rq.UserLat.Value, rq.UserLng!.Value,
-                                     (double)c.Latitude!, (double)c.Longitude!);
+                    ComplexId = c.CourtComplexId,
+                    Name = c.Name,
+                    Address = c.Address,
+                    ThumbnailUrl = c.MainImageCloudinaryUrl,
+                    DistanceKm = null, // không tính khoảng cách
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
 
-                    return new { c, dist };
-                })
-               .Where(x => rq.UserLat == null || rq.UserLng == null
-                        ? true
-                        : (x.dist ?? double.MaxValue) <= rq.RadiusKm)
-                .Select(x => new CourtComplexResultDto
-                {
-                    ComplexId = x.c.CourtComplexId,
-                    Name = x.c.Name,
-                    Address = x.c.Address,
-                    ThumbnailUrl = x.c.MainImageCloudinaryUrl,
-                    DistanceKm = x.dist,
-
-                    Courts = x.c.Courts
-                              .Where(co => co.Slots.Any())        // ít nhất 1 slot
+                    Courts = c.Courts
+                              .Where(co => co.Slots.Any())        // có ít nhất 1 slot
                               .Select(co => new CourtWithSlotsDto
                               {
                                   CourtId = co.CourtId,
@@ -139,12 +122,148 @@ namespace SportSync.Business.Services
                                   AvailableSlots = co.Slots
                               })
                 })
+                .Where(c => c.Courts.Any())  // loại bỏ complex không có sân phù hợp
+                .OrderBy(c => c.Name)        // sắp xếp theo tên complex hoặc có thể theo tiêu chí khác
+                .ToList();
+
+            return list;
+        }
+
+        public async Task<IReadOnlyList<CourtComplexResultDto>> SearchNearbyAsync(
+        double userLat, double userLng,
+        double radiusKm = 10,
+        CourtSearchRequest rq = null,
+        CancellationToken ct = default)
+        {
+            int dow = rq?.Date.DayOfWeek != null ? (int)rq.Date.DayOfWeek : (int)DateTime.Today.DayOfWeek;
+
+            // Chuyển rq.Date sang DateTime.Date để so sánh đúng kiểu với DB
+            DateTime queryDate = rq?.Date.ToDateTime(TimeOnly.MinValue).Date ?? DateTime.Today.Date;
+            DateOnly queryDateOnly = DateOnly.FromDateTime(queryDate);
+            var fromTime = rq?.FromTime ?? TimeOnly.MinValue;
+            var toTime = rq?.ToTime ?? TimeOnly.MaxValue;
+
+            var complexesQ = _db.CourtComplexes
+                .AsNoTracking()
+                .Include(c => c.Courts)
+                .Where(c => c.ApprovalStatus == ApprovalStatus.Approved &&
+                            c.IsActiveByOwner && c.IsActiveByAdmin);
+
+            if (!string.IsNullOrWhiteSpace(rq?.City))
+                complexesQ = complexesQ.Where(c => c.City == rq.City);
+
+            if (!string.IsNullOrWhiteSpace(rq?.District))
+                complexesQ = complexesQ.Where(c => c.District == rq.District);
+
+            var raw = await complexesQ
+                .Select(cpx => new
+                {
+                    cpx.CourtComplexId,
+                    cpx.Name,
+                    cpx.Address,
+                    cpx.Latitude,
+                    cpx.Longitude,
+                    cpx.MainImageCloudinaryUrl,
+
+                    Courts = cpx.Courts
+                        .Where(co => co.IsActiveByAdmin &&
+                                     co.StatusByOwner == CourtStatusByOwner.Available &&
+                                     (rq == null || !rq.SportTypeId.HasValue || co.SportTypeId == rq.SportTypeId))
+                        .Select(co => new
+                        {
+                            co.CourtId,
+                            co.Name,
+                            SportTypeName = co.SportType.Name,
+                            ImageUrl = co.MainImageCloudinaryUrl,
+
+                            Amenities = co.CourtAmenities.Select(a => a.Amenity.Name).ToList(),
+
+                            Slots = co.TimeSlots
+                                .Where(ts => ts.IsActiveByOwner &&
+                                             (ts.DayOfWeek == null || (int)ts.DayOfWeek == dow) &&
+                                             ts.StartTime >= fromTime &&
+                                             ts.EndTime <= toTime)
+                                .Where(ts => !_db.BlockedCourtSlots.Any(b =>
+                                    b.CourtId == co.CourtId &&
+                                    b.BlockDate == queryDateOnly &&
+                                    b.StartTime < ts.EndTime &&
+                                    b.EndTime > ts.StartTime))
+                                .Where(ts => !_db.BookedSlots.Any(bs =>
+                                    bs.TimeSlotId == ts.TimeSlotId &&
+                                    bs.SlotDate == queryDateOnly &&
+                                    bs.Booking.BookingStatus == BookingStatusType.Confirmed))
+                                .Select(ts => new TimeSlotDto
+                                {
+                                    TimeSlotId = ts.TimeSlotId,
+                                    Start = ts.StartTime,
+                                    End = ts.EndTime,
+                                    Price = ts.Price
+                                })
+                                .ToList()
+                        })
+                        .ToList()
+                })
+                .ToListAsync(ct);
+
+            var list = raw
+                .Select(c =>
+                {
+                    if (c.Latitude == null || c.Longitude == null) return null;
+
+                    double dist = DistanceKm(userLat, userLng, (double)c.Latitude.Value, (double)c.Longitude.Value);
+
+                    if (dist > radiusKm)
+                        return null;
+
+                    return new { c, dist };
+                })
+                .Where(x => x != null)
+                .Select(x => new CourtComplexResultDto
+                {
+                    ComplexId = x.c.CourtComplexId,
+                    Name = x.c.Name,
+                    Address = x.c.Address,
+                    ThumbnailUrl = x.c.MainImageCloudinaryUrl,
+                    DistanceKm = x.dist,
+                    Latitude = x.c.Latitude,        // Trả về Latitude
+                    Longitude = x.c.Longitude,      // Trả về Longitude
+
+                    Courts = x.c.Courts
+                        .Where(co => co.Slots.Any())
+                        .Select(co => new CourtWithSlotsDto
+                        {
+                            CourtId = co.CourtId,
+                            Name = co.Name,
+                            SportTypeName = co.SportTypeName,
+                            ImageUrl = co.ImageUrl,
+                            Amenities = co.Amenities ?? Enumerable.Empty<string>(),
+                            AvailableSlots = co.Slots ?? Enumerable.Empty<TimeSlotDto>()
+                        })
+                        .ToList()
+                })
                 .Where(c => c.Courts.Any())
-                .OrderBy(c => c.DistanceKm ?? double.MaxValue)      // gần nhất lên đầu
+                .OrderBy(c => c.DistanceKm)
                 .ThenBy(c => c.Courts.Min(co => co.MinPrice))
                 .ToList();
 
             return list;
         }
+
+        private static double DistanceKm(
+    double lat1, double lon1,
+    double lat2, double lon2)
+        {
+            const double R = 6371.0;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Cos(lat1 * Math.PI / 180) *
+                    Math.Cos(lat2 * Math.PI / 180) *
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+            return 2 * R * Math.Asin(Math.Sqrt(a));
+        }
+
     }
 }
