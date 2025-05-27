@@ -8,6 +8,7 @@ using SportSync.Business.Interfaces;
 using SportSync.Business.Services;
 
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 var firebaseCredentialPath = builder.Configuration["FirebaseAdminSdk:CredentialPath"]; 
@@ -89,6 +90,9 @@ builder.Services.Configure<SportSync.Business.Settings.CloudinarySettings>(build
 
 builder.Services.AddScoped<SportSync.Business.Interfaces.IImageUploadService, SportSync.Business.Services.CloudinaryImageUploadService>();
 builder.Services.AddScoped<ICourtComplexService, CourtComplexService>();
+builder.Services.AddScoped<IApplicationUserService, ApplicationUserService>();
+builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<CourtOwnerManagementService>();
 
 var app = builder.Build();
 
@@ -107,8 +111,42 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         await SeedRolesAsync(roleManager);
+
+        var context = services.GetRequiredService<ApplicationDbContext>(); // ✅ THÊM DÒNG NÀY
+
         // Bạn có thể gọi thêm các phương thức seed data khác ở đây (ví dụ: seed admin user)
         // await SeedAdminUserAsync(userManager, roleManager);
+
+        // Tạo tài khoản Admin nếu chưa tồn tại
+        string adminEmail = "admin@example.com";
+        string adminPhone = "+84987654321";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        if (adminUser == null)
+        {
+            adminUser = new ApplicationUser
+            {
+                UserName = adminPhone, // Sử dụng PhoneNumber làm UserName
+                Email = adminEmail,
+                PhoneNumber = adminPhone,
+                EmailConfirmed = true,
+                PhoneNumberConfirmed = true
+            };
+            var result = await userManager.CreateAsync(adminUser, "Admin@123"); // Mật khẩu mặc định
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+                // Tạo UserProfile cho Admin
+                var userProfile = new UserProfile
+                {
+                    UserId = adminUser.Id,
+                    FullName = "Admin User",
+                    RegisteredDate = DateTime.UtcNow,
+                    AccountStatusByAdmin = 0 // Active
+                };
+                context.UserProfiles.Add(userProfile);
+                await context.SaveChangesAsync();
+            }
+        }
     }
     catch (Exception ex)
     {
