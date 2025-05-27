@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SportSync.Business.Services;
 using SportSync.Data.Enums;
 using SportSync.Web.Models.ViewModels;
-using SportSync.Web.Models.ViewModels.CourtComplex;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -27,7 +26,7 @@ namespace SportSync.Web.Controllers
                 ? await _courtComplexManagementService.GetCourtComplexesAsync()
                 : await _courtComplexManagementService.SearchCourtComplexesAsync(searchTerm);
 
-            var courtComplexViewModels = courtComplexes.Select(cc => new Models.ViewModels.CourtComplexViewModel
+            var courtComplexViewModels = courtComplexes.Select(cc => new CourtComplexViewModel
             {
                 CourtComplexId = cc.CourtComplexId,
                 Name = cc.Name,

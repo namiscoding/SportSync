@@ -1,0 +1,59 @@
+﻿@model SportSync.Web.Models.ViewModels.CourtComplexDetailViewModel
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<h2>Chi tiết Hệ thống sân: @Model.Name</h2>
+
+<div>
+    <h4>Thông tin chung</h4>
+    <p><strong>Tên:</strong> @Model.Name</p>
+    <p><strong>Chủ sân:</strong> @Model.OwnerFullName (SĐT: @Model.OwnerPhoneNumber)</p>
+    <p><strong>Địa chỉ:</strong> @Model.Address, @Model.District, @Model.City@(string.IsNullOrEmpty(Model.Ward) ? "" : ", " + Model.Ward)</p>
+    <p><strong>Tọa độ:</strong> @(Model.Latitude.HasValue ? $"{Model.Latitude}, {Model.Longitude}" : "Chưa có")</p>
+    <p><strong>Mô tả:</strong> @(string.IsNullOrEmpty(Model.Description) ? "Chưa có" : Model.Description)</p>
+    <p><strong>Liên hệ:</strong> SĐT: @(string.IsNullOrEmpty(Model.ContactPhoneNumber) ? "Chưa có" : Model.ContactPhoneNumber), Email: @(string.IsNullOrEmpty(Model.ContactEmail) ? "Chưa có" : Model.ContactEmail)</p>
+    <p><strong>Giờ hoạt động mặc định:</strong> @(Model.DefaultOpeningTime.HasValue ? $"{Model.DefaultOpeningTime.Value.ToString("HH:mm")} - {Model.DefaultClosingTime.Value.ToString("HH:mm")}" : "Chưa thiết lập")</p>
+    <p><strong>Trạng thái duyệt:</strong> @Model.ApprovalStatus</p>
+    @if (!string.IsNullOrEmpty(Model.RejectionReason))
+    {
+        <p><strong>Lý do từ chối:</strong> @Model.RejectionReason</p>
+    }
+    <p><strong>Hoạt động:</strong> @(Model.IsActiveByAdmin ? "Có" : "Không")</p>
+</div>
+
+<h4>Danh sách sân</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên sân</th>
+            <th>Loại sân</th>
+            <th>Trạng thái bởi chủ sân</th>
+            <th>Hoạt động</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var court in Model.Courts)
+        {
+            <tr>
+                <td>@court.Name</td>
+                <td>@court.SportTypeName</td>
+                <td>@court.StatusByOwner</td>
+                <td>@(court.IsActiveByAdmin ? "Có" : "Không")</td>
+                <td>
+                    <form asp-action="ToggleCourtStatus" method="post" style="display:inline;">
+                        <input type="hidden" name="courtId" value="@court.CourtId" />
+                        <button type="submit">@(court.IsActiveByAdmin ? "Gỡ" : "Khôi phục")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Index">Quay lại</a>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
