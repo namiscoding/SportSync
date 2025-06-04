@@ -35,6 +35,7 @@
             }
         </select>
     </div>
+
     <div class="col-md-3">
         <label class="form-label">Thành phố</label>
         <select class="form-control" name="City" id="CitySelect" onchange="loadDistricts()">
@@ -48,37 +49,41 @@
             <option value="">-- Chọn Quận/Huyện --</option>
         </select>
     </div>
+
     <div class="col-md-3">
         <label class="form-label">Ngày</label>
         <input type="date" class="form-control" name="Date"
                value="@DateTime.Today.ToString("yyyy-MM-dd")" />
     </div>
+
     <div class="col-md-2">
         <label class="form-label">Từ</label>
         <input type="time" class="form-control" name="FromTime" value="07:00" />
     </div>
+
     <div class="col-md-2">
         <label class="form-label">Đến</label>
         <input type="time" class="form-control" name="ToTime" value="09:00" />
     </div>
+
     <div class="col-md-2">
         <label class="form-label">Bán kính (km)</label>
-        <input type="number" class="form-control" name="RadiusKm" value="10" step="0.5" />
+        <input type="number" class="form-control" name="RadiusKm" value="" step="0.5"
+               placeholder="ex: 10" />
     </div>
 
-    <!-- GPS tự điền -->
     <input type="hidden" name="UserLat" id="UserLat" />
     <input type="hidden" name="UserLng" id="UserLng" />
 
     <div class="col-md-2 align-self-end d-flex">
         <button type="submit" class="btn btn-primary w-50">Tìm</button>
-        <button type="button" id="btnNearby" class="btn btn-outline-primary w-50">Tìm sân gần đây</button>
+        <button type="button" id="btnNearby" class="btn btn-outline-primary w-50">
+            Tìm sân gần đây
+        </button>
     </div>
 </form>
 
 <div id="map"></div>
-
-<!-- danh sách kết quả -->
 <div id="resultList"></div>
 
 @section Scripts {
@@ -87,173 +92,142 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ';
         let map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: [105.84713, 21.030653],
-            zoom: 12
+            container:'map',
+            style:'mapbox://styles/mapbox/streets-v12',
+            center:[105.84713,21.030653],
+            zoom:12
         });
 
-        // Lấy GPS và hiển thị marker "Bạn ở đây"
-        function setUserLocationMarker(lat, lng) {
+        function setUserLocation(lat,lng){
             document.getElementById('UserLat').value = lat;
             document.getElementById('UserLng').value = lng;
-            new mapboxgl.Marker({ color: '#0d6efd' })
-                .setLngLat([lng, lat])
+            new mapboxgl.Marker({color:'#0d6efd'})
+                .setLngLat([lng,lat])
                 .setPopup(new mapboxgl.Popup().setHTML("Bạn ở đây"))
                 .addTo(map);
-            map.flyTo({ center: [lng, lat], zoom: 13 });
+            map.flyTo({center:[lng,lat],zoom:13});
         }
 
-        navigator.geolocation?.getCurrentPosition(pos => {
-            setUserLocationMarker(pos.coords.latitude, pos.coords.longitude);
-        }, err => {
-            console.warn("Không thể lấy vị trí người dùng.", err);
-        });
+        navigator.geolocation?.getCurrentPosition(
+            p=>setUserLocation(p.coords.latitude,p.coords.longitude),
+            e=>console.warn('GPS denied',e));
 
-        let markers = [];
-
-        function clearMarkers() {
-            markers.forEach(m => m.remove());
-            markers = [];
-        }
-
-        function addMarker(court) {
-            if (court.latitude == null || court.longitude == null) return;
-
-            const marker = new mapboxgl.Marker()
-                .setLngLat([court.longitude, court.latitude])
-                .setPopup(new mapboxgl.Popup().setHTML(`<b>${court.name}</b><br>${court.address}`))
+        let markers=[];
+        function clearMarkers(){markers.forEach(m=>m.remove());markers=[];}
+        function addMarker(c){
+            if(c.latitude==null||c.longitude==null) return;
+            const mk=new mapboxgl.Marker()
+                .setLngLat([c.longitude,c.latitude])
+                .setPopup(new mapboxgl.Popup().setHTML(`<b>${c.name}</b><br>${c.address}`))
                 .addTo(map);
-
-            
-            markers.push(marker);
+            markers.push(mk);
+        }
+        function fitMap(){ if(!markers.length) return;
+            const b=new mapboxgl.LngLatBounds();
+            markers.forEach(m=>b.extend(m.getLngLat()));
+            map.fitBounds(b,{padding:50,maxZoom:15,duration:800});
         }
 
-                function fitMapToMarkers() {
-            if (markers.length === 0) return;
-
-            const bounds = new mapboxgl.LngLatBounds();
-
-            markers.forEach(marker => {
-                bounds.extend(marker.getLngLat());
-            });
-
-            map.fitBounds(bounds, {
-                padding: 50,
-                maxZoom: 15,
-                duration: 1000
-            });
-        }
-
-        function renderList(data) {
-            const container = document.getElementById('resultList');
-            container.innerHTML = '';
-            data.forEach(c => {
-                const card = document.createElement('div');
-                card.className = 'card mb-3 shadow-sm';
-                card.innerHTML = `
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">${c.name}</h5>
-                        <small class="text-muted">${c.address}</small>
-                    </div>
-                    <div class="card-body p-2">
-                        ${c.courts.map(co => `
-                            <h6>${co.name} <span class="badge bg-success">${co.minPrice.toLocaleString()} đ</span></h6>
-                            <div>${co.amenities.join(', ')}</div>
-                            <div>${co.availableSlots.map(s => `<span class="badge bg-primary card-slot">
-                                    ${s.start.substring(0, 5)}-${s.end.substring(0, 5)}
-                                </span>`).join('')}
-                            </div>`).join('')}
-                    </div>`;
-                container.appendChild(card);
+        function renderList(data){
+            const box=document.getElementById('resultList');
+            box.innerHTML='';
+        const selectedDate =
+               document.querySelector('input[name="Date"]').value || '';
+            data.forEach(c=>{
+                const card=document.createElement('div');
+                card.className='card mb-3 shadow-sm';
+                card.innerHTML=`<div class="card-header bg-light">
+                    <h5 class="mb-0">
+                       <a href="/CourtComplex/Details/${c.complexId}?date=${selectedDate}">
+                           ${c.name}
+                       </a>
+                    </h5>
+                    <small class="text-muted">${c.address}</small>
+                </div>
+                <div class="card-body p-2">
+                    ${c.courts.map(co=>`
+                        <h6>${co.name} <span class="badge bg-success">${co.minPrice.toLocaleString()} đ</span></h6>
+                        <div>${co.amenities.join(', ')}</div>
+                        <div>${co.availableSlots.map(s=>`
+                            <span class="badge bg-primary card-slot">
+                                ${s.start.substring(0,5)}-${s.end.substring(0,5)}
+                            </span>`).join('')}
+                        </div>`).join('')}
+                </div>`;
+                box.appendChild(card);
             });
         }
 
-        document.getElementById('filterForm').addEventListener('submit', async e => {
+        document.getElementById('filterForm').addEventListener('submit',async e=>{
             e.preventDefault();
             clearMarkers();
-            document.getElementById('resultList').innerHTML = '<p>Đang tải…</p>';
+            document.getElementById('resultList').innerHTML='<p>Đang tải…</p>';
 
-            const qs = new URLSearchParams(new FormData(e.target));
-            const res = await fetch('/api/v1/courts/search?' + qs);
-            const data = await res.json();
-            if (!data.length) {
-                  alert('Không tìm thấy sân phù hợp.');
-                document.getElementById('resultList').innerHTML = '<p>Không tìm thấy sân.</p>';
+            const fd = new FormData(e.target);
+
+
+            if(!fd.get('UserLat') || !fd.get('UserLng')) fd.delete('RadiusKm');
+
+            const res=await fetch('/Courts/Search?'+new URLSearchParams(fd));
+            if(!res.ok){ alert('Lỗi tìm kiếm'); return; }
+
+            const data=await res.json();
+            if(!data.length){
+                document.getElementById('resultList').innerHTML='<p>Không tìm thấy sân.</p>';
                 return;
             }
-
-            renderList(data);
-            data.forEach(addMarker);
-            fitMapToMarkers();
+            renderList(data); data.forEach(addMarker); fitMap();
         });
 
-        // Xử lý nút "Tìm sân gần đây"
-        document.getElementById('btnNearby').addEventListener('click', () => {
-            navigator.geolocation?.getCurrentPosition(async pos => {
+        document.getElementById('btnNearby').addEventListener('click',()=>{
+            navigator.geolocation?.getCurrentPosition(async pos=>{
                 clearMarkers();
-                document.getElementById('resultList').innerHTML = '<p>Đang tải…</p>';
+                document.getElementById('resultList').innerHTML='<p>Đang tải…</p>';
 
-                // Cập nhật tọa độ và bán kính mặc định 10km
-                document.getElementById('UserLat').value = pos.coords.latitude;
-                document.getElementById('UserLng').value = pos.coords.longitude;
-                document.querySelector('input[name="RadiusKm"]').value = 10;
+                setUserLocation(pos.coords.latitude,pos.coords.longitude);
 
-                // Tạo query string với tọa độ và bán kính
-                const params = new URLSearchParams();
-                params.append('userLat', pos.coords.latitude);
-                params.append('userLng', pos.coords.longitude);
-                params.append('radiusKm', 10);
-
-                // Gửi request tới API nearby (API cần chuẩn bị)
-                const res = await fetch('/api/v1/courts/nearby?' + params.toString());
-                const data = await res.json();
-
-                if (!data.length) {
-                      alert('Không tìm thấy sân phù hợp.');
-                    document.getElementById('resultList').innerHTML = '<p>Không tìm thấy sân gần đây.</p>';
+                const qs=new URLSearchParams({
+                    userLat:pos.coords.latitude,
+                    userLng:pos.coords.longitude,
+                    radiusKm:10
+                });
+                const res=await fetch('/Courts/Nearby?'+qs);
+                const data=await res.json();
+                if(!data.length){
+                    document.getElementById('resultList').innerHTML='<p>Không tìm thấy sân gần đây.</p>';
                     return;
                 }
-
-                renderList(data);
-                data.forEach(addMarker);
-                fitMapToMarkers();
-            }, err => {
-                alert('Không thể lấy vị trí GPS của bạn. Vui lòng cho phép truy cập vị trí.');
-            });
+                renderList(data); data.forEach(addMarker); fitMap();
+            },()=>alert('Vui lòng cho phép truy cập vị trí để tìm sân gần bạn'));
         });
 
-        window.onload = function () {
-            fetch("https://provinces.open-api.vn/api/?depth=1")
-                .then(res => res.json())
-                .then(provinces => {
-                    const citySelect = document.getElementById("CitySelect");
-                    provinces.forEach(p => {
-                        const opt = document.createElement("option");
-                        opt.value = p.code; // code để fetch quận/huyện
-                        opt.textContent = p.name;
-                        citySelect.appendChild(opt);
-                    });
-                });
-        };
+ 
+        window.onload=()=>fetch('https://provinces.open-api.vn/api/?depth=1')
+         .then(r=>r.json())
+         .then(p=>{
+            const citySel=document.getElementById('CitySelect');
+            p.forEach(c=>{
+                const o=document.createElement('option');
+                o.value=c.name;            
+                o.dataset.code=c.code;     
+                o.textContent=c.name;
+                citySel.appendChild(o);
+            });
+         });
 
-        function loadDistricts() {
-            const cityCode = document.getElementById("CitySelect").value;
-            const districtSelect = document.getElementById("DistrictSelect");
-            districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
-
-            if (!cityCode) return;
-
-            fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
-                .then(res => res.json())
-                .then(data => {
-                    data.districts.forEach(d => {
-                        const opt = document.createElement("option");
-                        opt.value = d.name;
-                        opt.textContent = d.name;
-                        districtSelect.appendChild(opt);
-                    });
-                });
+        function loadDistricts(){
+            const code=document.querySelector('#CitySelect option:checked')?.dataset.code;
+            const districtSel=document.getElementById('DistrictSelect');
+            districtSel.innerHTML='<option value="">-- Chọn Quận/Huyện --</option>';
+            if(!code) return;
+            fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
+              .then(r=>r.json())
+              .then(d=>d.districts.forEach(ds=>{
+                  const o=document.createElement('option');
+                  o.value=ds.name;     
+                  o.textContent=ds.name;
+                  districtSel.appendChild(o);
+              }));
         }
     </script>
 }

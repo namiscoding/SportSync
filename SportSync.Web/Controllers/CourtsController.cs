@@ -9,57 +9,55 @@ using System.Threading.Tasks;
 namespace SportSync.Web.Controllers;
 
 
-public class CourtsController : Controller
+[Route("Courts")]                     
+public sealed class CourtsController : Controller
 {
-    private readonly ICourtSearchService _svc;
+    private readonly ICourtSearchService _searchSvc;
     private readonly ApplicationDbContext _db;
-    public CourtsController(ICourtSearchService svc, ApplicationDbContext db) {
-        _svc = svc;
+
+    public CourtsController(ICourtSearchService searchSvc, ApplicationDbContext db)
+    {
+        _searchSvc = searchSvc;
         _db = db;
     }
-       
 
-
+    [HttpGet("")]       
     public IActionResult Index()
     {
-        // Lấy các loại sân còn hoạt động
-        var types = _db.SportTypes
-                      .Where(t => t.IsActive)
-                      .OrderBy(t => t.Name)
-                      .Select(t => new { t.SportTypeId, t.Name })
-                      .ToList();
+        ViewBag.SportTypes = _db.SportTypes
+                                .Where(t => t.IsActive)
+                                .OrderBy(t => t.Name)
+                                .Select(t => new { t.SportTypeId, t.Name })
+                                .ToList();
 
-        ViewBag.SportTypes = types;         
-        return View();
+        ViewBag.Amenities = _db.Amenities
+                                .Where(a => a.IsActive)
+                                .OrderBy(a => a.Name)
+                                .Select(a => new { a.AmenityId, a.Name })
+                                .ToList();
+
+        return View();               
     }
 
-    [HttpGet("api/v1/courts/search")]
-    [ProducesResponseType(typeof(IEnumerable<CourtComplexResultDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search([FromQuery] CourtSearchRequest request, CancellationToken cancellationToken = default)
+    [HttpGet("Search")]
+    public async Task<IActionResult> Search([FromQuery] CourtSearchRequest req,
+                                            CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
-        var result = await _svc.SearchAsync(request, cancellationToken);
-        return Ok(result);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var data = await _searchSvc.SearchAsync(req, ct);
+        return Json(data);             
     }
 
-    [HttpGet("api/v1/courts/nearby")]
-    [ProducesResponseType(typeof(IEnumerable<CourtComplexResultDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SearchNearby([FromQuery] CourtSearchRequest request,
-                                                  [FromQuery] double userLat,
-                                                  [FromQuery] double userLng,
-                                                  [FromQuery] double radiusKm = 10,
-                                                  CancellationToken cancellationToken = default)
+    [HttpGet("Nearby")]
+    public async Task<IActionResult> Nearby(
+        [FromQuery] double userLat,
+        [FromQuery] double userLng,
+        [FromQuery] double radiusKm,
+        [FromQuery] CourtSearchRequest baseFilter,
+        CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
-        // Có thể validate thêm userLat, userLng ở đây (ví dụ: không được 0)
-
-        var result = await _svc.SearchNearbyAsync(userLat, userLng, radiusKm, request, cancellationToken);
-        return Ok(result);
+        var data = await _searchSvc.SearchNearbyAsync(
+            userLat, userLng, radiusKm, baseFilter, ct);
+        return Json(data);
     }
 }

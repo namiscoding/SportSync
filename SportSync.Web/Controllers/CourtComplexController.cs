@@ -135,5 +135,15 @@ namespace SportSync.Web.Controllers
 
             return View(model);
         }
+
+        [HttpGet("/CourtComplex/Details/{id:int}")]
+        public async Task<IActionResult> Details(int id, DateOnly? date)
+        {
+            var dto = await _courtComplexService.GetDetailAsync(id, date);
+            if (dto == null) return NotFound();
+
+            ViewBag.SelectedDate = date ?? DateOnly.FromDateTime(DateTime.Today);
+            return View(dto);    // /Views/CourtComplex/Details.cshtml
+        }
     }
 }

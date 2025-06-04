@@ -16,15 +16,12 @@ namespace SportSync.Business.Services
         private readonly ApplicationDbContext _db;
         public CourtSearchService(ApplicationDbContext db) => _db = db;
 
-        // ---------------------------------------------------  Haversine (km)
-
 
         public async Task<IReadOnlyList<CourtComplexResultDto>> SearchAsync(
     CourtSearchRequest rq, CancellationToken ct = default)
         {
             int dow = (int)rq.Date.DayOfWeek;
 
-            // Lọc CourtComplex theo trạng thái, City, District
             var complexesQ = _db.CourtComplexes
                 .AsNoTracking()
                 .Include(c => c.Courts)
@@ -47,7 +44,6 @@ namespace SportSync.Business.Services
                     EF.Functions.Like(c.District.ToLower(), $"%{district}%"));
             }   
 
-            // Lấy dữ liệu court + slots
             var raw = await complexesQ
                 .Select(cpx => new
                 {
@@ -98,7 +94,7 @@ namespace SportSync.Business.Services
                 })
                 .ToListAsync(ct);
 
-            // Bỏ lọc khoảng cách và bán kính (UserLat, UserLng không dùng)
+
             var list = raw
                 .Select(c => new CourtComplexResultDto
                 {
@@ -106,12 +102,12 @@ namespace SportSync.Business.Services
                     Name = c.Name,
                     Address = c.Address,
                     ThumbnailUrl = c.MainImageCloudinaryUrl,
-                    DistanceKm = null, // không tính khoảng cách
+                    DistanceKm = null, 
                     Latitude = c.Latitude,
                     Longitude = c.Longitude,
 
                     Courts = c.Courts
-                              .Where(co => co.Slots.Any())        // có ít nhất 1 slot
+                              .Where(co => co.Slots.Any())      
                               .Select(co => new CourtWithSlotsDto
                               {
                                   CourtId = co.CourtId,
@@ -122,8 +118,8 @@ namespace SportSync.Business.Services
                                   AvailableSlots = co.Slots
                               })
                 })
-                .Where(c => c.Courts.Any())  // loại bỏ complex không có sân phù hợp
-                .OrderBy(c => c.Name)        // sắp xếp theo tên complex hoặc có thể theo tiêu chí khác
+                .Where(c => c.Courts.Any()) 
+                .OrderBy(c => c.Name)        
                 .ToList();
 
             return list;
@@ -136,8 +132,6 @@ namespace SportSync.Business.Services
         CancellationToken ct = default)
         {
             int dow = rq?.Date.DayOfWeek != null ? (int)rq.Date.DayOfWeek : (int)DateTime.Today.DayOfWeek;
-
-            // Chuyển rq.Date sang DateTime.Date để so sánh đúng kiểu với DB
             DateTime queryDate = rq?.Date.ToDateTime(TimeOnly.MinValue).Date ?? DateTime.Today.Date;
             DateOnly queryDateOnly = DateOnly.FromDateTime(queryDate);
             var fromTime = rq?.FromTime ?? TimeOnly.MinValue;
@@ -225,8 +219,8 @@ namespace SportSync.Business.Services
                     Address = x.c.Address,
                     ThumbnailUrl = x.c.MainImageCloudinaryUrl,
                     DistanceKm = x.dist,
-                    Latitude = x.c.Latitude,        // Trả về Latitude
-                    Longitude = x.c.Longitude,      // Trả về Longitude
+                    Latitude = x.c.Latitude,     
+                    Longitude = x.c.Longitude,      
 
                     Courts = x.c.Courts
                         .Where(co => co.Slots.Any())

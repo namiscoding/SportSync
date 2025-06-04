@@ -140,5 +140,60 @@ namespace SportSync.Business.Services
                 return (false, null, errors);
             }
         }
+
+        public async Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, DateOnly? date, CancellationToken ct = default)
+        {
+            int? dow = date.HasValue ? (int)date.Value.DayOfWeek : null;
+
+            return await _context.CourtComplexes
+                .AsNoTracking()
+                .Where(c => c.CourtComplexId == complexId &&
+                            c.ApprovalStatus == ApprovalStatus.Approved &&
+                            c.IsActiveByOwner && c.IsActiveByAdmin)
+                .Select(c => new CourtComplexDetailDto
+                {
+                    ComplexId = c.CourtComplexId,
+                    Name = c.Name,
+                    Address = c.Address,
+                    Description = c.Description,
+                    ThumbnailUrl = c.MainImageCloudinaryUrl,
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
+                    ContactPhone = c.ContactPhoneNumber,
+                    ContactEmail = c.ContactEmail,
+
+                    Courts = c.Courts
+                        .Where(co => co.IsActiveByAdmin &&
+                                     co.StatusByOwner == CourtStatusByOwner.Available)
+                        .Select(co => new CourtDetailDto
+                        {
+                            CourtId = co.CourtId,
+                            Name = co.Name,
+                            SportTypeName = co.SportType.Name,
+                            ImageUrl = co.MainImageCloudinaryUrl,
+
+                            Amenities = co.CourtAmenities
+                                          .Select(a => new AmenityDto(a.Amenity.Name)),
+
+                            AvailableSlots = co.TimeSlots
+                                .Where(ts => ts.IsActiveByOwner &&
+                                             // lọc theo thứ
+                                             (!dow.HasValue || ts.DayOfWeek == null || (int)ts.DayOfWeek == dow) &&
+                                             // loại slot đã được đặt
+                                             (!date.HasValue || !_context.BookedSlots.Any(bs =>
+                                                  bs.TimeSlotId == ts.TimeSlotId &&
+                                                  bs.SlotDate == date &&
+                                                  bs.Booking.BookingStatus == BookingStatusType.Confirmed)))
+                                .Select(ts => new TimeSlotDto
+                                {
+                                    TimeSlotId = ts.TimeSlotId,
+                                    Start = ts.StartTime,
+                                    End = ts.EndTime,
+                                    Price = ts.Price
+                                })
+                        })
+                })
+                .FirstOrDefaultAsync(ct);
+        }
     }
 }
