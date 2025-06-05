@@ -184,6 +184,7 @@ namespace SportSync.Business.Services
         {
             _context.CourtComplexes.Update(courtComplex);
             await _context.SaveChangesAsync();
+        }
 
         public async Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, DateOnly? date, CancellationToken ct = default)
         {
