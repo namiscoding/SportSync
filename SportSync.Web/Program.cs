@@ -15,28 +15,17 @@ using SportSync.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var firebaseCredentialPath = builder.Configuration["FirebaseAdminSdk:CredentialPath"]; 
-if (string.IsNullOrEmpty(firebaseCredentialPath))
-{
-    firebaseCredentialPath = Path.Combine(builder.Environment.ContentRootPath, "firebase-adminsdk.json");
-}
 
-if (File.Exists(firebaseCredentialPath))
-{
-    FirebaseApp.Create(new AppOptions()
-    {
-        Credential = GoogleCredential.FromFile(firebaseCredentialPath),
-    });
-    Console.WriteLine("Firebase Admin SDK initialized successfully."); // Log để kiểm tra
-}
-else
-{
-    // Log lỗi hoặc xử lý nếu không tìm thấy file credential
-    // Trong môi trường production, bạn có thể muốn ứng dụng không khởi động nếu Firebase Admin không thể khởi tạo.
-    Console.Error.WriteLine($"Firebase Admin SDK credential file not found at: {firebaseCredentialPath}. Firebase Admin SDK will not be initialized.");
-    // Hoặc: throw new FileNotFoundException("Firebase Admin SDK credential file not found.", firebaseCredentialPath);
-}
+// Cấu hình Session State
+builder.Services.AddDistributedMemoryCache(); // Cần thiết cho session
+builder.Services.AddSession(options =>
 
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(10); // Thời gian OTP và session tồn tại (ví dụ: 10 phút)
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true; // Đảm bảo cookie session hoạt động ngay cả khi người dùng chưa chấp nhận cookie policy
+});
+builder.Services.AddScoped<ICourtSearchService, CourtSearchService>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 // 1. Lấy chuỗi kết nối từ appsettings.json
@@ -46,7 +35,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
     {
-        // Chỉ định assembly chứa migrations nếu DbContext ở project khác (SportBookingWebsite.Data)
         sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
     }));
 
@@ -94,22 +82,17 @@ builder.Services.Configure<SportSync.Business.Settings.CloudinarySettings>(build
 
 builder.Services.AddScoped<SportSync.Business.Interfaces.IImageUploadService, SportSync.Business.Services.CloudinaryImageUploadService>();
 builder.Services.AddScoped<ICourtComplexService, CourtComplexService>();
+
 builder.Services.AddScoped<IApplicationUserService, ApplicationUserService>();
 builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CourtOwnerManagementService>();
-
-
-
-
-
-
-
-
 builder.Services.AddScoped<CourtComplexManagementService>();
 builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<CourtManagementService>();
 builder.Services.AddScoped<ISportTypeService, SportTypeService>();
 builder.Services.AddScoped<SportTypeManagementService>();
+
+builder.Services.AddTransient<ISmsSender, DebugSmsSender>();
 
 
 var app = builder.Build();
@@ -119,6 +102,12 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 using (var scope = app.Services.CreateScope())
@@ -269,8 +258,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication(); 
-app.UseAuthorization(); 
-
+app.UseAuthorization();
+app.UseSession();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
@@ -279,7 +268,7 @@ app.Run();
 
 static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
 {
-    string[] roleNames = { "Admin", "CourtOwner", "User" };
+    string[] roleNames = { "Admin", "CourtOwner", "User", "StandardCourtOwner", "ProCourtOwner" };
     foreach (var roleName in roleNames)
     {
         var roleExist = await roleManager.RoleExistsAsync(roleName);

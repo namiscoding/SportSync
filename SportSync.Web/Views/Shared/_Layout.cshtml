@@ -43,27 +43,32 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Search" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
-                               asp-controller="Search" asp-action="Index">
+                            <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Courts" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                               asp-controller="Courts" asp-action="Index">
                                 <i class="fas fa-search me-1"></i>Tìm sân
                             </a>
                         </li>
 
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtComplex" && ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")"
-                                   asp-controller="CourtComplex" asp-action="Create">
-                                    <i class="fas fa-plus-circle me-1"></i>Thêm sân của bạn
-                                </a>
-                            </li>
-
-                            @if (User.IsInRole("CourtOwner"))
+                            @* THAY ĐỔI Ở ĐÂY: Nút "Thêm sân của bạn" sẽ trỏ đến trang đăng ký gói *@
+                            @if (!User.IsInRole("CourtOwner") && !User.IsInRole("StandardCourtOwner") && !User.IsInRole("ProCourtOwner")) // Chỉ hiển thị nếu chưa phải là chủ sân
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtComplex" && ViewContext.RouteData.Values["action"]?.ToString() == "MyComplexes" ? "active" : "")"
-                                       asp-controller="CourtComplex" asp-action="MyComplexes">
-                                        <i class="fas fa-landmark me-1"></i>Khu sân của tôi
+                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Subscription" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                                       asp-controller="Subscription" asp-action="Index">
+                                        <i class="fas fa-plus-circle me-1"></i>Đăng ký làm Chủ Sân
+                                    </a>
+                                </li>
+                            }
+
+                            @if (User.IsInRole("CourtOwner") || User.IsInRole("StandardCourtOwner") || User.IsInRole("ProCourtOwner")) // Hoặc các vai trò chủ sân khác
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtOwnerDashboard" ? "active" : "")"
+                                       asp-controller="CourtOwnerDashboard" asp-action="Index">
+                                        @* Trỏ đến Dashboard của chủ sân *@
+                                        <i class="fas fa-tachometer-alt me-1"></i>Khu vực Chủ Sân
                                     </a>
                                 </li>
                             }
