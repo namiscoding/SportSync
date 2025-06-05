@@ -22,7 +22,8 @@
     display: flex;
     width: 100%;
     position: relative;
-    align-items: center; /* Đảm bảo căn giữa theo chiều dọc */
+    align-items: center;
+    justify-content: center;
 }
 
 /* Phần wrapper chứa nội dung chính */
@@ -51,8 +52,7 @@
 
 /* Logo và tiêu đề của layout */
 .auth-header {
-    margin-bottom: 30px;
-    text-align: center; /* Đảm bảo căn giữa tiêu đề và phụ đề */
+    text-align: center;         /* Đảm bảo căn giữa tiêu đề và phụ đề */
 }
 
 .auth-logo {

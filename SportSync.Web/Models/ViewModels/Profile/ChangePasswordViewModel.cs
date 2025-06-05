@@ -21,7 +21,5 @@ namespace SportSync.Web.Models.ViewModels.Profile
         [Compare("NewPassword", ErrorMessage = "Mật khẩu mới và xác nhận mật khẩu mới không khớp.")]
         public string ConfirmPassword { get; set; }
 
-        [TempData]
-        public string StatusMessage { get; set; }
     }
 }
