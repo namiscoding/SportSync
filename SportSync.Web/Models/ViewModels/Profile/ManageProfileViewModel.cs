@@ -18,7 +18,5 @@ namespace SportSync.Web.Models.ViewModels.Profile
         // [Display(Name = "Địa chỉ Email")]
         // public string Email { get; set; }
 
-        [TempData] // Để hiển thị thông báo sau khi cập nhật
-        public string StatusMessage { get; set; }
     }
 }
