@@ -2,11 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SportSync.Business.Interfaces;
-using SportSync.Business.Dtos; // **THÊM USING CHO DTOS**
+using SportSync.Business.Dtos;
 using SportSync.Data;
 using SportSync.Data.Entities;
 using SportSync.Data.Enums;
-// using SportSync.Web.Models.ViewModels.CourtComplex; // **XÓA USING NÀY**
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,6 @@ namespace SportSync.Business.Services
 
         public async Task<IEnumerable<CourtComplex>> GetCourtComplexesByOwnerAsync(string ownerUserId)
         {
-            // ... (giữ nguyên logic) ...
             if (string.IsNullOrEmpty(ownerUserId))
             {
                 _logger.LogWarning("GetCourtComplexesByOwnerAsync: ownerUserId is null or empty.");
@@ -56,7 +54,6 @@ namespace SportSync.Business.Services
             }
         }
 
-        // **THAY ĐỔI VIEWMODEL THÀNH DTO**
         public async Task<(bool Success, CourtComplex CreatedComplex, IEnumerable<string> Errors)> CreateCourtComplexAsync(CreateCourtComplexDto dto, string ownerUserId)
         {
             var errors = new List<string>();
@@ -71,33 +68,43 @@ namespace SportSync.Business.Services
                 return (false, null, errors);
             }
 
-            // Mapping từ DTO sang Entity
+            // **KIỂM TRA NẾU CHỦ SÂN ĐÃ CÓ KHU PHỨC HỢP CHƯA**
+            var existingComplexesCount = await _context.CourtComplexes
+                                                 .CountAsync(cc => cc.OwnerUserId == ownerUserId);
+
+            if (existingComplexesCount > 0)
+            {
+                _logger.LogWarning("User {OwnerUserId} attempted to create a new court complex but already owns {Count} complex(es).", ownerUserId, existingComplexesCount);
+                errors.Add("Mỗi chủ sân chỉ được quản lý một khu phức hợp sân. Bạn đã có một khu phức hợp.");
+                return (false, null, errors);
+            }
+
             var courtComplex = new CourtComplex
             {
                 OwnerUserId = ownerUserId,
                 Name = dto.Name,
                 Address = dto.Address,
-                City = dto.City,
-                District = dto.District,
-                Ward = dto.Ward,
+                City = dto.City, // Giả sử đây là code, cần xử lý lấy tên nếu muốn lưu tên
+                District = dto.District, // Giả sử đây là code
+                Ward = dto.Ward, // Giả sử đây là code
                 Description = dto.Description,
                 ContactPhoneNumber = dto.ContactPhoneNumber,
                 ContactEmail = dto.ContactEmail,
                 DefaultOpeningTime = dto.DefaultOpeningTime,
                 DefaultClosingTime = dto.DefaultClosingTime,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
                 CreatedAt = DateTime.UtcNow,
                 ApprovalStatus = ApprovalStatus.PendingApproval,
                 IsActiveByOwner = true,
                 IsActiveByAdmin = false
             };
 
-            // Xử lý tải ảnh từ DTO
             if (dto.MainImage != null && dto.MainImage.Content != null && dto.MainImage.Content.Length > 0)
             {
                 _logger.LogInformation("Attempting to upload main image for new court complex: {FileName}", dto.MainImage.FileName);
                 string folderName = $"court_complexes/{Guid.NewGuid()}";
 
-                // Gọi service upload ảnh với ImageInputDto
                 var uploadResult = await _imageUploadService.UploadImageAsync(dto.MainImage, folderName);
 
                 if (uploadResult.Success)
@@ -113,19 +120,17 @@ namespace SportSync.Business.Services
                 }
             }
 
-            // Nếu có lỗi từ việc tải ảnh và bạn muốn dừng lại, hãy kiểm tra errors ở đây
             if (errors.Any(e => e.StartsWith("Lỗi tải ảnh đại diện")))
             {
-                // return (false, null, errors); // Bỏ comment nếu muốn dừng khi tải ảnh lỗi
+                // return (false, null, errors); // Quyết định có dừng nếu lỗi ảnh không
             }
-
 
             try
             {
                 _context.CourtComplexes.Add(courtComplex);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("CourtComplex '{ComplexName}' created successfully by User {OwnerUserId}. ID: {ComplexId}", courtComplex.Name, ownerUserId, courtComplex.CourtComplexId);
-                return (true, courtComplex, null); // Trả về null cho errors nếu thành công
+                return (true, courtComplex, null);
             }
             catch (DbUpdateException ex)
             {

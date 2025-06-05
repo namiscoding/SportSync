@@ -1,42 +1,44 @@
-﻿using FirebaseAdmin;
-using FirebaseAdmin.Auth;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SportSync.Data.Entities; // Đảm bảo namespace này đúng
-using SportSync.Data.Enums;   // Đảm bảo namespace này đúng
-using SportSync.Web.Models.ViewModels.Account; // Đảm bảo namespace này đúng
+using Microsoft.Extensions.Logging;
+using SportSync.Business.Interfaces;
+using SportSync.Data.Entities;
+using SportSync.Data.Enums;
+using SportSync.Web.Models.ViewModels.Account;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Text.RegularExpressions; // Thêm cho Regex
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-// ViewModel để nhận IdToken từ client (đã có ở file trước)
-// public class FirebaseLoginRequest { ... }
-
-namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
+namespace SportSync.Web.Controllers
 {
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
-        // private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ISmsSender _smsSender;
+
+        private const string OtpSessionKeyPrefix = "RegOtp_";
+        private const string OtpExpirySessionKeyPrefix = "RegOtpExpiry_";
+        private const string OtpVerifiedFlagKeyPrefix = "RegOtpVerified_";
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ILogger<AccountController> logger
-            /*, RoleManager<IdentityRole> roleManager */)
+            ILogger<AccountController> logger,
+            ISmsSender smsSender)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
-            // _roleManager = roleManager;
+            _smsSender = smsSender;
         }
 
-        // Helper function to normalize phone number (giữ nguyên)
         private string NormalizePhoneNumberToE164(string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber)) return null;
@@ -57,7 +59,6 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
             return null;
         }
 
-        // --- KIỂM TRA SỐ ĐIỆN THOẠI TỒN TẠI ---
         [HttpGet]
         [AllowAnonymous]
         [Route("Account/CheckPhoneNumberExistence")]
@@ -66,34 +67,117 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
             string normalizedPhoneNumber = NormalizePhoneNumberToE164(phoneNumber);
             if (string.IsNullOrEmpty(normalizedPhoneNumber))
             {
-                return Ok(new { exists = false, message = "Số điện thoại không hợp lệ." }); // Hoặc BadRequest
+                return Ok(new { exists = false, message = "Số điện thoại không hợp lệ." });
             }
-
-            var user = await _userManager.FindByNameAsync(normalizedPhoneNumber); // UserName là SĐT đã chuẩn hóa
+            var user = await _userManager.FindByNameAsync(normalizedPhoneNumber);
             if (user != null)
             {
-                // Kiểm tra thêm nếu user đã có mật khẩu hay chưa, tùy theo logic bạn muốn
-                // Hiện tại, chỉ cần SĐT tồn tại là không cho đăng ký lại qua luồng này.
                 bool hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
                 _logger.LogInformation("CheckPhoneNumberExistence: Phone number {PhoneNumber} exists. HasPassword: {HasPassword}", normalizedPhoneNumber, hasPassword);
-                return Ok(new { exists = true, message = "Số điện thoại này đã được đăng ký." });
+                if (hasPassword) return Ok(new { exists = true, message = "Số điện thoại này đã được đăng ký và có mật khẩu." });
+                return Ok(new { exists = true, message = "Số điện thoại này đã được sử dụng." });
             }
             _logger.LogInformation("CheckPhoneNumberExistence: Phone number {PhoneNumber} does not exist.", normalizedPhoneNumber);
             return Ok(new { exists = false });
         }
 
-
-        // --- ĐĂNG KÝ ---
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Register()
         {
-            if (_signInManager.IsSignedIn(User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            if (_signInManager.IsSignedIn(User)) return RedirectToAction("Index", "Home");
             return View();
         }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("Account/SendRegistrationOtp")]
+        public async Task<IActionResult> SendRegistrationOtp([FromBody] ForgotPasswordViewModel model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.PhoneNumber))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng cung cấp số điện thoại." });
+            }
+
+            string normalizedPhoneNumber = NormalizePhoneNumberToE164(model.PhoneNumber);
+            if (string.IsNullOrEmpty(normalizedPhoneNumber))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var existingUser = await _userManager.FindByNameAsync(normalizedPhoneNumber);
+            if (existingUser != null && !string.IsNullOrEmpty(existingUser.PasswordHash))
+            {
+                _logger.LogWarning("SendRegistrationOtp: Attempt to register with existing phone number {PhoneNumber} that already has a password.", normalizedPhoneNumber);
+                return Ok(new { success = false, message = "Số điện thoại này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng chức năng 'Quên mật khẩu'." });
+            }
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var otpExpiry = DateTime.UtcNow.AddMinutes(5);
+
+            HttpContext.Session.SetString(OtpSessionKeyPrefix + normalizedPhoneNumber, otpCode);
+            HttpContext.Session.SetString(OtpExpirySessionKeyPrefix + normalizedPhoneNumber, otpExpiry.ToString("o"));
+            HttpContext.Session.Remove(OtpVerifiedFlagKeyPrefix + normalizedPhoneNumber);
+
+            _logger.LogInformation("SendRegistrationOtp: Generated OTP {OtpCode} for {PhoneNumber}, expires at {OtpExpiryUtc}", otpCode, normalizedPhoneNumber, otpExpiry);
+
+            try
+            {
+                await _smsSender.SendSmsAsync(normalizedPhoneNumber, $"Mã OTP đăng ký SportSync của bạn là: {otpCode}");
+                _logger.LogInformation("SendRegistrationOtp: OTP sent successfully to {PhoneNumber}.", normalizedPhoneNumber);
+                return Ok(new { success = true, message = "Mã OTP đã được gửi đến số điện thoại của bạn." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SendRegistrationOtp: Error sending OTP to {PhoneNumber}.", normalizedPhoneNumber);
+                return StatusCode(500, new { success = false, message = "Lỗi gửi OTP. Vui lòng thử lại." });
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("Account/VerifyRegistrationOtp")]
+        public IActionResult VerifyRegistrationOtp([FromBody] OtpVerificationRequest model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.PhoneNumber) || string.IsNullOrEmpty(model.OtpCode))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại và mã OTP là bắt buộc." });
+            }
+
+            string normalizedPhoneNumber = NormalizePhoneNumberToE164(model.PhoneNumber);
+            if (string.IsNullOrEmpty(normalizedPhoneNumber))
+            {
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+            }
+
+            var sessionOtp = HttpContext.Session.GetString(OtpSessionKeyPrefix + normalizedPhoneNumber);
+            var sessionOtpExpiryString = HttpContext.Session.GetString(OtpExpirySessionKeyPrefix + normalizedPhoneNumber);
+
+            if (string.IsNullOrEmpty(sessionOtp) || string.IsNullOrEmpty(sessionOtpExpiryString))
+            {
+                _logger.LogWarning("VerifyRegistrationOtp: No OTP found in session for {PhoneNumber}.", normalizedPhoneNumber);
+                return Ok(new { success = false, message = "Mã OTP không tồn tại hoặc đã hết hạn. Vui lòng yêu cầu OTP mới." });
+            }
+
+            if (!DateTime.TryParse(sessionOtpExpiryString, out DateTime otpExpiry) || otpExpiry < DateTime.UtcNow)
+            {
+                _logger.LogWarning("VerifyRegistrationOtp: OTP expired for {PhoneNumber}. Stored Expiry: {StoredExpiryUtc}", normalizedPhoneNumber, sessionOtpExpiryString);
+                HttpContext.Session.Remove(OtpSessionKeyPrefix + normalizedPhoneNumber);
+                HttpContext.Session.Remove(OtpExpirySessionKeyPrefix + normalizedPhoneNumber);
+                return Ok(new { success = false, message = "Mã OTP đã hết hạn. Vui lòng yêu cầu OTP mới." });
+            }
+
+            if (sessionOtp != model.OtpCode)
+            {
+                _logger.LogWarning("VerifyRegistrationOtp: Invalid OTP for {PhoneNumber}. Entered: {EnteredOtp}, Expected: {ExpectedOtp}", normalizedPhoneNumber, model.OtpCode, sessionOtp);
+                return Ok(new { success = false, message = "Mã OTP không chính xác." });
+            }
+
+            HttpContext.Session.SetString(OtpVerifiedFlagKeyPrefix + normalizedPhoneNumber, "true");
+            _logger.LogInformation("VerifyRegistrationOtp: OTP verified successfully for {PhoneNumber}. Verification flag set.", normalizedPhoneNumber);
+            return Ok(new { success = true, message = "Xác thực OTP thành công." });
+        }
+
 
         [HttpPost]
         [AllowAnonymous]
@@ -107,7 +191,8 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
             }
             model.PhoneNumber = normalizedModelPhoneNumber;
 
-            if (!ModelState.IsValid) // Kiểm tra ModelState sau khi đã chuẩn hóa SĐT và cập nhật model
+            // **THAY ĐỔI Ở ĐÂY: Chỉ kiểm tra ModelState, không kiểm tra OTP trực tiếp nữa**
+            if (!ModelState.IsValid) // ModelState vẫn kiểm tra [Required] cho OtpCode, FullName, Password...
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                 _logger.LogWarning("CompleteRegistration: ModelState is invalid. Errors: {Errors}", string.Join("; ", errors));
@@ -116,100 +201,71 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
 
             _logger.LogInformation("CompleteRegistration: Attempting for PhoneNumber {PhoneNumber}, FullName: {FullName}", model.PhoneNumber, model.FullName);
 
-            FirebaseToken decodedToken = null;
-            string firebaseVerifiedPhoneNumber = null;
-
-            try
+            // **THAY ĐỔI Ở ĐÂY: Kiểm tra cờ đã xác thực OTP từ session**
+            var otpVerifiedFlag = HttpContext.Session.GetString(OtpVerifiedFlagKeyPrefix + model.PhoneNumber);
+            if (otpVerifiedFlag != "true")
             {
-                if (FirebaseApp.DefaultInstance == null)
-                {
-                    _logger.LogError("CompleteRegistration: Firebase Admin SDK NOT INITIALIZED.");
-                    return StatusCode(500, new { success = false, message = "Lỗi cấu hình máy chủ." });
-                }
-
-                decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(model.FirebaseIdToken);
-                _logger.LogInformation("CompleteRegistration: Firebase ID Token verified. UID: {FirebaseUid}", decodedToken.Uid);
-
-                if (decodedToken.Claims.TryGetValue("phone_number", out var phoneNumberClaimValue) && phoneNumberClaimValue != null)
-                {
-                    firebaseVerifiedPhoneNumber = phoneNumberClaimValue.ToString();
-                }
-
-                if (string.IsNullOrEmpty(firebaseVerifiedPhoneNumber))
-                {
-                    _logger.LogWarning("CompleteRegistration: 'phone_number' claim not found in Firebase token. Using (normalized) PhoneNumber from request model: {RequestPhoneNumber} as fallback.", model.PhoneNumber);
-                    firebaseVerifiedPhoneNumber = model.PhoneNumber;
-                }
-
-                if (firebaseVerifiedPhoneNumber != model.PhoneNumber)
-                {
-                    _logger.LogWarning("CompleteRegistration: Phone number mismatch! Token: {TokenPhoneNumber}, Model: {ModelPhoneNumber}. Denying registration.",
-                                       firebaseVerifiedPhoneNumber, model.PhoneNumber);
-                    return BadRequest(new { success = false, message = "Xác thực số điện thoại không thành công hoặc thông tin không khớp." });
-                }
-            }
-            catch (FirebaseAuthException ex)
-            {
-                _logger.LogError(ex, "CompleteRegistration: Invalid Firebase ID Token for PhoneNumber {PhoneNumber}.", model.PhoneNumber);
-                return Unauthorized(new { success = false, message = "Token xác thực không hợp lệ hoặc đã hết hạn." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "CompleteRegistration: Error verifying Firebase ID Token for {PhoneNumber}.", model.PhoneNumber);
-                return StatusCode(500, new { success = false, message = "Lỗi máy chủ khi xác thực token." });
+                _logger.LogWarning("CompleteRegistration: OTP verification flag not found or invalid for {PhoneNumber}. Registration denied. User might have skipped OTP verification step.", model.PhoneNumber);
+                // Trả về lỗi chung hoặc lỗi cụ thể cho trường OTP nếu muốn
+                // ModelState.AddModelError("OtpCode", "Vui lòng xác thực OTP trước.");
+                return BadRequest(new { success = false, message = "Vui lòng xác thực OTP ở bước trước." });
             }
 
-            var user = await _userManager.FindByNameAsync(firebaseVerifiedPhoneNumber);
+            // **THAY ĐỔI Ở ĐÂY: Bỏ qua việc kiểm tra lại sessionOtp và model.OtpCode ở đây**
+            // Chúng ta tin tưởng vào cờ OtpVerifiedFlagKeyPrefix.
+            // Nếu muốn an toàn hơn, bạn có thể giữ lại việc kiểm tra model.OtpCode với sessionOtp,
+            // nhưng điều đó có nghĩa là OTP vẫn phải được lưu trong session cho đến bước này.
+            // Hiện tại, chúng ta sẽ chỉ dựa vào cờ.
+
+            // Xóa cờ khỏi session sau khi đã kiểm tra
+            // OTP và Expiry có thể đã được xóa hoặc sẽ hết hạn tự nhiên.
+            // Để chắc chắn, có thể xóa cả OTP và Expiry nếu bạn muốn.
+            HttpContext.Session.Remove(OtpVerifiedFlagKeyPrefix + model.PhoneNumber);
+            HttpContext.Session.Remove(OtpSessionKeyPrefix + model.PhoneNumber); // Xóa luôn OTP sau khi dùng cờ
+            HttpContext.Session.Remove(OtpExpirySessionKeyPrefix + model.PhoneNumber);
+            _logger.LogInformation("CompleteRegistration: OTP verification flag and OTP data cleared from session for {PhoneNumber}.", model.PhoneNumber);
+
+            var user = await _userManager.FindByNameAsync(model.PhoneNumber);
 
             if (user != null)
             {
                 if (!string.IsNullOrEmpty(user.PasswordHash))
                 {
-                    _logger.LogWarning("CompleteRegistration: User with phone {PhoneNumber} already exists AND has a password.", firebaseVerifiedPhoneNumber);
-                    return BadRequest(new { success = false, message = "Số điện thoại này đã được đăng ký và có mật khẩu. Vui lòng đăng nhập hoặc sử dụng chức năng 'Quên mật khẩu'." });
+                    _logger.LogWarning("CompleteRegistration: User with phone {PhoneNumber} already exists AND has a password.", model.PhoneNumber);
+                    return BadRequest(new { success = false, message = "Số điện thoại này đã được đăng ký và có mật khẩu." });
                 }
                 else
                 {
-                    _logger.LogInformation("CompleteRegistration: User {PhoneNumber} exists but has no password. Proceeding to set password and update profile.", firebaseVerifiedPhoneNumber);
+                    _logger.LogInformation("CompleteRegistration: User {PhoneNumber} exists but has no password. Setting password and profile.", model.PhoneNumber);
                     var addPasswordResult = await _userManager.AddPasswordAsync(user, model.Password);
                     if (!addPasswordResult.Succeeded)
                     {
-                        _logger.LogError("CompleteRegistration: Failed to add password for existing user {UserName}. Errors: {Errors}",
-                                         user.UserName, string.Join(", ", addPasswordResult.Errors.Select(e => e.Description)));
-                        return StatusCode(500, new { success = false, message = "Không thể đặt mật khẩu cho tài khoản.", errors = addPasswordResult.Errors.Select(e => e.Description) });
+                        _logger.LogError("CompleteRegistration: Failed to add password for existing user {UserName}. Errors: {Errors}", user.UserName, string.Join(", ", addPasswordResult.Errors.Select(e => e.Description)));
+                        return StatusCode(500, new { success = false, message = "Không thể đặt mật khẩu.", errors = addPasswordResult.Errors.Select(e => e.Description) });
                     }
-                    _logger.LogInformation("CompleteRegistration: Password added successfully for existing user {UserName}.", user.UserName);
+                    _logger.LogInformation("CompleteRegistration: Password added for existing user {UserName}.", user.UserName);
 
-                    // Cập nhật UserProfile với FullName
-                    if (user.UserProfile == null) user.UserProfile = new UserProfile { UserId = user.Id }; // Đảm bảo UserProfile tồn tại
+                    if (user.UserProfile == null) user.UserProfile = new UserProfile { UserId = user.Id };
                     user.UserProfile.FullName = model.FullName;
-                    // Không cần gọi _userManager.UpdateAsync(user) riêng cho UserProfile nếu nó được EF Core theo dõi qua user.
-
                     if (!user.PhoneNumberConfirmed) user.PhoneNumberConfirmed = true;
 
-                    var updateUserResult = await _userManager.UpdateAsync(user); // Lưu thay đổi cho UserProfile và PhoneNumberConfirmed
-                    if (!updateUserResult.Succeeded)
-                    {
-                        _logger.LogError("CompleteRegistration: Failed to update user profile for {UserName}. Errors: {Errors}",
-                                         user.UserName, string.Join(", ", updateUserResult.Errors.Select(e => e.Description)));
-                        // Có thể không phải là lỗi nghiêm trọng nếu mật khẩu đã được đặt
-                    }
+                    var updateUserResult = await _userManager.UpdateAsync(user);
+                    if (!updateUserResult.Succeeded) _logger.LogError("CompleteRegistration: Failed to update user profile for {UserName}.", user.UserName);
                 }
             }
             else
             {
-                _logger.LogInformation("CompleteRegistration: User with phone {PhoneNumber} not found. Creating new user.", firebaseVerifiedPhoneNumber);
+                _logger.LogInformation("CompleteRegistration: User with phone {PhoneNumber} not found. Creating new user.", model.PhoneNumber);
                 user = new ApplicationUser
                 {
-                    UserName = firebaseVerifiedPhoneNumber,
-                    PhoneNumber = firebaseVerifiedPhoneNumber,
+                    UserName = model.PhoneNumber,
+                    PhoneNumber = model.PhoneNumber,
                     PhoneNumberConfirmed = true,
                     Email = $"user_{Guid.NewGuid().ToString("N").Substring(0, 8)}@placeholder.sportbook.com",
                     EmailConfirmed = false,
-                    UserProfile = new UserProfile // Khởi tạo UserProfile khi tạo ApplicationUser
+                    UserProfile = new UserProfile
                     {
-                        // UserId sẽ được EF Core tự động gán khi user được tạo và lưu
-                        FullName = model.FullName, // Gán FullName
+                        FullName = model.FullName,
                         RegisteredDate = DateTime.UtcNow,
                         AccountStatusByAdmin = AccountStatus.Active
                     }
@@ -218,8 +274,7 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
                 var createUserResult = await _userManager.CreateAsync(user, model.Password);
                 if (!createUserResult.Succeeded)
                 {
-                    _logger.LogError("CompleteRegistration: Failed to create user {UserName} with password. Errors: {Errors}",
-                                     firebaseVerifiedPhoneNumber, string.Join(", ", createUserResult.Errors.Select(e => e.Description)));
+                    _logger.LogError("CompleteRegistration: Failed to create user {UserName} with password. Errors: {Errors}", model.PhoneNumber, string.Join(", ", createUserResult.Errors.Select(e => e.Description)));
                     return StatusCode(500, new { success = false, message = "Không thể tạo tài khoản.", errors = createUserResult.Errors.Select(e => e.Description) });
                 }
                 _logger.LogInformation("CompleteRegistration: User {UserName} created successfully with password and FullName {FullName}.", user.UserName, model.FullName);
@@ -228,18 +283,15 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
             await _signInManager.SignInAsync(user, isPersistent: false);
             _logger.LogInformation("CompleteRegistration: User {UserName} signed in.", user.UserName);
 
-            return Ok(new { success = true, message = "Hoàn tất đăng ký và đăng nhập thành công!", redirectUrl = Url.Action("Index", "Home") });
+            return Ok(new { success = true, message = "Đăng ký tài khoản thành công!", redirectUrl = Url.Action("Index", "Home") });
         }
 
-        // --- ĐĂNG NHẬP --- (Giữ nguyên)
+        // --- ĐĂNG NHẬP ---
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login(string returnUrl = null)
         {
-            if (_signInManager.IsSignedIn(User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            if (_signInManager.IsSignedIn(User)) return RedirectToLocal(returnUrl); // Chuyển hướng nếu đã đăng nhập
             ViewData["ReturnUrl"] = returnUrl;
             return View(new LoginWithPasswordViewModel());
         }
@@ -263,72 +315,122 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
 
             if (ModelState.IsValid)
             {
-                _logger.LogInformation("Login POST: ModelState is valid for (normalized) PhoneNumber {NormalizedPhoneNumber}.", normalizedPhoneNumber);
                 var user = await _userManager.FindByNameAsync(normalizedPhoneNumber);
-
                 if (user != null)
                 {
-                    _logger.LogInformation("Login POST: User {UserName} found. Current PasswordHash: {PasswordHash}. PhoneNumberConfirmed: {PhoneNumberConfirmed}", user.UserName, user.PasswordHash, user.PhoneNumberConfirmed);
                     if (string.IsNullOrEmpty(user.PasswordHash))
                     {
-                        _logger.LogWarning("Login POST: User {UserName} has no password set. Cannot login with password.", user.UserName);
-                        ModelState.AddModelError(string.Empty, "Tài khoản của bạn chưa có mật khẩu. Vui lòng sử dụng chức năng 'Đăng ký' để hoàn tất và đặt mật khẩu.");
+                        ModelState.AddModelError(string.Empty, "Tài khoản của bạn chưa có mật khẩu. Vui lòng hoàn tất đăng ký.");
                         return View(model);
                     }
                     if (!user.PhoneNumberConfirmed)
                     {
-                        _logger.LogWarning("Login POST: User {UserName}'s phone number is not confirmed.", user.UserName);
-                        ModelState.AddModelError(string.Empty, "Số điện thoại chưa được xác thực. Vui lòng xác thực số điện thoại trước.");
+                        ModelState.AddModelError(string.Empty, "Số điện thoại chưa được xác thực.");
                         return View(model);
                     }
-                    var passwordCheckResult = await _userManager.CheckPasswordAsync(user, model.Password);
-                    _logger.LogInformation("Login POST: Password check for user {UserName} result: {PasswordCheckResult}", user.UserName, passwordCheckResult);
 
-                    if (passwordCheckResult)
+                    var result = await _signInManager.PasswordSignInAsync(user: user, password: model.Password, isPersistent: model.RememberMe, lockoutOnFailure: true);
+
+                    if (result.Succeeded)
                     {
-                        _logger.LogInformation("Login POST: Password check succeeded for {UserName}. Attempting PasswordSignInAsync.", user.UserName);
-                        var result = await _signInManager.PasswordSignInAsync(user: user, password: model.Password, isPersistent: model.RememberMe, lockoutOnFailure: true);
-                        _logger.LogInformation("Login POST: PasswordSignInAsync result for {UserName}: Succeeded={Succeeded}, IsLockedOut={IsLockedOut}, IsNotAllowed={IsNotAllowed}, RequiresTwoFactor={RequiresTwoFactor}", user.UserName, result.Succeeded, result.IsLockedOut, result.IsNotAllowed, result.RequiresTwoFactor);
+                        _logger.LogInformation("User {NormalizedPhoneNumber} logged in successfully with password.", normalizedPhoneNumber);
 
-                        if (result.Succeeded)
+                        // **THAY ĐỔI CHUYỂN HƯỚNG SAU ĐĂNG NHẬP**
+                        if (await _userManager.IsInRoleAsync(user, "StandardCourtOwner") ||
+                            await _userManager.IsInRoleAsync(user, "ProCourtOwner"))
                         {
-                            _logger.LogInformation("User {NormalizedPhoneNumber} logged in successfully with password.", normalizedPhoneNumber);
-                            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) return Redirect(returnUrl);
-                            return RedirectToAction("Index", "Home");
+                            _logger.LogInformation("User {NormalizedPhoneNumber} is a court owner or admin. Redirecting to CourtOwnerDashboard.", normalizedPhoneNumber);
+                            return RedirectToAction("Index", "CourtOwnerDashboard");
                         }
-                        if (result.IsLockedOut) { _logger.LogWarning("User {NormalizedPhoneNumber} account locked out.", normalizedPhoneNumber); ModelState.AddModelError(string.Empty, "Tài khoản đã bị khóa. Vui lòng thử lại sau."); }
-                        else if (result.IsNotAllowed) { _logger.LogWarning("User {NormalizedPhoneNumber} is not allowed to sign in.", normalizedPhoneNumber); ModelState.AddModelError(string.Empty, "Tài khoản chưa được kích hoạt hoặc không được phép đăng nhập."); }
-                        else { _logger.LogWarning("Login POST: PasswordSignInAsync failed for {UserName}.", user.UserName); ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không chính xác."); }
+
+                        return RedirectToLocal(returnUrl); // Chuyển hướng đến returnUrl hoặc trang chủ
                     }
-                    else { _logger.LogWarning("Login POST: CheckPasswordAsync failed for user {UserName}.", user.UserName); ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không chính xác (sai mật khẩu)."); }
+                    // ... (xử lý lỗi IsLockedOut, IsNotAllowed, sai mật khẩu giữ nguyên)
+                    if (result.IsLockedOut) { _logger.LogWarning("User {NormalizedPhoneNumber} account locked out.", normalizedPhoneNumber); ModelState.AddModelError(string.Empty, "Tài khoản đã bị khóa. Vui lòng thử lại sau."); }
+                    else if (result.IsNotAllowed) { _logger.LogWarning("User {NormalizedPhoneNumber} is not allowed to sign in.", normalizedPhoneNumber); ModelState.AddModelError(string.Empty, "Tài khoản chưa được kích hoạt hoặc không được phép đăng nhập."); }
+                    else { _logger.LogWarning("Login POST: PasswordSignInAsync failed for {UserName}.", user.UserName); ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không chính xác."); }
                 }
                 else { _logger.LogWarning("Login POST: User with (normalized) PhoneNumber {NormalizedPhoneNumber} not found.", normalizedPhoneNumber); ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không chính xác (không tìm thấy SĐT)."); }
             }
-            else { _logger.LogWarning("Login POST: ModelState is invalid. Raw PhoneNumber {RawPhoneNumber}. Errors: {Errors}", model.PhoneNumber, string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))); }
             return View(model);
         }
 
+        private IActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            else
+            {
+                return RedirectToAction(nameof(HomeController.Index), "Home");
+            }
+        }
 
-        // --- QUÊN MẬT KHẨU --- (Giữ nguyên)
+
+        // --- QUÊN MẬT KHẨU --- (Sẽ cần cập nhật tương tự cho OTP server)
         [HttpGet]
         [AllowAnonymous]
         public IActionResult ForgotPassword()
         {
             if (_signInManager.IsSignedIn(User)) return RedirectToAction("Index", "Home");
-            return View();
+            return View(); // View này sẽ cần JavaScript để gọi SendPasswordResetOtp
         }
+
+        // Action mới để gửi OTP cho Quên Mật Khẩu
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("Account/SendPasswordResetOtp")]
+        public async Task<IActionResult> SendPasswordResetOtp([FromBody] ForgotPasswordViewModel model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.PhoneNumber))
+                return BadRequest(new { success = false, message = "Vui lòng cung cấp số điện thoại." });
+
+            string normalizedPhoneNumber = NormalizePhoneNumberToE164(model.PhoneNumber);
+            if (string.IsNullOrEmpty(normalizedPhoneNumber))
+                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+
+            var user = await _userManager.FindByNameAsync(normalizedPhoneNumber);
+            if (user == null || string.IsNullOrEmpty(user.PasswordHash)) // Chỉ cho reset nếu user tồn tại và có mật khẩu
+            {
+                _logger.LogWarning("SendPasswordResetOtp: User not found or no password set for {PhoneNumber}.", normalizedPhoneNumber);
+                // Trả về success = true để không tiết lộ SĐT có tồn tại hay không, nhưng không gửi OTP
+                return Ok(new { success = true, message = "Nếu số điện thoại của bạn đã đăng ký, mã OTP sẽ được gửi." });
+            }
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var otpExpiry = DateTime.UtcNow.AddMinutes(5);
+            string sessionKeyOtp = OtpSessionKeyPrefix + normalizedPhoneNumber + "_Reset";
+            string sessionKeyExpiry = OtpExpirySessionKeyPrefix + normalizedPhoneNumber + "_Reset";
+
+            HttpContext.Session.SetString(sessionKeyOtp, otpCode);
+            HttpContext.Session.SetString(sessionKeyExpiry, otpExpiry.ToString("o"));
+            HttpContext.Session.Remove(OtpVerifiedFlagKeyPrefix + normalizedPhoneNumber + "_Reset"); // Xóa cờ cũ
+
+            _logger.LogInformation("SendPasswordResetOtp: Generated OTP {OtpCode} for {PhoneNumber}", otpCode, normalizedPhoneNumber);
+            try
+            {
+                await _smsSender.SendSmsAsync(normalizedPhoneNumber, $"Mã OTP đặt lại mật khẩu SportSync của bạn là: {otpCode}");
+                return Ok(new { success = true, message = "Mã OTP đã được gửi đến số điện thoại của bạn." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SendPasswordResetOtp: Error sending OTP to {PhoneNumber}.", normalizedPhoneNumber);
+                return StatusCode(500, new { success = false, message = "Lỗi gửi OTP. Vui lòng thử lại." });
+            }
+        }
+
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ResetPassword(string phoneNumber, string token)
+        public IActionResult ResetPassword(string phoneNumber) // Chỉ cần SĐT để hiển thị form
         {
-            string normalizedPhoneNumber = NormalizePhoneNumberToE164(phoneNumber);
-            if (string.IsNullOrEmpty(normalizedPhoneNumber) || string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(phoneNumber))
             {
-                TempData["ErrorMessage"] = "Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+                TempData["ErrorMessage"] = "Yêu cầu đặt lại mật khẩu không hợp lệ.";
                 return RedirectToAction(nameof(ForgotPassword));
             }
-            var model = new ResetPasswordViewModel { PhoneNumber = normalizedPhoneNumber, FirebaseIdToken = token };
+            var model = new ResetPasswordViewModel { PhoneNumber = NormalizePhoneNumberToE164(phoneNumber) ?? phoneNumber };
             return View(model);
         }
 
@@ -345,38 +447,45 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
             }
             model.PhoneNumber = normalizedModelPhoneNumber;
 
-            if (!ModelState.IsValid) return View(model);
-            _logger.LogInformation("ResetPassword: Attempting for PhoneNumber {PhoneNumber}", model.PhoneNumber);
-            FirebaseToken decodedToken = null;
-            string tokenVerifiedPhoneNumber = null;
+            if (!ModelState.IsValid) return View(model); // OtpCode, Password, ConfirmPassword sẽ được validate ở đây
+            _logger.LogInformation("ResetPassword POST: Attempting for PhoneNumber {PhoneNumber}", model.PhoneNumber);
 
-            try
+            // Xác thực OTP từ Session
+            string sessionKeyOtp = OtpSessionKeyPrefix + model.PhoneNumber + "_Reset";
+            string sessionKeyExpiry = OtpExpirySessionKeyPrefix + model.PhoneNumber + "_Reset";
+            var sessionOtp = HttpContext.Session.GetString(sessionKeyOtp);
+            var sessionOtpExpiryString = HttpContext.Session.GetString(sessionKeyExpiry);
+
+            if (string.IsNullOrEmpty(sessionOtp) || string.IsNullOrEmpty(sessionOtpExpiryString) ||
+                !DateTime.TryParse(sessionOtpExpiryString, out DateTime otpExpiry) || otpExpiry < DateTime.UtcNow ||
+                sessionOtp != model.OtpCode)
             {
-                if (FirebaseApp.DefaultInstance == null) { _logger.LogError("ResetPassword: Firebase Admin SDK NOT INITIALIZED."); ModelState.AddModelError(string.Empty, "Lỗi cấu hình máy chủ."); return View(model); }
-                decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(model.FirebaseIdToken);
-                _logger.LogInformation("ResetPassword: Firebase ID Token verified. UID: {FirebaseUid}", decodedToken.Uid);
-                if (decodedToken.Claims.TryGetValue("phone_number", out var phoneNumberClaimValue) && phoneNumberClaimValue != null) tokenVerifiedPhoneNumber = phoneNumberClaimValue.ToString();
-                if (string.IsNullOrEmpty(tokenVerifiedPhoneNumber)) { _logger.LogWarning("ResetPassword: 'phone_number' claim not found. Using model phone: {ModelPhone}", model.PhoneNumber); tokenVerifiedPhoneNumber = model.PhoneNumber; }
-                if (tokenVerifiedPhoneNumber != model.PhoneNumber) { _logger.LogWarning("ResetPassword: Phone mismatch! Token: {TokenPhone}, Model: {ModelPhone}.", tokenVerifiedPhoneNumber, model.PhoneNumber); ModelState.AddModelError(string.Empty, "Xác thực SĐT không khớp."); return View(model); }
+                _logger.LogWarning("ResetPassword POST: Invalid or expired OTP for {PhoneNumber}.", model.PhoneNumber);
+                ModelState.AddModelError("OtpCode", "Mã OTP không hợp lệ hoặc đã hết hạn.");
+                return View(model);
             }
-            catch (FirebaseAuthException ex) { _logger.LogError(ex, "ResetPassword: Invalid Firebase ID Token for {Phone}.", model.PhoneNumber); ModelState.AddModelError(string.Empty, "Token xác thực không hợp lệ/hết hạn."); return View(model); }
-            catch (Exception ex) { _logger.LogError(ex, "ResetPassword: Error verifying Firebase ID Token for {Phone}.", model.PhoneNumber); ModelState.AddModelError(string.Empty, "Lỗi máy chủ khi xác thực token."); return View(model); }
+            HttpContext.Session.Remove(sessionKeyOtp);
+            HttpContext.Session.Remove(sessionKeyExpiry);
+            _logger.LogInformation("ResetPassword POST: OTP verified for {PhoneNumber}.", model.PhoneNumber);
 
             var user = await _userManager.FindByNameAsync(model.PhoneNumber);
-            if (user == null) { _logger.LogWarning("ResetPassword: User {Phone} not found.", model.PhoneNumber); TempData["SuccessMessage"] = "Nếu SĐT tồn tại, mật khẩu sẽ được reset."; return RedirectToAction(nameof(Login)); }
+            if (user == null)
+            {
+                _logger.LogWarning("ResetPassword POST: User {Phone} not found (should not happen if OTP was sent).", model.PhoneNumber);
+                TempData["ErrorMessage"] = "Đã xảy ra lỗi. Vui lòng thử lại từ đầu.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
 
             var identityResetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            _logger.LogInformation("ResetPassword: Generated Identity reset token for {UserName}.", user.UserName);
             var resetPassResult = await _userManager.ResetPasswordAsync(user, identityResetToken, model.Password);
 
             if (!resetPassResult.Succeeded)
             {
-                _logger.LogError("ResetPassword: Failed to reset password for {UserName}. Errors: {Errors}", user.UserName, string.Join(", ", resetPassResult.Errors.Select(e => e.Description)));
+                _logger.LogError("ResetPassword POST: Failed to reset password for {UserName}. Errors: {Errors}", user.UserName, string.Join(", ", resetPassResult.Errors.Select(e => e.Description)));
                 foreach (var error in resetPassResult.Errors) ModelState.AddModelError(string.Empty, error.Description);
-                model.FirebaseIdToken = "";
                 return View(model);
             }
-            _logger.LogInformation("ResetPassword: Password reset successfully for {UserName}.", user.UserName);
+            _logger.LogInformation("ResetPassword POST: Password reset successfully for {UserName}.", user.UserName);
             TempData["SuccessMessage"] = "Mật khẩu đã được đặt lại. Vui lòng đăng nhập.";
             return RedirectToAction(nameof(Login));
         }
@@ -390,8 +499,16 @@ namespace SportSync.Web.Controllers // Đảm bảo namespace này đúng
         {
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
-            // Chuyển hướng về trang Đăng nhập sau khi logout
             return RedirectToAction(nameof(Login));
         }
+    }
+
+    // ViewModel cho yêu cầu xác thực OTP (dùng chung cho Register và ResetPassword ở client)
+    public class OtpVerificationRequest
+    {
+        [Required]
+        public string PhoneNumber { get; set; }
+        [Required]
+        public string OtpCode { get; set; }
     }
 }

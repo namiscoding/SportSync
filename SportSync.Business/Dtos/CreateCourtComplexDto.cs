@@ -19,7 +19,8 @@ namespace SportSync.Business.Dtos
         public string? ContactEmail { get; set; }
         public TimeOnly? DefaultOpeningTime { get; set; }
         public TimeOnly? DefaultClosingTime { get; set; }
-
+        public decimal? Latitude { get; set; } 
+        public decimal? Longitude { get; set; } 
         // Thay thế IFormFile bằng thông tin cần thiết cho việc upload
         public ImageInputDto? MainImage { get; set; }
     }
