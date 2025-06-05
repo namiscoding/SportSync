@@ -13,11 +13,9 @@ namespace SportSync.Business.Interfaces
     CourtSearchRequest request,
     CancellationToken ct = default);
 
-        Task<IReadOnlyList<CourtComplexResultDto>> SearchNearbyAsync(
-    double userLat, double userLng,
-    double radiusKm = 10,
-    CourtSearchRequest rq = null,
-    CancellationToken ct = default);
+        Task<IReadOnlyList<CourtComplexResultDto>> SearchNearbyAsync( double userLat, double userLng, double radiusKm = 10, CourtSearchRequest rq = null,
+                                                                        CancellationToken ct = default);
+        Task<CourtDetailDto?> GetDetailAsync(int courtId, DateOnly date, CancellationToken ct = default);
     }
         
 }
