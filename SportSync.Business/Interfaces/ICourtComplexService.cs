@@ -13,5 +13,6 @@ namespace SportSync.Business.Interfaces
         Task<IEnumerable<CourtComplex>> GetCourtComplexesByOwnerAsync(string ownerUserId);
         // **THAY ĐỔI VIEWMODEL THÀNH DTO**
         Task<(bool Success, CourtComplex CreatedComplex, IEnumerable<string> Errors)> CreateCourtComplexAsync(CreateCourtComplexDto dto, string ownerUserId);
+        Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, DateOnly? date = null, CancellationToken ct = default);
     }
 }

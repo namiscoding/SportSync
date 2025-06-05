@@ -10,15 +10,17 @@ using SportSync.Business.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // Cấu hình Session State
 builder.Services.AddDistributedMemoryCache(); // Cần thiết cho session
 builder.Services.AddSession(options =>
+
 {
     options.IdleTimeout = TimeSpan.FromMinutes(10); // Thời gian OTP và session tồn tại (ví dụ: 10 phút)
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true; // Đảm bảo cookie session hoạt động ngay cả khi người dùng chưa chấp nhận cookie policy
 });
-
+builder.Services.AddScoped<ICourtSearchService, CourtSearchService>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 // 1. Lấy chuỗi kết nối từ appsettings.json
@@ -28,7 +30,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
     {
-        // Chỉ định assembly chứa migrations nếu DbContext ở project khác (SportBookingWebsite.Data)
         sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
     }));
 
