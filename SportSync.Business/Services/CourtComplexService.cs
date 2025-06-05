@@ -146,6 +146,45 @@ namespace SportSync.Business.Services
             }
         }
 
+        ////Dat
+            public async Task<IEnumerable<CourtComplex>> GetCourtComplexesAsync()
+        {
+            return await _context.CourtComplexes
+                .Include(cc => cc.OwnerUser)
+                .ThenInclude(u => u.UserProfile)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<CourtComplex>> SearchCourtComplexesAsync(string searchTerm)
+        {
+            var courtComplexes = await GetCourtComplexesAsync();
+            if (string.IsNullOrEmpty(searchTerm))
+            {
+                return courtComplexes;
+            }
+
+            searchTerm = searchTerm.ToLower();
+            return courtComplexes.Where(cc =>
+                cc.Name.ToLower().Contains(searchTerm) ||
+                cc.Address.ToLower().Contains(searchTerm) ||
+                cc.City.ToLower().Contains(searchTerm));
+        }
+
+        public async Task<CourtComplex> GetCourtComplexByIdAsync(int courtComplexId)
+        {
+            return await _context.CourtComplexes
+                .Include(cc => cc.OwnerUser)
+                .ThenInclude(u => u.UserProfile)
+                .Include(cc => cc.Courts)
+                .ThenInclude(c => c.SportType)
+                .FirstOrDefaultAsync(cc => cc.CourtComplexId == courtComplexId);
+        }
+
+        public async Task UpdateCourtComplexAsync(CourtComplex courtComplex)
+        {
+            _context.CourtComplexes.Update(courtComplex);
+            await _context.SaveChangesAsync();
+
         public async Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, DateOnly? date, CancellationToken ct = default)
         {
             int? dow = date.HasValue ? (int)date.Value.DayOfWeek : null;
@@ -202,3 +241,4 @@ namespace SportSync.Business.Services
         }
     }
 }
+
