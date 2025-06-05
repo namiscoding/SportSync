@@ -1,0 +1,48 @@
+﻿@model IEnumerable<SportSync.Web.Models.ViewModels.Admin.UserViewModel>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>Quản lý người đặt sân</h2>
+
+<form asp-action="Index" method="get">
+    <input type="text" name="searchTerm" placeholder="Tìm kiếm..." />
+    <button type="submit">Tìm</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên người dùng</th>
+            <th>Email</th>
+            <th>Họ tên</th>
+            <th>Trạng thái</th>
+            <th>Ngày đăng ký</th>
+            <th>Đăng nhập cuối</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+                <td>@user.FullName</td>
+                <td>@user.AccountStatus</td>
+                <td>@user.RegisteredDate.ToString("dd/MM/yyyy")</td>
+                <td>@(user.LastLoginDate?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</td>
+                <td>
+                    <form asp-action="ToggleStatus" method="post">
+                        <input type="hidden" name="userId" value="@user.UserId" />
+                        <button type="submit">@(user.AccountStatus == "Active" ? "Vô hiệu hóa" : "Kích hoạt")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

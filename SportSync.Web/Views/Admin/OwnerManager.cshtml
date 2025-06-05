@@ -1,0 +1,63 @@
+﻿@model IEnumerable<SportSync.Web.Models.ViewModels.Admin.CourtOwnerViewModel>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>Quản lý chủ sân</h2>
+
+<form asp-action="Index" method="get">
+    <input type="text" name="searchTerm" placeholder="Tìm kiếm..." />
+    <button type="submit">Tìm</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên người dùng</th>
+            <th>Email</th>
+            <th>Họ tên</th>
+            <th>Trạng thái</th>
+            <th>Ngày đăng ký</th>
+            <th>Đăng nhập cuối</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var owner in Model)
+        {
+            <tr>
+                <td>@owner.UserName</td>
+                <td>@owner.Email</td>
+                <td>@owner.FullName</td>
+                <td>@owner.AccountStatus</td>
+                <td>@owner.RegisteredDate.ToString("dd/MM/yyyy")</td>
+                <td>@(owner.LastLoginDate?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</td>
+                <td>
+                    @if (owner.AccountStatus == "SuspendedByAdmin")
+                    {
+                        <form asp-action="Approve" method="post" style="display:inline;">
+                            <input type="hidden" name="userId" value="@owner.UserId" />
+                            <button type="submit">Duyệt</button>
+                        </form>
+                    }
+                    @if (owner.AccountStatus == "Active")
+                    {
+                        <form asp-action="Reject" method="post" style="display:inline;">
+                            <input type="hidden" name="userId" value="@owner.UserId" />
+                            <input type="text" name="rejectionReason" placeholder="Lý do từ chối" />
+                            <button type="submit">Từ chối</button>
+                        </form>
+                    }
+                    <form asp-action="ToggleStatus" method="post" style="display:inline;">
+                        <input type="hidden" name="userId" value="@owner.UserId" />
+                        <button type="submit">@(owner.AccountStatus == "Active" ? "Vô hiệu hóa" : "Kích hoạt")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
