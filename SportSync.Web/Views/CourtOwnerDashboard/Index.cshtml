@@ -1,15 +1,25 @@
 ﻿@{
     ViewData["Title"] = "Bảng Điều Khiển Chủ Sân";
+    bool hasComplex = ViewBag.HasCourtComplex ?? false;
+    string complexName = ViewBag.CourtComplexName ?? "Khu phức hợp của bạn";
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-5 fw-bold">@ViewData["Title"]</h1>
-        <div>
-            <a asp-controller="CourtComplex" asp-action="Create" class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i> Thêm Khu Phức Hợp Mới
+        @if (hasComplex)
+        {
+            @* Nút này có thể không cần thiết nếu các card bên dưới đã đủ dùng *@
+            @* <a asp-controller="CourtComplex" asp-action="MyComplexes" class="btn btn-outline-secondary">
+                <i class="fas fa-cog me-1"></i> Cài đặt Khu Phức Hợp
+            </a> *@
+        }
+        else
+        {
+            <a asp-controller="CourtComplex" asp-action="Create" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-1"></i> Thêm Khu Phức Hợp Sân
             </a>
-        </div>
+        }
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -20,51 +30,70 @@
         </div>
     }
 
-    <p class="lead">Chào mừng bạn đến với khu vực quản lý dành cho chủ sân!</p>
-    <hr />
+    @if (hasComplex)
+    {
+        <p class="lead">Chào mừng bạn đến với khu vực quản lý cho <strong class="text-primary">@complexName</strong>!</p>
+        <hr />
 
-    <div class="row g-4">
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-landmark fa-3x text-primary mb-3"></i>
-                    <h5 class="card-title">Khu Phức Hợp Sân</h5>
-                    <p class="card-text">Xem và quản lý tất cả các khu phức hợp sân của bạn.</p>
-                    <a asp-controller="CourtComplex" asp-action="MyComplexes" class="btn btn-outline-primary">Đi đến Quản Lý</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
-                    <h5 class="card-title">Quản Lý Lịch Đặt</h5>
-                    <p class="card-text">Theo dõi và quản lý các lượt đặt sân sắp tới và đã hoàn thành.</p>
-                    <a href="#" class="btn btn-outline-success disabled">Sắp ra mắt</a> @* Liên kết này sẽ được cập nhật sau *@
-                </div>
-            </div>
-        </div>
-
-        @if (User.IsInRole("ProCourtOwner"))
-        {
+        <div class="row g-4">
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body text-center">
-                        <i class="fas fa-utensils fa-3x text-info mb-3"></i>
-                        <h5 class="card-title">Dịch Vụ & Tiện Ích (Pro)</h5>
-                        <p class="card-text">Quản lý đồ ăn, thức uống, và các vật dụng cho thuê.</p>
-                        <a href="#" class="btn btn-outline-info disabled">Sắp ra mắt</a> @* Liên kết này sẽ được cập nhật sau *@
+                        <i class="fas fa-landmark fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Thông Tin Khu Phức Hợp</h5>
+                        <p class="card-text">Xem và chỉnh sửa thông tin chung của khu phức hợp.</p>
+                        @* Giả sử bạn sẽ có action Edit trong CourtComplexController *@
+                        <a asp-controller="CourtComplex" asp-action="EditCurrent" class="btn btn-outline-primary">Chỉnh Sửa Thông Tin</a>
                     </div>
                 </div>
             </div>
-        }
-    </div>
 
-    @* Thêm các thống kê hoặc thông tin khác ở đây sau này *@
-    <div class="mt-5">
-        <h4>Thống kê nhanh (ví dụ)</h4>
-        <p>Bạn có X khu sân đang hoạt động.</p>
-        <p>Có Y lượt đặt sân trong tuần này.</p>
-    </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-th-list fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Quản Lý Sân Con</h5>
+                        <p class="card-text">Thêm, sửa, xóa và quản lý các sân con trong khu phức hợp.</p>
+                        @* Nút này sẽ trỏ đến CourtController, Index action, truyền ID của complex hiện tại *@
+                        @* Bạn cần lấy ID của complex này từ controller và truyền vào đây nếu cần *@
+                        <a asp-controller="Court" asp-action="IndexForOwner" class="btn btn-outline-info">Quản Lý Sân Con</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Quản Lý Lịch Đặt</h5>
+                        <p class="card-text">Theo dõi và quản lý các lượt đặt sân.</p>
+                        <a href="#" class="btn btn-outline-success disabled">Sắp ra mắt</a>
+                    </div>
+                </div>
+            </div>
+
+            @if (User.IsInRole("ProCourtOwner"))
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="fas fa-utensils fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Dịch Vụ & Tiện Ích (Pro)</h5>
+                            <p class="card-text">Quản lý đồ ăn, thức uống, và các vật dụng cho thuê.</p>
+                            <a href="#" class="btn btn-outline-warning disabled">Sắp ra mắt</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center mt-5">
+            <i class="fas fa-store-slash fa-5x text-muted mb-3"></i>
+            <h4>Bạn chưa có khu phức hợp sân nào.</h4>
+            <p class="text-muted">Hãy bắt đầu bằng cách thêm thông tin khu phức hợp sân của bạn để có thể quản lý và cho thuê.</p>
+            @* Nút thêm khu phức hợp đã có ở trên cùng *@
+        </div>
+    }
 </div>

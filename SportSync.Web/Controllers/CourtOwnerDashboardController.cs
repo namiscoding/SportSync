@@ -2,42 +2,48 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using SportSync.Data.Entities; // Namespace của ApplicationUser
+using SportSync.Data.Entities;
+using SportSync.Business.Interfaces; // Thêm using cho ICourtComplexService
+using System.Linq; // Thêm using cho Any()
 using System.Threading.Tasks;
 
-namespace SportSync.Web.Controllers // Hoặc SportBookingWebsite.Web.Controllers
+namespace SportSync.Web.Controllers
 {
-    [Authorize(Roles = "StandardCourtOwner,ProCourtOwner")] // Các vai trò được phép truy cập
+    [Authorize(Roles = "StandardCourtOwner,ProCourtOwner,CourtOwner,Admin")]
     public class CourtOwnerDashboardController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<CourtOwnerDashboardController> _logger;
+        private readonly ICourtComplexService _courtComplexService; // Inject service
 
         public CourtOwnerDashboardController(
             UserManager<ApplicationUser> userManager,
-            ILogger<CourtOwnerDashboardController> logger)
+            ILogger<CourtOwnerDashboardController> logger,
+            ICourtComplexService courtComplexService) // Thêm service vào constructor
         {
             _userManager = userManager;
             _logger = logger;
+            _courtComplexService = courtComplexService;
         }
 
-        // GET: /CourtOwnerDashboard/Index
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
-                return Challenge(); // Không tìm thấy người dùng
+                return Challenge();
             }
 
             _logger.LogInformation("User {UserId} accessed CourtOwnerDashboard.", user.Id);
 
-            // Bạn có thể truyền thêm dữ liệu vào View nếu cần, ví dụ:
-            // ViewBag.UserName = user.UserName; // Hoặc FullName từ UserProfile nếu đã load
-            // var courtComplexes = await _courtComplexService.GetCourtComplexesByOwnerAsync(user.Id);
-            // return View(courtComplexes); // Nếu muốn hiển thị danh sách sân ngay trên dashboard
+            // Kiểm tra xem chủ sân đã có khu phức hợp nào chưa
+            var courtComplexes = await _courtComplexService.GetCourtComplexesByOwnerAsync(user.Id);
+            var existingComplex = courtComplexes.FirstOrDefault(); // Chủ sân chỉ có 1 complex
 
-            return View(); // Trả về View dashboard đơn giản
+            ViewBag.HasCourtComplex = existingComplex != null;
+            ViewBag.CourtComplexName = existingComplex?.Name; // Truyền tên complex nếu có
+
+            return View();
         }
     }
 }
