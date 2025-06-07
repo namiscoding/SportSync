@@ -1,0 +1,507 @@
+﻿@model SportSync.Business.Dtos.TimeSlotTemplateDto
+@using System.Text.Json; 
+
+@{
+    ViewData["Title"] = $"Thiết Lập Lịch & Giá - {Model.CourtName}";
+}
+
+<style>
+    /* CSS để ngăn chọn văn bản khi người dùng kéo chuột */
+    body {
+        -webkit-user-select: none; /* Safari */
+        -ms-user-select: none; /* IE 10 and IE 11 */
+        user-select: none; /* Standard syntax */
+    }
+
+    .schedule-container {
+        background-color: #fff;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+    }
+
+    .schedule-grid {
+        overflow-x: auto;
+    }
+
+    .schedule-table {
+        width: 100%;
+        min-width: 800px;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.9rem;
+    }
+
+        .schedule-table th, .schedule-table td {
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .schedule-table thead th {
+            padding: 0.75rem;
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 10;
+        }
+
+        .schedule-table td.time-header {
+            font-weight: 600;
+            text-align: center;
+            width: 110px;
+            background-color: #f8f9fa;
+        }
+
+    .timeslot {
+        padding: 8px;
+        text-align: center;
+        min-height: 60px;
+        position: relative;
+        transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer; /* Mặc định có thể chọn */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .timeslot.is-closed {
+            background-color: #e9ecef;
+            color: #6c757d;
+        }
+
+        .timeslot.is-booked {
+            background-color: #ffe8e8;
+            color: #b02a37;
+            cursor: not-allowed;
+        }
+
+        .timeslot.is-changed {
+            box-shadow: inset 0 0 0 2px #0d6efd;
+        }
+
+        .timeslot.is-selected {
+            background-color: #cfe2ff !important;
+            box-shadow: inset 0 0 0 2px #0d6efd;
+        }
+
+        .timeslot .price {
+            font-weight: 600;
+            font-size: 1rem;
+            display: block;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .timeslot:not(.is-closed):not(.is-booked) .price {
+            cursor: text;
+        }
+
+        .timeslot .price-input {
+            width: 90px;
+            text-align: center;
+            border: 1px solid #0d6efd;
+            border-radius: 4px;
+        }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 1.5rem;
+    }
+
+    .legend-color {
+        width: 15px;
+        height: 15px;
+        border-radius: 2px;
+        margin-right: 8px;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    #bulkActionToolbar {
+        position: fixed;
+        bottom: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        transition: bottom 0.3s ease-in-out;
+        z-index: 1000;
+    }
+
+        #bulkActionToolbar.show {
+            bottom: 20px;
+        }
+</style>
+
+<div class="container my-5">    
+    <form id="antiForgeryForm">@Html.AntiForgeryToken()</form>
+    <div class="schedule-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb bg-transparent p-0 mb-2">
+                        <li class="breadcrumb-item"><a asp-controller="CourtOwnerDashboard" asp-action="Index">Tổng quan</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="CourtComplex" asp-action="Manage">Quản lý Khu Sân</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="OwnerCourt" asp-action="Index" asp-route-courtComplexId="@Model.CourtComplexId">@Model.CourtComplexName</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Lịch Mẫu & Giá</li>
+                    </ol>
+                </nav>
+                <h1 class="display-5 fw-bold">Thiết Lập Lịch & Giá</h1>
+                <p class="lead text-muted mb-0">Sân: <strong>@Model.CourtName</strong></p>
+            </div>
+            <div>
+                <a asp-controller="OwnerCourt" asp-action="Index" asp-route-courtComplexId="@Model.CourtComplexId" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Quay lại</a>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="display-5 fw-bold">Thiết Lập Lịch & Giá</h1>
+                <p class="lead text-muted mb-0">Sân: <strong>@Model.CourtName</strong></p>
+            </div>
+            <div>
+                <a asp-controller="OwnerCourt" asp-action="Index" asp-route-courtComplexId="@ViewBag.CourtComplexId" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Quay lại</a>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" id="selectAllBtn"><i class="far fa-check-square me-1"></i> Chọn tất cả</button>
+                <p class="text-muted fst-italic mb-0"><i class="fas fa-info-circle me-1"></i>Mẹo: Nhấp hoặc kéo chuột để chọn nhiều khung giờ.</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="legend-item"><span class="legend-color" style="background-color: #fff;"></span>Mở bán</div>
+                <div class="legend-item"><span class="legend-color" style="background-color: #e9ecef;"></span>Đóng</div>
+                <div class="legend-item"><span class="legend-color" style="box-shadow: inset 0 0 0 2px #0d6efd;"></span>Đã sửa</div>
+            </div>
+        </div>
+
+        <div class="schedule-grid">
+            <table class="table table-bordered schedule-table" id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th><i class="far fa-clock"></i> Thời gian</th>
+                        <th>Thứ Hai</th>
+                        <th>Thứ Ba</th>
+                        <th>Thứ Tư</th>
+                        <th>Thứ Năm</th>
+                        <th>Thứ Sáu</th>
+                        <th>Thứ Bảy</th>
+                        <th>Chủ Nhật</th>   
+                    </tr>
+                </thead>
+                <tbody id="schedule-body"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 text-end">
+            <button class="btn btn-primary btn-lg" id="saveAllChangesBtn">
+                <i class="fas fa-save me-2"></i> Lưu tất cả thay đổi
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- THANH CÔNG CỤ HÀNG LOẠT -->
+<div id="bulkActionToolbar" class="card shadow-lg p-2 bg-light border-primary">
+    <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold me-2 text-primary">Đã chọn: <span id="selectedCount">0</span> slot</span>
+        <div class="input-group">
+            <input type="number" class="form-control" placeholder="Giá mới..." id="bulkPriceInput" step="10000">
+            <button class="btn btn-outline-primary" type="button" id="bulkSetPriceBtn" title="Áp dụng giá cho các slot đã chọn"><i class="fas fa-tag"></i> Áp dụng</button>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" id="bulkCloseBtn" title="Đóng các slot đã chọn"><i class="fas fa-lock"></i> Đóng</button>
+            <button class="btn btn-outline-success" id="bulkOpenBtn" title="Mở lại các slot đã chọn"><i class="fas fa-lock-open"></i> Mở</button>
+        </div>
+        <button class="btn btn-danger" id="bulkDeselectAllBtn" title="Bỏ chọn tất cả"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // === 1. DOM Element variables ===
+            const scheduleBody = document.getElementById('schedule-body');
+            const bulkActionToolbar = document.getElementById('bulkActionToolbar');
+            const selectedCountSpan = document.getElementById('selectedCount');
+            const statusContainer = document.getElementById('status-container');
+            const antiForgeryTokenInput = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]');
+
+            // === 2. State variables ===
+            const scheduleData = @Html.Raw(Json.Serialize(Model));
+            console.log("Data received from server to render schedule:", scheduleData);
+            const defaultPrice = 200000;
+            let changesToSave = {};
+            let selectedSlots = new Set();
+            let isMouseDown = false;
+            let isDragging = false;
+            const antiForgeryToken = antiForgeryTokenInput ? antiForgeryTokenInput.value : null;
+
+            // === 3. Helper Functions ===
+            function showStatus(message, type = 'info') {
+                if (!statusContainer) {
+                    console.error("Status container element not found. Cannot display status:", message);
+                    alert(message); // Fallback to a simple alert
+                    return;
+                }
+                const icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-${icon} me-2"></i> ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                statusContainer.innerHTML = alertHtml;
+            }
+
+
+            // === HÀM HỖ TRỢ & LOGIC ===
+            function formatPrice(price) { return new Intl.NumberFormat('vi-VN').format(price) + ' đ'; }
+
+                            function generateScheduleGrid() {
+            const startTime = new Date(`1970-01-01T${scheduleData.openingTime}`);
+            const endTime = new Date(`1970-01-01T${scheduleData.closingTime}`);
+            let currentTime = new Date(startTime.getTime());
+
+            const dayMapping = [1, 2, 3, 4, 5, 6, 0];
+
+            const slotsArray = scheduleData.definedTimeSlots || scheduleData.timeSlots || scheduleData.TimeSlots || [];
+            console.log("slotsArray:", JSON.stringify(slotsArray, null, 2));
+            if (!slotsArray.length) {
+                console.warn("No time slots found in scheduleData. All slots will use default values.");
+            }
+
+            while (currentTime < endTime) {
+                const row = document.createElement('tr');
+                const timeHeader = document.createElement('td');
+                timeHeader.className = 'time-header';
+                const nextTime = new Date(currentTime.getTime() + scheduleData.slotDurationMinutes * 60000);
+                timeHeader.textContent = `${currentTime.toTimeString().substring(0, 5)} - ${nextTime.toTimeString().substring(0, 5)}`;
+                row.appendChild(timeHeader);
+
+                for (const dayOfWeek of dayMapping) {
+                    const cell = document.createElement('td');
+                    const slotStartTimeStr = currentTime.toTimeString().substring(0, 5);
+                    const slotId = `slot-${dayOfWeek}-${slotStartTimeStr}`;
+
+                    const existingSlot = slotsArray.find(s =>
+                        s.dayOfWeek === dayOfWeek &&
+                        s.startTime.split(':').slice(0, 2).join(':') === slotStartTimeStr
+                    );
+
+                    const price = existingSlot ? existingSlot.price : defaultPrice;
+                    const isClosed = existingSlot ? existingSlot.isClosed : true; // Sửa ở đây
+
+                    console.log(`Rendering slot ${slotId}:`, { existingSlot, isClosed, price });
+
+                    cell.innerHTML = `<div class="timeslot" data-slot-id="${slotId}" data-day="${dayOfWeek}" data-time="${slotStartTimeStr}"><div class="price-container"><span class="price">${formatPrice(price)}</span></div></div>`;
+
+                    const timeslotDiv = cell.querySelector('.timeslot');
+                    if (isClosed) {
+                        timeslotDiv.classList.add('is-closed');
+                        timeslotDiv.querySelector('.price-container').innerHTML = 'Đóng';
+                    }
+
+                    row.appendChild(cell);
+                }
+                scheduleBody.appendChild(row);
+                currentTime = nextTime;
+            }
+        }
+
+
+
+            function updateBulkToolbar() {
+                if(!selectedCountSpan || !bulkActionToolbar) return;
+                const count = selectedSlots.size;
+                selectedCountSpan.textContent = count;
+                bulkActionToolbar.classList.toggle('show', count > 0);
+            }
+
+            function deselectAll() {
+                selectedSlots.clear();
+                document.querySelectorAll('.timeslot.is-selected').forEach(el => el.classList.remove('is-selected'));
+                updateBulkToolbar();
+            }
+
+            function applyChange(slotId, changeType, value) {
+                const timeslotDiv = document.querySelector(`.timeslot[data-slot-id='${slotId}']`);
+                if (!timeslotDiv) return;
+
+                if (!changesToSave[slotId]) {
+                    changesToSave[slotId] = {
+                        dayOfWeek: parseInt(timeslotDiv.dataset.day),
+                        startTime: timeslotDiv.dataset.time
+                    };
+                }
+                changesToSave[slotId][changeType] = value;
+                timeslotDiv.classList.add('is-changed');
+            }
+
+            // === XỬ LÝ SỰ KIỆN ===
+            document.getElementById('bulkDeselectAllBtn')?.addEventListener('click', deselectAll);
+            document.getElementById('selectAllBtn')?.addEventListener('click', () => {
+                document.querySelectorAll('.timeslot:not(.is-booked)').forEach(slot => {
+                    slot.classList.add('is-selected');
+                    selectedSlots.add(slot.dataset.slotId);
+                });
+                updateBulkToolbar();
+            });
+
+            scheduleBody.addEventListener('mousedown', function(e) {
+                const timeslotDiv = e.target.closest('.timeslot:not(.is-booked)');
+                if (!timeslotDiv) return;
+                e.preventDefault();
+                isMouseDown = true;
+                isDragging = false;
+
+                timeslotDiv.classList.toggle('is-selected');
+                if (timeslotDiv.classList.contains('is-selected')) {
+                    selectedSlots.add(timeslotDiv.dataset.slotId);
+                } else {
+                    selectedSlots.delete(timeslotDiv.dataset.slotId);
+                }
+                updateBulkToolbar();
+            });
+
+            scheduleBody.addEventListener('mouseover', function(e) {
+                if (!isMouseDown) return;
+                isDragging = true;
+                const timeslotDiv = e.target.closest('.timeslot:not(.is-booked)');
+                if (timeslotDiv && !selectedSlots.has(timeslotDiv.dataset.slotId)) {
+                    timeslotDiv.classList.add('is-selected');
+                    selectedSlots.add(timeslotDiv.dataset.slotId);
+                    updateBulkToolbar();
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (isMouseDown) {
+                    isMouseDown = false;
+                    isDragging = false;
+                }
+            });
+
+            scheduleBody.addEventListener('click', function(e) {
+                if (isDragging) return; // Bỏ qua click nếu người dùng đang kéo
+
+                if (selectedSlots.size > 0) { // Nếu đang có lựa chọn hàng loạt, không cho sửa giá đơn lẻ
+                    // Logic nhấp chuột để chọn/bỏ chọn đã được xử lý trong 'mousedown'
+                    return;
+                }
+
+                const priceSpan = e.target.closest('.price');
+                const timeslotDiv = e.target.closest('.timeslot');
+                if (!priceSpan || !timeslotDiv || timeslotDiv.classList.contains('is-closed')) return;
+
+                const slotId = timeslotDiv.dataset.slotId;
+                const currentPrice = parseFloat(priceSpan.textContent.replace(/\D/g, ''));
+                const priceContainer = priceSpan.parentElement;
+
+                priceContainer.innerHTML = `<input type="number" class="price-input" value="${currentPrice}" step="10000">`;
+                const input = priceContainer.querySelector('input');
+                input.focus();
+                input.select();
+
+                function savePriceChange() {
+                    const newPrice = parseFloat(input.value) || 0;
+                    priceContainer.innerHTML = `<span class="price">${formatPrice(newPrice)}</span>`;
+                    applyChange(slotId, 'newPrice', newPrice);
+                }
+                input.addEventListener('blur', savePriceChange);
+                input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); });
+            });
+
+            // Event listeners cho các nút trên thanh công cụ hàng loạt
+            document.getElementById('bulkSetPriceBtn')?.addEventListener('click', function() {
+                const newPrice = parseFloat(document.getElementById('bulkPriceInput').value);
+                if (isNaN(newPrice) || newPrice < 0) { alert('Vui lòng nhập giá hợp lệ.'); return; }
+                selectedSlots.forEach(slotId => {
+                    const timeslotDiv = document.querySelector(`.timeslot[data-slot-id='${slotId}']`);
+                    if (timeslotDiv && !timeslotDiv.classList.contains('is-closed')) {
+                        timeslotDiv.querySelector('.price-container').innerHTML = `<span class="price">${formatPrice(newPrice)}</span>`;
+                        applyChange(slotId, 'newPrice', newPrice);
+                    }
+                });
+                deselectAll();
+            });
+
+            document.getElementById('bulkCloseBtn')?.addEventListener('click', function() {
+                selectedSlots.forEach(slotId => {
+                    const timeslotDiv = document.querySelector(`.timeslot[data-slot-id='${slotId}']`);
+                    if (timeslotDiv) {
+                        timeslotDiv.classList.add('is-closed');
+                        timeslotDiv.querySelector('.price-container').innerHTML = 'Đóng';
+                        applyChange(slotId, 'newStatus', 'Closed');
+                    }
+                });
+                deselectAll();
+            });
+
+            document.getElementById('bulkOpenBtn')?.addEventListener('click', function() {
+                selectedSlots.forEach(slotId => {
+                    const timeslotDiv = document.querySelector(`.timeslot[data-slot-id='${slotId}']`);
+                    if (timeslotDiv) {
+                        timeslotDiv.classList.remove('is-closed');
+                        const price = changesToSave[slotId]?.newPrice || defaultPrice;
+                        timeslotDiv.querySelector('.price-container').innerHTML = `<span class="price">${formatPrice(price)}</span>`;
+                        applyChange(slotId, 'newStatus', 'Available');
+                    }
+                });
+                deselectAll();
+            });
+
+            document.getElementById('saveAllChangesBtn')?.addEventListener('click', async function() {
+                if (Object.keys(changesToSave).length === 0) {
+                    showStatus('Không có thay đổi nào để lưu.', 'info');
+                    return;
+                }
+
+                if (!antiForgeryToken) {
+                    showStatus('Lỗi bảo mật: Không tìm thấy Anti-Forgery Token.', 'danger');
+                    return;
+                }
+
+                this.disabled = true;
+                this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> Đang lưu...`;
+
+                const payload = {
+                    courtId: scheduleData.courtId,
+                    changes: changesToSave
+                };
+
+                try {
+                    const response = await fetch('/TimeSlotManagement/UpdateBulk', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showStatus(result.message || 'Đã lưu các thay đổi thành công!', 'success');
+                        changesToSave = {}; // Reset lại các thay đổi đã lưu
+                        document.querySelectorAll('.timeslot.is-changed').forEach(el => el.classList.remove('is-changed'));
+                        setTimeout(() => {
+                            window.location.href = result.redirectUrl;
+                        }, 1000); // Chờ 1 giây để người dùng đọc thông báo
+                    } else {
+                        showStatus('Lỗi: ' + (result.message || 'Không thể lưu thay đổi.'), 'danger');
+                    }
+                } catch (error) {
+                    console.error("Error saving timeslot changes:", error);
+                    showStatus('Đã xảy ra lỗi kết nối. Vui lòng thử lại.', 'danger');
+                } finally {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-save me-2"></i> Lưu tất cả thay đổi';
+                }
+            });
+
+            // === KHỞI TẠO ===
+            generateScheduleGrid();
+        });
+    </script>
+}

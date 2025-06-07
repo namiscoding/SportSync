@@ -9,7 +9,6 @@ namespace SportSync.Data.Enums
     public enum CourtStatusByOwner
     {
         Available = 0,
-        UnderMaintenance = 1,
-        TemporarilyClosed = 2
+        Suspended = 1
     }
 }
