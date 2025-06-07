@@ -1,0 +1,458 @@
+﻿@model SportSync.Web.Models.ViewModels.Owner.OwnerCourtViewModel
+
+@{
+    ViewData["Title"] = $"Chỉnh sửa Sân: {Model.Name}";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-transparent p-0">
+            <li class="breadcrumb-item"><a asp-controller="CourtComplex" asp-action="Manage" class="text-decoration-none">Quản lý Khu Sân</a></li>
+            <li class="breadcrumb-item"><a asp-controller="OwnerCourt" asp-action="Index" asp-route-courtComplexId="@Model.CourtComplexId" class="text-decoration-none">@Model.CourtComplexName</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa sân</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h1 class="display-5 fw-bold text-primary mb-2 mb-md-0">@ViewData["Title"]</h1>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            @* Adjusted column width for better visual balance on larger screens *@
+            <form asp-action="Edit" asp-route-id="@Model.CourtId" method="post" enctype="multipart/form-data">
+                <input type="hidden" asp-for="CourtId" />
+                <input type="hidden" asp-for="CourtComplexId" />
+                <input type="hidden" asp-for="CourtComplexName" />
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4 animate-fade-in" role="alert">
+                        <i class="fas fa-check-circle me-3 fa-lg"></i>
+                        <div>
+                            @TempData["SuccessMessage"]
+                        </div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4 animate-fade-in" role="alert">
+                        <i class="fas fa-exclamation-circle me-3 fa-lg"></i>
+                        <div>
+                            @TempData["ErrorMessage"]
+                        </div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div asp-validation-summary="ModelOnly" class="text-danger alert alert-danger rounded-3 shadow-sm p-3 mb-4" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> Vui lòng kiểm tra lại các lỗi sau:
+                </div>
+
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Thông Tin Cơ Bản Về Sân</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <label asp-for="Name" class="form-label fw-bold"></label>
+                            <input asp-for="Name" class="form-control form-control-lg rounded-pill" placeholder="Tên sân" />
+                            <span asp-validation-for="Name" class="text-danger mt-1 d-block"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="SportTypeId" class="form-label fw-bold"></label>
+                            <select asp-for="SportTypeId" class="form-select form-select-lg rounded-pill" asp-items="Model.SportTypes">
+                                <option value="">-- Chọn loại hình thể thao --</option>
+                            </select>
+                            <span asp-validation-for="SportTypeId" class="text-danger mt-1 d-block"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Description" class="form-label fw-bold"></label>
+                            <textarea asp-for="Description" class="form-control rounded-3" rows="4" placeholder="Mô tả chi tiết về sân..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger mt-1 d-block"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="MainImageFile" class="form-label fw-bold">Thay đổi ảnh đại diện</label>
+                            <input asp-for="MainImageFile" type="file" class="form-control form-control-lg rounded-pill" accept="image/*" />
+                            <span asp-validation-for="MainImageFile" class="text-danger mt-1 d-block"></span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.MainImageCloudinaryUrl))
+                        {
+                            <div class="mb-3">
+                                <div class="border rounded-3 p-2 bg-light d-inline-block shadow-sm">
+                                    <img src="@Model.MainImageCloudinaryUrl" alt="Ảnh đại diện hiện tại" class="img-fluid rounded-2" style="max-height: 200px; object-fit: cover;" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Cài Đặt Hoạt Động & Đặt Chỗ</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="DefaultSlotDurationMinutes" class="form-label fw-bold"></label>
+                                <input asp-for="DefaultSlotDurationMinutes" type="number" class="form-control form-control-lg rounded-pill" placeholder="Ví dụ: 60 (phút)" />
+                                <span asp-validation-for="DefaultSlotDurationMinutes" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="AdvanceBookingDaysLimit" class="form-label fw-bold"></label>
+                                <input asp-for="AdvanceBookingDaysLimit" type="number" class="form-control form-control-lg rounded-pill" placeholder="Ví dụ: 30 (ngày)" />
+                                <span asp-validation-for="AdvanceBookingDaysLimit" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="OpeningTime" class="form-label fw-bold"></label>
+                                <input asp-for="OpeningTime" type="time" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="OpeningTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="ClosingTime" class="form-label fw-bold"></label>
+                                <input asp-for="ClosingTime" type="time" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="ClosingTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-list-ul me-2"></i>Tiện Ích Sân</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Chọn các tiện ích có sẵn tại sân:</label>
+                            <div class="row g-2">
+                                @* Smaller gutter for checkboxes *@
+                                @if (Model.AvailableAmenities != null && Model.AvailableAmenities.Any())
+                                {
+                                    @foreach (var amenity in Model.AvailableAmenities)
+                                    {
+                                        <div class="col-6 col-md-4 col-lg-3">
+                                            @* Responsive columns for checkboxes *@
+                                            <div class="form-check form-check-lg amenity-checkbox-item py-2 px-3 rounded-pill bg-light border">
+                                                <input type="checkbox" name="SelectedAmenityIds" value="@amenity.Value"
+                                                       class="form-check-input" id="amenity-@amenity.Value"
+                                                       checked="@(Model.SelectedAmenityIds != null && Model.SelectedAmenityIds.Contains(int.Parse(amenity.Value)))" />
+                                                <label class="form-check-label ms-2" for="amenity-@amenity.Value">
+                                                    @amenity.Text
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="col-12">
+                                        <p class="text-muted text-center p-3 border rounded-3 bg-light">Không có tiện ích nào để chọn.</p>
+                                    </div>
+                                }
+                            </div>
+                            <span asp-validation-for="SelectedAmenityIds" class="text-danger mt-1 d-block"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 mb-5 d-flex flex-column flex-md-row justify-content-end align-items-stretch align-items-md-center">
+                    <a asp-action="Index" asp-route-courtComplexId="@Model.CourtComplexId" class="btn btn-outline-secondary btn-lg rounded-pill me-md-3 mb-3 mb-md-0 w-100 w-md-auto shadow-sm">
+                        <i class="fas fa-times me-2"></i> Hủy
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill w-100 w-md-auto shadow">
+                        <i class="fas fa-save me-2"></i> Lưu Thay Đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Smooth scroll to alerts if they are visible
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert.classList.contains('show')) {
+                        alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            });
+
+            // Handle amenity checkbox styling
+            document.querySelectorAll('.amenity-checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                const labelContainer = checkbox.closest('.amenity-checkbox-item');
+                if (checkbox.checked) {
+                    labelContainer.classList.add('checked');
+                }
+
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        labelContainer.classList.add('checked');
+                    } else {
+                        labelContainer.classList.remove('checked');
+                    }
+                });
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light gray background */
+        }
+
+        .breadcrumb-item a {
+            color: #007bff;
+            transition: color 0.2s ease-in-out;
+        }
+
+            .breadcrumb-item a:hover {
+                color: #0056b3;
+            }
+
+        .display-5.fw-bold {
+            color: #007bff !important; /* Primary blue for main title */
+        }
+
+        .lead-text {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        /* Alerts */
+        .alert {
+            font-size: 1.1rem;
+            padding: 1rem 1.5rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        @@keyframes fadeIn {
+            from
+
+        {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+
+        }
+
+        /* Card Styles */
+        .card {
+            border: none;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08) !important; /* Stronger shadow */
+        }
+
+        .card-header {
+            background-color: #007bff; /* Primary blue for card headers */
+            color: white;
+            border-bottom: none;
+            font-size: 1.25rem;
+            padding: 0.9rem 1.5rem;
+        }
+
+            .card-header h5 {
+                font-size: 1.25rem; /* Ensure consistent heading size */
+            }
+
+        .form-label.fw-bold {
+            color: #343a40; /* Darker color for labels */
+        }
+
+        .form-control, .form-select {
+            border-color: #ced4da;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .form-control-lg, .form-select-lg {
+            padding: 0.5rem 1rem;
+            font-size: 1.1rem;
+            height: calc(2.25em + 1rem + 2px); /* Adjust height for lg inputs */
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Image Preview */
+        .img-fluid.rounded-2 {
+            max-height: 200px;
+            object-fit: cover;
+            display: block; /* Ensure it takes full width of its container if small */
+        }
+
+        .d-inline-block.shadow-sm {
+            border: 1px solid #dee2e6; /* Add a subtle border */
+        }
+
+
+        /* Amenity Checkbox Styles */
+        .amenity-checkbox-item {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border-color: #e9ecef;
+            user-select: none; /* Prevent text selection */
+            display: flex; /* Align checkbox and label */
+            align-items: center;
+        }
+
+            .amenity-checkbox-item:hover {
+                background-color: #e2e6ea;
+                border-color: #d1d6db;
+            }
+
+            .amenity-checkbox-item.checked {
+                background-color: #e0f7fa; /* Light blue */
+                border-color: #00bcd4; /* Info color border */
+                box-shadow: 0 0 0 0.25rem rgba(0, 188, 212, 0.25); /* Light shadow on checked */
+            }
+
+            .amenity-checkbox-item .form-check-input {
+                cursor: pointer;
+                width: 1.25em; /* Larger checkbox */
+                height: 1.25em;
+                flex-shrink: 0;
+                margin-top: 0; /* Align with label */
+                margin-right: 0.5rem; /* Space between checkbox and label */
+            }
+
+                .amenity-checkbox-item .form-check-input:checked {
+                    background-color: #007bff; /* Primary color */
+                    border-color: #007bff;
+                }
+
+            .amenity-checkbox-item .form-check-label {
+                cursor: pointer;
+                font-weight: normal;
+                color: #495057; /* Darker text for label */
+            }
+
+            .amenity-checkbox-item.checked .form-check-label {
+                font-weight: 500; /* Slightly bolder when checked */
+                color: #007bff;
+            }
+
+
+        /* Buttons */
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+                transform: translateY(-1px);
+            }
+
+        .btn-outline-secondary {
+            color: #6c757d;
+            border-color: #6c757d;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .btn-outline-secondary:hover {
+                background-color: #6c757d;
+                color: #fff;
+                transform: translateY(-1px);
+            }
+
+        /* --- Responsive Adjustments --- */
+        @@media (max-width: 767.98px) { /* Small devices (phones) */
+            .display-5.fw-bold
+
+        {
+            font-size: 2rem !important; /* Smaller title on mobile */
+        }
+
+        .lead-text {
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .card-header {
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
+        }
+
+            .card-header h5 {
+                font-size: 1.1rem;
+            }
+
+        .card-body {
+            padding: 1.5rem !important; /* Adjust card body padding */
+        }
+
+        .form-control-lg, .form-select-lg {
+            padding: 0.4rem 0.8rem;
+            font-size: 1rem;
+            height: calc(2.25em + .8rem + 2px);
+        }
+
+        /* Amenities */
+        .amenity-checkbox-item {
+            font-size: 0.9rem; /* Smaller text for amenities */
+            padding: 0.5rem 0.8rem;
+        }
+
+            .amenity-checkbox-item .form-check-input {
+                width: 1.1em;
+                height: 1.1em;
+            }
+
+        /* Buttons at bottom */
+        .d-flex.flex-column.flex-md-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+            .d-flex.flex-column.flex-md-row > .btn {
+                width: 100% !important; /* Full width buttons on mobile */
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                margin-bottom: 1rem !important; /* Space between stacked buttons */
+            }
+
+                .d-flex.flex-column.flex-md-row > .btn:last-child {
+                    margin-bottom: 0 !important;
+                }
+
+        }
+    </style>
+}

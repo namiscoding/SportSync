@@ -1,177 +1,398 @@
 ﻿@model SportSync.Web.Models.ViewModels.CourtComplex.CourtComplexViewModel
 
 @{
-    ViewData["Title"] = "Thêm Khu Phức Hợp Sân Mới";
-    // ==========================================================================================
-    // == QUAN TRỌNG: THAY THẾ "YOUR_MAPBOX_ACCESS_TOKEN" BẰNG ACCESS TOKEN MAPBOX CỦA BẠN ==
-    // == Bạn nên lưu trữ Access Token này trong appsettings.json và đọc ra ở đây,        ==
-    // == hoặc truyền từ Controller qua ViewData để an toàn hơn trong môi trường production. ==
-    // ==========================================================================================
+    ViewData["Title"] = "Thiết lập Cụm Sân Mới";
     var mapboxAccessToken = "pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ";
 }
 
-<h1>@ViewData["Title"]</h1>
-<p class="text-muted">Điền thông tin chi tiết về khu phức hợp sân của bạn. Sử dụng bản đồ để chọn vị trí chính xác.</p>
-<hr />
-<div class="row">
-    <div class="col-md-12">
-        <form asp-action="Create" method="post" enctype="multipart/form-data" id="createComplexForm">
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-transparent p-0">
+            <li class="breadcrumb-item"><a asp-controller="CourtOwnerDashboard" asp-action="Index" class="text-decoration-none">Tổng quan</a></li>
+            <li class="breadcrumb-item"><a asp-controller="CourtComplex" asp-action="MyComplexes" class="text-decoration-none">Khu phức hợp của tôi</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Thêm Khu Phức Hợp Mới</li>
+        </ol>
+    </nav>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label asp-for="Name" class="form-label fw-semibold"></label>
-                        <input asp-for="Name" class="form-control" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
-                    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h1 class="display-5 fw-bold text-primary mb-2 mb-md-0">@ViewData["Title"]</h1>
+    </div>
+    <p class="text-muted lead-text mt-1">Điền thông tin chi tiết về khu phức hợp sân của bạn và sử dụng bản đồ để chọn vị trí chính xác.</p>
+    
+    <hr class="my-4">
 
-                    @* API Hành chính Việt Nam *@
-                    <div class="mb-3">
-                        <label for="citySelect" class="form-label fw-semibold">Tỉnh/Thành phố</label>
-                        <select asp-for="City" id="citySelect" class="form-select">
-                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
-                        </select>
-                        <span asp-validation-for="City" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="districtSelect" class="form-label fw-semibold">Quận/Huyện</label>
-                        <select asp-for="District" id="districtSelect" class="form-select" disabled>
-                            <option value="">-- Chọn Quận/Huyện --</option>
-                        </select>
-                        <span asp-validation-for="District" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="wardSelect" class="form-label fw-semibold">Phường/Xã</label>
-                        <select asp-for="Ward" id="wardSelect" class="form-select" disabled>
-                            <option value="">-- Chọn Phường/Xã --</option>
-                        </select>
-                        <span asp-validation-for="Ward" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Address" class="form-label fw-semibold"></label>
-                        <input asp-for="Address" class="form-control" placeholder="Ví dụ: Số 123, Đường ABC" />
-                        <span asp-validation-for="Address" class="text-danger"></span>
-                        <small class="form-text text-muted">Nhập số nhà và tên đường.</small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Description" class="form-label fw-semibold"></label>
-                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    @* Mapbox Integration *@
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Chọn vị trí trên bản đồ</label>
-                        @* Ô tìm kiếm của Mapbox Geocoder sẽ được thêm vào đây bằng JavaScript *@
-                        <div id="mapbox-geocoder-container" class="mb-2"></div>
-                        <div id="map-mapbox" style="height: 350px; width: 100%; border-radius: 0.375rem; border: 1px solid #ced4da;">
-                            @if (string.IsNullOrEmpty(mapboxAccessToken) || mapboxAccessToken == "YOUR_MAPBOX_ACCESS_TOKEN")
-                            {
-                                <div class="alert alert-warning h-100 d-flex align-items-center justify-content-center">
-                                    Vui lòng cung cấp Mapbox Access Token hợp lệ để hiển thị bản đồ.
-                                </div>
-                            }
+    <div class="row justify-content-center">
+        <div class="col-lg-10"> @* Increased column width slightly for better form flow *@
+            <form asp-action="Create" method="post" enctype="multipart/form-data" id="createComplexForm">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4 animate-fade-in" role="alert">
+                        <i class="fas fa-check-circle me-3 fa-lg"></i>
+                        <div>
+                            @TempData["SuccessMessage"]
                         </div>
-                        <small class="form-text text-muted">Nhấp vào bản đồ để đặt marker hoặc tìm kiếm địa chỉ.</small>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <input type="hidden" asp-for="Latitude" id="latitudeInput" />
-                    <input type="hidden" asp-for="Longitude" id="longitudeInput" />
-                    <div class="mb-3">
-                        <p class="small">Tọa độ: Vĩ độ <span id="latDisplay" class="fw-bold">N/A</span>, Kinh độ <span id="lngDisplay" class="fw-bold">N/A</span></p>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4 animate-fade-in" role="alert">
+                        <i class="fas fa-exclamation-circle me-3 fa-lg"></i>
+                        <div>
+                            @TempData["ErrorMessage"]
+                        </div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div asp-validation-summary="ModelOnly" class="text-danger alert alert-danger rounded-3 shadow-sm p-3 mb-4" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> Vui lòng kiểm tra lại các lỗi sau:
+                </div>
+
+                <input type="hidden" asp-for="CourtComplexId" />
+                <input type="hidden" asp-for="Latitude" id="latitudeInput" />
+                <input type="hidden" asp-for="Longitude" id="longitudeInput" />
+
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Thông tin chung</h5>
+                    </div>
+                    <div class="card-body p-4 p-md-5"> @* Adjusted padding for mobile *@
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="mb-4">
+                                    <label asp-for="Name" class="form-label fw-bold"></label>
+                                    <input asp-for="Name" class="form-control form-control-lg rounded-pill" placeholder="Tên khu phức hợp sân" />
+                                    <span asp-validation-for="Name" class="text-danger mt-1 d-block"></span>
+                                </div>
+                                <div class="mb-4">
+                                    <label asp-for="Address" class="form-label fw-bold"></label>
+                                    <input asp-for="Address" class="form-control form-control-lg rounded-pill" placeholder="Số nhà, tên đường..." />
+                                    <span asp-validation-for="Address" class="text-danger mt-1 d-block"></span>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-4">
+                                        <label for="citySelect" class="form-label fw-bold">Tỉnh/Thành phố</label>
+                                        <select asp-for="City" id="citySelect" class="form-select form-select-lg rounded-pill">
+                                            <option value="">-- Đang tải... --</option>
+                                        </select>
+                                        <span asp-validation-for="City" class="text-danger mt-1 d-block"></span>
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <label for="districtSelect" class="form-label fw-bold">Quận/Huyện</label>
+                                        <select asp-for="District" id="districtSelect" class="form-select form-select-lg rounded-pill" disabled>
+                                            <option value="">-- Chọn Tỉnh/TP trước --</option>
+                                        </select>
+                                        <span asp-validation-for="District" class="text-danger mt-1 d-block"></span>
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <label for="wardSelect" class="form-label fw-bold">Phường/Xã</label>
+                                        <select asp-for="Ward" id="wardSelect" class="form-select form-select-lg rounded-pill" disabled>
+                                            <option value="">-- Chọn Quận/Huyện trước --</option>
+                                        </select>
+                                        <span asp-validation-for="Ward" class="text-danger mt-1 d-block"></span>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label asp-for="Description" class="form-label fw-bold"></label>
+                                    <textarea asp-for="Description" class="form-control rounded-3" rows="4" placeholder="Mô tả chi tiết về khu phức hợp sân..."></textarea>
+                                    <span asp-validation-for="Description" class="text-danger mt-1 d-block"></span>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <h5 class="mb-3 text-secondary"><i class="fas fa-map-marked-alt me-2"></i>Vị trí trên bản đồ</h5>
+                                <div id="mapbox-geocoder-container" class="mb-3"></div>
+                                <div id="map-mapbox" class="map-container"> @* Added map-container class *@
+                                    @if (string.IsNullOrEmpty(mapboxAccessToken) || mapboxAccessToken == "YOUR_MAPBOX_ACCESS_TOKEN")
+                                    {
+                                        <div class="alert alert-warning h-100 d-flex align-items-center justify-content-center flex-column text-center p-3">
+                                            <i class="fas fa-exclamation-triangle fa-2x mb-3 text-warning"></i>
+                                            <p class="mb-0">Vui lòng cung cấp Mapbox Access Token hợp lệ để hiển thị bản đồ.</p>
+                                        </div>
+                                    }
+                                </div>
+                                <small class="form-text text-muted mt-2 d-block">
+                                    Tọa độ: Vĩ độ <span id="latDisplay" class="fw-bold">N/A</span>, Kinh độ <span id="lngDisplay" class="fw-bold">N/A</span>
+                                    <br />Nhấp vào bản đồ để đặt marker hoặc tìm kiếm địa chỉ.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <hr class="my-4">
-            <h5 class="mb-3">Thông tin bổ sung</h5>
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-image me-2"></i>Ảnh đại diện</h5>
+                    </div>
+                    <div class="card-body p-4 p-md-5">
+                        <div class="mb-3">
+                            <label asp-for="MainImageFile" class="form-label fw-bold"></label>
+                            <input asp-for="MainImageFile" type="file" class="form-control form-control-lg rounded-pill" accept="image/*" />
+                            <span asp-validation-for="MainImageFile" class="text-danger mt-1 d-block"></span>
+                            <small class="text-muted mt-2 d-block">Vui lòng tải lên ảnh rõ ràng để giới thiệu khu phức hợp của bạn.</small>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="MainImageFile" class="form-label fw-semibold"></label>
-                    <input asp-for="MainImageFile" type="file" class="form-control" />
-                    <span asp-validation-for="MainImageFile" class="text-danger"></span>
-                    @if (TempData["InfoMessage"] != null)
-                    {
-                        <small class="form-text text-muted">@TempData["InfoMessage"]</small>
-                    }
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-phone-alt me-2"></i>Thông tin liên hệ & Giờ hoạt động</h5>
+                    </div>
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="ContactPhoneNumber" class="form-label fw-bold"></label>
+                                <input asp-for="ContactPhoneNumber" class="form-control form-control-lg rounded-pill" placeholder="Số điện thoại liên hệ" />
+                                <span asp-validation-for="ContactPhoneNumber" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="ContactEmail" class="form-label fw-bold"></label>
+                                <input asp-for="ContactEmail" type="email" class="form-control form-control-lg rounded-pill" placeholder="Email liên hệ" />
+                                <span asp-validation-for="ContactEmail" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="DefaultOpeningTime" class="form-label fw-bold"></label>
+                                <input asp-for="DefaultOpeningTime" type="time" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="DefaultOpeningTime" class="text-danger mt-1 d-block"></span>
+                                <small class="text-muted mt-2 d-block">Giờ mở cửa mặc định cho các sân trong khu phức hợp.</small>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="DefaultClosingTime" class="form-label fw-bold"></label>
+                                <input asp-for="DefaultClosingTime" type="time" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="DefaultClosingTime" class="text-danger mt-1 d-block"></span>
+                                <small class="text-muted mt-2 d-block">Giờ đóng cửa mặc định cho các sân trong khu phức hợp.</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label asp-for="ContactPhoneNumber" class="form-label fw-semibold"></label>
-                    <input asp-for="ContactPhoneNumber" class="form-control" />
-                    <span asp-validation-for="ContactPhoneNumber" class="text-danger"></span>
+                <div class="mt-4 mb-5 d-flex flex-column flex-md-row justify-content-end align-items-stretch align-items-md-center">
+                    <a asp-action="MyComplexes" class="btn btn-outline-secondary btn-lg rounded-pill me-md-3 mb-3 mb-md-0 w-100 w-md-auto shadow-sm">
+                        <i class="fas fa-times me-2"></i> Hủy
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill w-100 w-md-auto shadow">
+                        <i class="fas fa-plus me-2"></i> Tạo Khu Phức Hợp
+                    </button>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="ContactEmail" class="form-label fw-semibold"></label>
-                    <input asp-for="ContactEmail" type="email" class="form-control" />
-                    <span asp-validation-for="ContactEmail" class="text-danger"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label asp-for="DefaultOpeningTime" class="form-label fw-semibold"></label>
-                    <input asp-for="DefaultOpeningTime" type="time" class="form-control" />
-                    <span asp-validation-for="DefaultOpeningTime" class="text-danger"></span>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="DefaultClosingTime" class="form-label fw-semibold"></label>
-                    <input asp-for="DefaultClosingTime" type="time" class="form-control" />
-                    <span asp-validation-for="DefaultClosingTime" class="text-danger"></span>
-                </div>
-            </div>
-
-            <div class="mb-3 mt-4">
-                <button type="submit" class="btn btn-primary btn-lg px-5">Tạo Khu Phức Hợp</button>
-                <a asp-action="MyComplexes" class="btn btn-outline-secondary btn-lg ms-2 px-4">Hủy</a>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
 @section Styles {
-    @* Thêm section Styles nếu layout của bạn có RenderSection("Styles", false) *@
     @if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
     {
         <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
         <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
     }
     <style>
-        /* CSS cho div bản đồ Mapbox (có thể cần hoặc không) */
-        #map-mapbox {
-            /* Đã set height trong HTML, có thể thêm các style khác ở đây */
+        body {
+            background-color: #f8f9fa; /* Light gray background */
         }
 
-        .mapboxgl-ctrl-geocoder { /* Style cho ô tìm kiếm của Mapbox */
+        .breadcrumb-item a {
+            color: #007bff;
+            transition: color 0.2s ease-in-out;
+        }
+        .breadcrumb-item a:hover {
+            color: #0056b3;
+        }
+
+        .display-5.fw-bold {
+            color: #007bff !important; /* Primary blue for main title */
+        }
+
+        .lead-text {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        /* Alerts */
+        .alert {
+            font-size: 1.1rem;
+            padding: 1rem 1.5rem;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Card Styles */
+        .card {
+            border: none;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08) !important; /* Stronger shadow */
+        }
+
+        .card-header {
+            background-color: #007bff; /* Primary blue for card headers */
+            color: white;
+            border-bottom: none;
+            font-size: 1.25rem;
+            padding: 0.9rem 1.5rem;
+        }
+        .card-header h5 {
+            font-size: 1.25rem; /* Ensure consistent heading size */
+        }
+        
+        .form-label.fw-bold {
+            color: #343a40; /* Darker color for labels */
+        }
+
+        .form-control, .form-select {
+            border-color: #ced4da;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-control-lg, .form-select-lg {
+            padding: 0.5rem 1rem;
+            font-size: 1.1rem;
+            height: calc(2.25em + 1rem + 2px); /* Adjust height for lg inputs */
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        
+        /* Mapbox Styles */
+        .map-container {
+            height: 350px; /* Default height */
             width: 100%;
-            max-width: none; /* Ghi đè max-width mặc định nếu cần */
+            border-radius: 1rem; /* Match card radius */
+            overflow: hidden; /* Ensure map doesn't overflow border radius */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Subtle shadow for map */
+        }
+        .mapboxgl-canvas {
+            border-radius: 1rem; /* Ensure map canvas also has rounded corners */
+        }
+        .mapboxgl-ctrl-geocoder {
+            width: 100%;
+            max-width: none;
             font-size: 1rem;
             line-height: 1.5;
-            margin-bottom: 0.5rem; /* Thêm chút khoảng cách */
+        }
+        .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input {
+            height: calc(2.25em + .75rem + 2px); /* Adjust to match form-control-lg height */
+            padding: .5rem 1rem; /* Adjust padding */
+            border-radius: 2rem; /* Make it rounded like the other inputs */
+            border: 1px solid #ced4da;
+            box-shadow: none;
+        }
+        .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        .mapboxgl-marker {
+            color: #007bff; /* Primary blue marker */
         }
 
-            .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input {
-                height: calc(1.5em + .75rem + 2px); /* Làm cho nó giống với input Bootstrap */
-                padding: .375rem .75rem;
+        /* Buttons */
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-secondary {
+            color: #6c757d;
+            border-color: #6c757d;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        /* --- Responsive Adjustments --- */
+        @@media (max-width: 767.98px) { /* Small devices (phones) */
+            .display-5.fw-bold {
+                font-size: 2rem !important; /* Smaller title on mobile */
             }
+
+            .lead-text {
+                font-size: 0.95rem;
+                text-align: center;
+            }
+
+            .card-header {
+                font-size: 1.1rem;
+                padding: 0.75rem 1rem;
+            }
+            .card-header h5 {
+                font-size: 1.1rem;
+            }
+
+            .card-body {
+                padding: 1.5rem !important; /* Adjust card body padding */
+            }
+
+            .form-control-lg, .form-select-lg {
+                padding: 0.4rem 0.8rem;
+                font-size: 1rem;
+                height: calc(2.25em + .8rem + 2px);
+            }
+            
+            .map-container {
+                height: 250px; /* Shorter map on mobile */
+            }
+
+            /* Buttons at bottom */
+            .d-flex.flex-column.flex-md-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .d-flex.flex-column.flex-md-row > .btn {
+                width: 100% !important; /* Full width buttons on mobile */
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                margin-bottom: 1rem !important; /* Space between stacked buttons */
+            }
+            .d-flex.flex-column.flex-md-row > .btn:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
     </style>
 }
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
     <script>
-        // ... (JavaScript cho API Hành chính giữ nguyên như trước) ...
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
+            // Smooth scroll to alerts if they are visible
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert.classList.contains('show')) {
+                        alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            });
+
+            // === API HÀNH CHÍNH VIỆT NAM ===
             const citySelect = document.getElementById('citySelect');
             const districtSelect = document.getElementById('districtSelect');
             const wardSelect = document.getElementById('wardSelect');
@@ -205,142 +426,175 @@
                     selectElement.disabled = true;
                 }
             }
-            populateDropdown(apiBaseUrl + 'p/', citySelect, 'Chọn Tỉnh/Thành phố', null);
+            
+            // Initial load for cities
+            await populateDropdown(apiBaseUrl + 'p/', citySelect, 'Chọn Tỉnh/Thành phố', null);
+
             citySelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
-                const cityCode = selectedOption.dataset.code;
+                const cityCode = selectedOption?.dataset.code;
                 districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>'; districtSelect.disabled = true;
                 wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>'; wardSelect.disabled = true;
                 if (cityCode) { populateDropdown(apiBaseUrl + `p/${cityCode}?depth=2`, districtSelect, 'Chọn Quận/Huyện', 'districts'); }
             });
+
             districtSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
-                const districtCode = selectedOption.dataset.code;
+                const districtCode = selectedOption?.dataset.code;
                 wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>'; wardSelect.disabled = true;
                 if (districtCode) { populateDropdown(apiBaseUrl + `d/${districtCode}?depth=2`, wardSelect, 'Chọn Phường/Xã', 'wards'); }
             });
-        });
-    </script>
 
-    @* Script cho Mapbox API *@
-    @if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
-    {
-        <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-        <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-        <script>
-            const mapboxToken = "@mapboxAccessToken"; // Lấy token từ biến C#
-            let map;
-            let marker;
+            // === Mapbox Integration ===
+            const mapboxTokenConst = "@mapboxAccessToken";
+            let mapInstance;
+            let mapMarker;
+            const latitudeInput = document.getElementById('latitudeInput');
+            const longitudeInput = document.getElementById('longitudeInput');
+            const latDisplay = document.getElementById('latDisplay');
+            const lngDisplay = document.getElementById('lngDisplay');
+
+            function updateCoordinates(lngLat) {
+                if (lngLat && typeof lngLat.lng === 'number' && typeof lngLat.lat === 'number') {
+                    latitudeInput.value = lngLat.lat.toFixed(6);
+                    longitudeInput.value = lngLat.lng.toFixed(6);
+                    latDisplay.textContent = lngLat.lat.toFixed(6);
+                    lngDisplay.textContent = lngLat.lng.toFixed(6);
+                } else {
+                    console.warn("updateCoordinates called with invalid lngLat:", lngLat);
+                    latDisplay.textContent = "N/A";
+                    lngDisplay.textContent = "N/A";
+                }
+            }
+
+            function placeAndAddMarker(lngLat) {
+                if (lngLat && typeof lngLat.lng === 'number' && typeof lngLat.lat === 'number') {
+                    mapMarker.setLngLat(lngLat);
+                    if (!mapMarker.getElement().parentNode) {
+                        mapMarker.addTo(mapInstance);
+                    }
+                    updateCoordinates(lngLat);
+                }
+            }
 
             function initializeMapbox() {
-                if (!mapboxToken || mapboxToken === "YOUR_MAPBOX_ACCESS_TOKEN") {
-                    console.error("Mapbox Access Token is not configured.");
-                    document.getElementById('map-mapbox').innerHTML = '<div class="alert alert-danger h-100 d-flex align-items-center justify-content-center">Mapbox Access Token không hợp lệ.</div>';
+                if (!mapboxTokenConst || mapboxTokenConst === "YOUR_MAPBOX_ACCESS_TOKEN") {
+                    console.error("Mapbox Access Token is not configured. Map functionality will be disabled.");
+                    const mapDiv = document.getElementById('map-mapbox');
+                    if (mapDiv && !mapDiv.querySelector('.alert')) {
+                        mapDiv.innerHTML = '<div class="alert alert-danger h-100 d-flex align-items-center justify-content-center flex-column text-center p-3"><i class="fas fa-exclamation-triangle fa-2x mb-3 text-danger"></i><p class="mb-0">Mapbox Access Token không hợp lệ hoặc bị thiếu.</p></div>';
+                    }
                     return;
                 }
 
-                mapboxgl.accessToken = mapboxToken;
-                map = new mapboxgl.Map({
-                    container: 'map-mapbox', // ID của div chứa bản đồ
-                    style: 'mapbox://styles/mapbox/streets-v12', // Kiểu bản đồ, bạn có thể chọn kiểu khác
-                    center: [105.804817, 21.028511], // Tọa độ Hà Nội [lng, lat] làm mặc định
+                mapboxgl.accessToken = mapboxTokenConst;
+                mapInstance = new mapboxgl.Map({
+                    container: 'map-mapbox',
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: [105.804817, 21.028511], // Default to Hanoi, Vietnam
                     zoom: 11
                 });
 
-                map.addControl(new mapboxgl.NavigationControl()); // Thêm control zoom, xoay
+                mapInstance.addControl(new mapboxgl.NavigationControl());
 
-                // Tạo marker có thể kéo thả
-                marker = new mapboxgl.Marker({
+                mapMarker = new mapboxgl.Marker({
                     draggable: true,
-                    color: "#d02922" // Màu đỏ cho marker
-                })
-                // .setLngLat([105.804817, 21.028511]) // Có thể đặt vị trí ban đầu
-                .addTo(map);
-
-                // Hàm cập nhật tọa độ vào input ẩn
-                function updateCoordinates(lngLat) {
-                    document.getElementById('longitudeInput').value = lngLat.lng.toFixed(6);
-                    document.getElementById('latitudeInput').value = lngLat.lat.toFixed(6);
-                    document.getElementById('lngDisplay').textContent = lngLat.lng.toFixed(6);
-                    document.getElementById('latDisplay').textContent = lngLat.lat.toFixed(6);
-                }
-
-                // Sự kiện khi marker được kéo thả xong
-                marker.on('dragend', () => {
-                    const lngLat = marker.getLngLat();
-                    updateCoordinates(lngLat);
-                    // Bạn có thể thêm logic geocode ngược để lấy địa chỉ từ tọa độ nếu cần
+                    color: "#007bff" // Changed marker color to primary blue
                 });
 
-                // Sự kiện khi nhấp vào bản đồ
-                map.on('click', (e) => {
-                    marker.setLngLat(e.lngLat);
-                    updateCoordinates(e.lngLat);
+                mapMarker.on('dragend', () => {
+                    updateCoordinates(mapMarker.getLngLat());
                 });
 
-                // Thêm Geocoder (ô tìm kiếm địa chỉ)
+                mapInstance.on('click', (e) => {
+                    if (e.lngLat) {
+                        placeAndAddMarker(e.lngLat);
+                        mapInstance.panTo(e.lngLat);
+                    }
+                });
+
                 const geocoder = new MapboxGeocoder({
                     accessToken: mapboxgl.accessToken,
                     mapboxgl: mapboxgl,
-                    marker: false, // Không tự động thêm marker của Geocoder, chúng ta dùng marker riêng
+                    marker: false,
                     placeholder: "Tìm kiếm địa điểm..."
                 });
 
-                document.getElementById('mapbox-geocoder-container').appendChild(geocoder.onAdd(map));
+                const geocoderContainer = document.getElementById('mapbox-geocoder-container');
+                if (geocoderContainer) {
+                    geocoderContainer.innerHTML = ''; // Clear existing content
+                    geocoderContainer.appendChild(geocoder.onAdd(mapInstance));
+                } else {
+                    console.error("Mapbox geocoder container not found.");
+                }
 
-                // Sự kiện khi chọn một kết quả từ Geocoder
                 geocoder.on('result', (e) => {
-                    const coords = e.result.geometry.coordinates; // [lng, lat]
-                    const lngLat = { lng: coords[0], lat: coords[1] };
-                    marker.setLngLat(lngLat);
-                    map.flyTo({ center: lngLat, zoom: 15 });
-                    updateCoordinates(lngLat);
+                    if (e.result && e.result.geometry && e.result.geometry.coordinates) {
+                        const coords = e.result.geometry.coordinates; // [lng, lat]
+                        const lngLat = { lng: coords[0], lat: coords[1] };
+                        placeAndAddMarker(lngLat);
+                        mapInstance.flyTo({ center: lngLat, zoom: 15 });
+                    }
                 });
-                 // Gọi khi bản đồ sẵn sàng để đảm bảo marker được hiển thị nếu có vị trí ban đầu
-                map.on('load', () => {
-                    const initialLat = parseFloat(document.getElementById('latitudeInput').value);
-                    const initialLng = parseFloat(document.getElementById('longitudeInput').value);
-                    if (!isNaN(initialLat) && !isNaN(initialLng)) {
-                        const initialPos = [initialLng, initialLat];
-                        marker.setLngLat(initialPos);
-                        map.setCenter(initialPos);
+
+                mapInstance.on('load', () => {
+                    console.log("Mapbox map loaded.");
+                    // Attempt to get user's current location if no coordinates are pre-filled
+                    if (!latitudeInput.value && !longitudeInput.value) {
+                        attemptGeolocation();
                     } else {
-                         // Nếu không có tọa độ ban đầu, thử lấy vị trí hiện tại của người dùng (cần sự cho phép)
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(position => {
-                                const userLngLat = [position.coords.longitude, position.coords.latitude];
-                                map.setCenter(userLngLat);
-                                // Không tự động đặt marker, để người dùng tự chọn
-                            }, () => {
-                                console.warn('Không thể lấy vị trí hiện tại của người dùng.');
-                            });
+                        // If coordinates exist (e.g., from validation failure), set marker and center map
+                        const initialLat = parseFloat(latitudeInput.value);
+                        const initialLng = parseFloat(longitudeInput.value);
+                        if (!isNaN(initialLat) && !isNaN(initialLng)) {
+                            const initialPos = { lng: initialLng, lat: initialLat };
+                            placeAndAddMarker(initialPos);
+                            mapInstance.setCenter(initialPos);
+                            mapInstance.setZoom(15);
+                            console.log("Map loaded and marker set on pre-filled coordinates:", initialPos);
+                        } else {
+                             // Fallback to geolocation if pre-filled are invalid
+                             attemptGeolocation();
                         }
                     }
                 });
 
+                function attemptGeolocation() {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(position => {
+                            const userLngLat = [position.coords.longitude, position.coords.latitude];
+                            mapInstance.setCenter(userLngLat);
+                            mapInstance.setZoom(13); // Zoom closer to user location
+                            console.log("Map centered on user's geolocation.");
+                        }, () => {
+                            console.warn('Không thể lấy vị trí hiện tại của người dùng.');
+                            // Fallback to default center if geolocation fails
+                            mapInstance.setCenter([105.804817, 21.028511]); // Hanoi
+                            mapInstance.setZoom(11);
+                        });
+                    } else {
+                        console.warn("Geolocation is not supported by this browser.");
+                    }
+                }
+            } // End of initializeMapbox function
 
-            } // Kết thúc hàm initializeMapbox
-
-            // Chạy hàm khởi tạo bản đồ Mapbox
-            // Đảm bảo nó được gọi sau khi các script Mapbox đã tải
-            // Thư viện Mapbox thường tự xử lý việc này nếu bạn đặt script theo đúng thứ tự.
-            // Hoặc bạn có thể dùng sự kiện onload của script Mapbox nếu cần.
-            // Hiện tại, chỉ cần đặt nó trong DOMContentLoaded là đủ nếu script Mapbox được tải trước.
-             document.addEventListener('DOMContentLoaded', initializeMapbox);
-
-
-        </script>
-    }
-    else
-    {
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                 console.warn("Mapbox Access Token is not configured. Map functionality will be disabled.");
-                 const mapDiv = document.getElementById('map-mapbox');
-                 if (mapDiv && !mapDiv.querySelector('.alert')) {
-                    // Thông báo đã được xử lý bằng HTML ở trên rồi
-                 }
-            });
-        </script>
-    }
+            // Check if Mapbox libraries are loaded before initializing
+            if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
+                initializeMapbox();
+            } else {
+                console.error("Mapbox GL JS or MapboxGeocoder not loaded. Waiting for DOMContentLoaded and Mapbox scripts.");
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
+                        initializeMapbox();
+                    } else {
+                        console.error("Mapbox libraries still not loaded after DOMContentLoaded. Displaying error message.");
+                        const mapDiv = document.getElementById('map-mapbox');
+                        if (mapDiv && !mapDiv.querySelector('.alert')) {
+                            mapDiv.innerHTML = '<div class="alert alert-danger h-100 d-flex align-items-center justify-content-center flex-column text-center p-3"><i class="fas fa-exclamation-triangle fa-2x mb-3 text-danger"></i><p class="mb-0">Không thể tải thư viện bản đồ. Vui lòng kiểm tra kết nối và thử lại.</p></div>';
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 }

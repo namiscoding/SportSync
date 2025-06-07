@@ -89,6 +89,13 @@ namespace SportSync.Web.Controllers
             return View();
         }
 
+        [HttpGet]
+        [AllowAnonymous] 
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
         [HttpPost]
         [AllowAnonymous]
         [Route("Account/SendRegistrationOtp")]
@@ -123,7 +130,7 @@ namespace SportSync.Web.Controllers
 
             try
             {
-                await _smsSender.SendSmsAsync(normalizedPhoneNumber, $"Mã OTP đăng ký SportSync của bạn là: {otpCode}");
+                await _smsSender.SendSmsAsync(normalizedPhoneNumber, $"Ma OTP cua ban la: {otpCode}");
                 _logger.LogInformation("SendRegistrationOtp: OTP sent successfully to {PhoneNumber}.", normalizedPhoneNumber);
                 return Ok(new { success = true, message = "Mã OTP đã được gửi đến số điện thoại của bạn." });
             }
@@ -211,15 +218,7 @@ namespace SportSync.Web.Controllers
                 return BadRequest(new { success = false, message = "Vui lòng xác thực OTP ở bước trước." });
             }
 
-            // **THAY ĐỔI Ở ĐÂY: Bỏ qua việc kiểm tra lại sessionOtp và model.OtpCode ở đây**
-            // Chúng ta tin tưởng vào cờ OtpVerifiedFlagKeyPrefix.
-            // Nếu muốn an toàn hơn, bạn có thể giữ lại việc kiểm tra model.OtpCode với sessionOtp,
-            // nhưng điều đó có nghĩa là OTP vẫn phải được lưu trong session cho đến bước này.
-            // Hiện tại, chúng ta sẽ chỉ dựa vào cờ.
-
-            // Xóa cờ khỏi session sau khi đã kiểm tra
-            // OTP và Expiry có thể đã được xóa hoặc sẽ hết hạn tự nhiên.
-            // Để chắc chắn, có thể xóa cả OTP và Expiry nếu bạn muốn.
+           
             HttpContext.Session.Remove(OtpVerifiedFlagKeyPrefix + model.PhoneNumber);
             HttpContext.Session.Remove(OtpSessionKeyPrefix + model.PhoneNumber); // Xóa luôn OTP sau khi dùng cờ
             HttpContext.Session.Remove(OtpExpirySessionKeyPrefix + model.PhoneNumber);
@@ -380,43 +379,46 @@ namespace SportSync.Web.Controllers
         // Action mới để gửi OTP cho Quên Mật Khẩu
         [HttpPost]
         [AllowAnonymous]
-        [Route("Account/SendPasswordResetOtp")]
         public async Task<IActionResult> SendPasswordResetOtp([FromBody] ForgotPasswordViewModel model)
         {
-            if (model == null || string.IsNullOrEmpty(model.PhoneNumber))
-                return BadRequest(new { success = false, message = "Vui lòng cung cấp số điện thoại." });
-
-            string normalizedPhoneNumber = NormalizePhoneNumberToE164(model.PhoneNumber);
-            if (string.IsNullOrEmpty(normalizedPhoneNumber))
-                return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
-
-            var user = await _userManager.FindByNameAsync(normalizedPhoneNumber);
-            if (user == null || string.IsNullOrEmpty(user.PasswordHash)) // Chỉ cho reset nếu user tồn tại và có mật khẩu
-            {
-                _logger.LogWarning("SendPasswordResetOtp: User not found or no password set for {PhoneNumber}.", normalizedPhoneNumber);
-                // Trả về success = true để không tiết lộ SĐT có tồn tại hay không, nhưng không gửi OTP
-                return Ok(new { success = true, message = "Nếu số điện thoại của bạn đã đăng ký, mã OTP sẽ được gửi." });
-            }
-
-            var otpCode = new Random().Next(100000, 999999).ToString();
-            var otpExpiry = DateTime.UtcNow.AddMinutes(5);
-            string sessionKeyOtp = OtpSessionKeyPrefix + normalizedPhoneNumber + "_Reset";
-            string sessionKeyExpiry = OtpExpirySessionKeyPrefix + normalizedPhoneNumber + "_Reset";
-
-            HttpContext.Session.SetString(sessionKeyOtp, otpCode);
-            HttpContext.Session.SetString(sessionKeyExpiry, otpExpiry.ToString("o"));
-            HttpContext.Session.Remove(OtpVerifiedFlagKeyPrefix + normalizedPhoneNumber + "_Reset"); // Xóa cờ cũ
-
-            _logger.LogInformation("SendPasswordResetOtp: Generated OTP {OtpCode} for {PhoneNumber}", otpCode, normalizedPhoneNumber);
             try
             {
-                await _smsSender.SendSmsAsync(normalizedPhoneNumber, $"Mã OTP đặt lại mật khẩu SportSync của bạn là: {otpCode}");
+                if (model == null || string.IsNullOrEmpty(model.PhoneNumber))
+                {
+                    return BadRequest(new { success = false, message = "Vui lòng cung cấp số điện thoại." });
+                }
+
+                string normalizedPhoneNumber = NormalizePhoneNumberToE164(model.PhoneNumber);
+                if (string.IsNullOrEmpty(normalizedPhoneNumber))
+                {
+                    return BadRequest(new { success = false, message = "Số điện thoại không hợp lệ." });
+                }
+
+                var user = await _userManager.FindByNameAsync(normalizedPhoneNumber);
+                if (user == null || string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    _logger.LogWarning("SendPasswordResetOtp: User not found or no password set for {PhoneNumber}.", normalizedPhoneNumber);
+                    // Luôn trả về thông báo thành công để không tiết lộ SĐT có tồn tại trong hệ thống hay không
+                    return Ok(new { success = true, message = "Nếu số điện thoại của bạn đã đăng ký, mã OTP sẽ được gửi." });
+                }
+
+                var otpCode = new Random().Next(100000, 999999).ToString();
+                var otpExpiry = DateTime.UtcNow.AddMinutes(5);
+                string sessionKeyOtp = OtpSessionKeyPrefix + normalizedPhoneNumber + "_Reset";
+                string sessionKeyExpiry = OtpExpirySessionKeyPrefix + normalizedPhoneNumber + "_Reset";
+
+                HttpContext.Session.SetString(sessionKeyOtp, otpCode);
+                HttpContext.Session.SetString(sessionKeyExpiry, otpExpiry.ToString("o"));
+
+                _logger.LogInformation("SendPasswordResetOtp: Generated OTP {OtpCode} for {PhoneNumber}", otpCode, normalizedPhoneNumber);
+                await _smsSender.SendSmsAsync(normalizedPhoneNumber, $"Ma OTP cua ban la: {otpCode}");
+
                 return Ok(new { success = true, message = "Mã OTP đã được gửi đến số điện thoại của bạn." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SendPasswordResetOtp: Error sending OTP to {PhoneNumber}.", normalizedPhoneNumber);
-                return StatusCode(500, new { success = false, message = "Lỗi gửi OTP. Vui lòng thử lại." });
+                _logger.LogError(ex, "SendPasswordResetOtp: An unexpected error occurred for phone number {PhoneNumber}.", model?.PhoneNumber);
+                return StatusCode(500, new { success = false, message = "Đã xảy ra lỗi hệ thống khi gửi OTP. Vui lòng thử lại." });
             }
         }
 
