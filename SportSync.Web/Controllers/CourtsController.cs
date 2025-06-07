@@ -60,4 +60,15 @@ public sealed class CourtsController : Controller
             userLat, userLng, radiusKm, baseFilter, ct);
         return Json(data);
     }
+  
+    [HttpGet("/Court/Details/{id:int}")]
+    public async Task<IActionResult> Details(int id, DateOnly? date)
+    {
+        var day = date ?? DateOnly.FromDateTime(DateTime.Today);
+        var dto = await _searchSvc.GetDetailAsync(id, day);
+        if (dto == null) return NotFound();
+
+        ViewBag.SelectedDate = day;
+        return View(dto);                   
+    }
 }
