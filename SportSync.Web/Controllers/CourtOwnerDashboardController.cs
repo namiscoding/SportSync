@@ -2,9 +2,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SportSync.Business.Interfaces; // Thêm
 using SportSync.Data.Entities;
-using SportSync.Business.Interfaces; // Thêm using cho ICourtComplexService
-using System.Linq; // Thêm using cho Any()
 using System.Threading.Tasks;
 
 namespace SportSync.Web.Controllers
@@ -14,36 +13,35 @@ namespace SportSync.Web.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<CourtOwnerDashboardController> _logger;
-        private readonly ICourtComplexService _courtComplexService; // Inject service
+        private readonly ICourtOwnerDashboardService _dashboardService; // Sử dụng service mới
 
         public CourtOwnerDashboardController(
             UserManager<ApplicationUser> userManager,
             ILogger<CourtOwnerDashboardController> logger,
-            ICourtComplexService courtComplexService) // Thêm service vào constructor
+            ICourtOwnerDashboardService dashboardService) // Inject service mới
         {
             _userManager = userManager;
             _logger = logger;
-            _courtComplexService = courtComplexService;
+            _dashboardService = dashboardService;
         }
 
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
+            if (user == null) return Challenge();
+
+            _logger.LogInformation("User {UserId} accessing CourtOwnerDashboard.", user.Id);
+
+            var dashboardData = await _dashboardService.GetDashboardDataAsync(user.Id);
+
+            if (!dashboardData.HasComplex)
             {
-                return Challenge();
+                _logger.LogInformation("User {UserId} has no court complex. Redirecting to Create page.", user.Id);
+                TempData["InfoMessage"] = "Chào mừng đến với khu vực Chủ sân! Hãy bắt đầu bằng cách tạo khu phức hợp sân của bạn.";
+                return RedirectToAction("Create", "CourtComplex");
             }
 
-            _logger.LogInformation("User {UserId} accessed CourtOwnerDashboard.", user.Id);
-
-            // Kiểm tra xem chủ sân đã có khu phức hợp nào chưa
-            var courtComplexes = await _courtComplexService.GetCourtComplexesByOwnerAsync(user.Id);
-            var existingComplex = courtComplexes.FirstOrDefault(); // Chủ sân chỉ có 1 complex
-
-            ViewBag.HasCourtComplex = existingComplex != null;
-            ViewBag.CourtComplexName = existingComplex?.Name; // Truyền tên complex nếu có
-
-            return View();
+            return View(dashboardData);
         }
     }
 }
