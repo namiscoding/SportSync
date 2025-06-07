@@ -18,11 +18,12 @@
         <h1 class="display-5 fw-bold text-primary mb-2 mb-md-0">@ViewData["Title"]</h1>
     </div>
     <p class="text-muted lead-text mt-1">Điền thông tin chi tiết về khu phức hợp sân của bạn và sử dụng bản đồ để chọn vị trí chính xác.</p>
-    
+
     <hr class="my-4">
 
     <div class="row justify-content-center">
-        <div class="col-lg-10"> @* Increased column width slightly for better form flow *@
+        <div class="col-lg-10">
+            @* Increased column width slightly for better form flow *@
             <form asp-action="Create" method="post" enctype="multipart/form-data" id="createComplexForm">
                 @if (TempData["SuccessMessage"] != null)
                 {
@@ -57,7 +58,8 @@
                     <div class="card-header bg-primary text-white border-0 py-3 rounded-top-4">
                         <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Thông tin chung</h5>
                     </div>
-                    <div class="card-body p-4 p-md-5"> @* Adjusted padding for mobile *@
+                    <div class="card-body p-4 p-md-5">
+                        @* Adjusted padding for mobile *@
                         <div class="row g-4">
                             <div class="col-lg-6">
                                 <div class="mb-4">
@@ -102,7 +104,20 @@
                             <div class="col-lg-6">
                                 <h5 class="mb-3 text-secondary"><i class="fas fa-map-marked-alt me-2"></i>Vị trí trên bản đồ</h5>
                                 <div id="mapbox-geocoder-container" class="mb-3"></div>
-                                <div id="map-mapbox" class="map-container"> @* Added map-container class *@
+
+                                <div class="mb-3 p-3 bg-light rounded-3 border">
+                                    <label for="googleMapsLink" class="form-label fw-bold small">Dán link Google Maps để tự động định vị:</label>
+                                    <div class="input-group">
+                                        <input type="text" id="googleMapsLink" class="form-control rounded-start-pill" placeholder="https://www.google.com/maps/..." />
+                                        <button class="btn btn-outline-primary rounded-end-pill" type="button" id="convertMapLinkBtn">
+                                            <i class="fas fa-magic me-1"></i> Chuyển đổi
+                                        </button>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Hỗ trợ các link dạng <code>@@latitude!4dlongitude</code>.</small>
+                                </div>
+
+                                <div id="map-mapbox" class="map-container">
+                                    @* Added map-container class *@
                                     @if (string.IsNullOrEmpty(mapboxAccessToken) || mapboxAccessToken == "YOUR_MAPBOX_ACCESS_TOKEN")
                                     {
                                         <div class="alert alert-warning h-100 d-flex align-items-center justify-content-center flex-column text-center p-3">
@@ -196,9 +211,10 @@
             color: #007bff;
             transition: color 0.2s ease-in-out;
         }
-        .breadcrumb-item a:hover {
-            color: #0056b3;
-        }
+
+            .breadcrumb-item a:hover {
+                color: #0056b3;
+            }
 
         .display-5.fw-bold {
             color: #007bff !important; /* Primary blue for main title */
@@ -214,23 +230,32 @@
             font-size: 1.1rem;
             padding: 1rem 1.5rem;
         }
+
         .alert-success {
             background-color: #d4edda;
             color: #155724;
             border-color: #c3e6cb;
         }
+
         .alert-danger {
             background-color: #f8d7da;
             color: #721c24;
             border-color: #f5c6cb;
         }
+
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
             opacity: 0;
         }
+
         @@keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         /* Card Styles */
@@ -246,10 +271,11 @@
             font-size: 1.25rem;
             padding: 0.9rem 1.5rem;
         }
-        .card-header h5 {
-            font-size: 1.25rem; /* Ensure consistent heading size */
-        }
-        
+
+            .card-header h5 {
+                font-size: 1.25rem; /* Ensure consistent heading size */
+            }
+
         .form-label.fw-bold {
             color: #343a40; /* Darker color for labels */
         }
@@ -258,17 +284,19 @@
             border-color: #ced4da;
             transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+
         .form-control-lg, .form-select-lg {
             padding: 0.5rem 1rem;
             font-size: 1.1rem;
             height: calc(2.25em + 1rem + 2px); /* Adjust height for lg inputs */
         }
+
         .form-control:focus, .form-select:focus {
             border-color: #80bdff;
             box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
             outline: none;
         }
-        
+
         /* Mapbox Styles */
         .map-container {
             height: 350px; /* Default height */
@@ -277,27 +305,32 @@
             overflow: hidden; /* Ensure map doesn't overflow border radius */
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Subtle shadow for map */
         }
+
         .mapboxgl-canvas {
             border-radius: 1rem; /* Ensure map canvas also has rounded corners */
         }
+
         .mapboxgl-ctrl-geocoder {
             width: 100%;
             max-width: none;
             font-size: 1rem;
             line-height: 1.5;
         }
-        .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input {
-            height: calc(2.25em + .75rem + 2px); /* Adjust to match form-control-lg height */
-            padding: .5rem 1rem; /* Adjust padding */
-            border-radius: 2rem; /* Make it rounded like the other inputs */
-            border: 1px solid #ced4da;
-            box-shadow: none;
-        }
-        .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
-            outline: none;
-        }
+
+            .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input {
+                height: calc(2.25em + .75rem + 2px); /* Adjust to match form-control-lg height */
+                padding: .5rem 1rem; /* Adjust padding */
+                border-radius: 2rem; /* Make it rounded like the other inputs */
+                border: 1px solid #ced4da;
+                box-shadow: none;
+            }
+
+                .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input:focus {
+                    border-color: #80bdff;
+                    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+                    outline: none;
+                }
+
         .mapboxgl-marker {
             color: #007bff; /* Primary blue marker */
         }
@@ -308,78 +341,95 @@
             border-color: #007bff;
             transition: all 0.2s ease-in-out;
         }
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-            transform: translateY(-1px);
-        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+                transform: translateY(-1px);
+            }
 
         .btn-outline-secondary {
             color: #6c757d;
             border-color: #6c757d;
             transition: all 0.2s ease-in-out;
         }
-        .btn-outline-secondary:hover {
-            background-color: #6c757d;
-            color: #fff;
-            transform: translateY(-1px);
-        }
+
+            .btn-outline-secondary:hover {
+                background-color: #6c757d;
+                color: #fff;
+                transform: translateY(-1px);
+            }
 
         /* --- Responsive Adjustments --- */
         @@media (max-width: 767.98px) { /* Small devices (phones) */
-            .display-5.fw-bold {
-                font-size: 2rem !important; /* Smaller title on mobile */
-            }
+            .display-5.fw-bold
 
-            .lead-text {
-                font-size: 0.95rem;
-                text-align: center;
-            }
+        {
+            font-size: 2rem !important; /* Smaller title on mobile */
+        }
 
-            .card-header {
-                font-size: 1.1rem;
-                padding: 0.75rem 1rem;
-            }
+        .lead-text {
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .card-header {
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
+        }
+
             .card-header h5 {
                 font-size: 1.1rem;
             }
 
-            .card-body {
-                padding: 1.5rem !important; /* Adjust card body padding */
-            }
+        .card-body {
+            padding: 1.5rem !important; /* Adjust card body padding */
+        }
 
-            .form-control-lg, .form-select-lg {
-                padding: 0.4rem 0.8rem;
-                font-size: 1rem;
-                height: calc(2.25em + .8rem + 2px);
-            }
-            
-            .map-container {
-                height: 250px; /* Shorter map on mobile */
-            }
+        .form-control-lg, .form-select-lg {
+            padding: 0.4rem 0.8rem;
+            font-size: 1rem;
+            height: calc(2.25em + .8rem + 2px);
+        }
 
-            /* Buttons at bottom */
-            .d-flex.flex-column.flex-md-row {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
+        .map-container {
+            height: 250px; /* Shorter map on mobile */
+        }
+
+        /* Buttons at bottom */
+        .d-flex.flex-column.flex-md-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
             .d-flex.flex-column.flex-md-row > .btn {
                 width: 100% !important; /* Full width buttons on mobile */
                 margin-left: 0 !important;
                 margin-right: 0 !important;
                 margin-bottom: 1rem !important; /* Space between stacked buttons */
             }
-            .d-flex.flex-column.flex-md-row > .btn:last-child {
-                margin-bottom: 0 !important;
-            }
+
+                .d-flex.flex-column.flex-md-row > .btn:last-child {
+                    margin-bottom: 0 !important;
+                }
+
         }
     </style>
 }
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    @* --- Tải thư viện Mapbox từ CDN --- *@
+    @if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
+    {
+        <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+        <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    }
+
+    @* --- Mã JavaScript tùy chỉnh của bạn (sau khi các thư viện Mapbox đã được tải) --- *@
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
             // Smooth scroll to alerts if they are visible
@@ -426,7 +476,7 @@
                     selectElement.disabled = true;
                 }
             }
-            
+
             // Initial load for cities
             await populateDropdown(apiBaseUrl + 'p/', citySelect, 'Chọn Tỉnh/Thành phố', null);
 
@@ -578,23 +628,94 @@
                 }
             } // End of initializeMapbox function
 
-            // Check if Mapbox libraries are loaded before initializing
-            if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
-                initializeMapbox();
-            } else {
-                console.error("Mapbox GL JS or MapboxGeocoder not loaded. Waiting for DOMContentLoaded and Mapbox scripts.");
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
-                        initializeMapbox();
+            // --- Google Maps Link Conversion Logic ---
+            const googleMapsLinkInput = document.getElementById('googleMapsLink');
+            const convertMapLinkBtn = document.getElementById('convertMapLinkBtn');
+
+            if (googleMapsLinkInput && convertMapLinkBtn) {
+                convertMapLinkBtn.addEventListener('click', parseGoogleMapsLink);
+                // Optional: Trigger conversion on paste
+                // googleMapsLinkInput.addEventListener('paste', () => setTimeout(parseGoogleMapsLink, 0));
+                // googleMapsLinkInput.addEventListener('keydown', (e) => {
+                //     if (e.key === 'Enter') {
+                //         e.preventDefault(); // Prevent form submission
+                //         parseGoogleMapsLink();
+                //     }
+                // });
+            }
+
+            function parseGoogleMapsLink() {
+                const link = googleMapsLinkInput.value;
+                let lat = null;
+                let lng = null;
+
+                const regex1 = /@@(-?\d +\.?\d *),(-?\d+\.?\d*),(\d+(\.\d*)?)z/;
+                const match1 = link.match(regex1);
+                if (match1) {
+                    lat = parseFloat(match1[1]);
+                    lng = parseFloat(match1[2]);
+                    console.log("Matched regex1: ", lat, lng);
+                }
+
+                // Pattern 2: !3dlatitude!4dlongitude (often found in longer URLs)
+                if (lat === null && lng === null) {
+                    const regex2 = /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/;
+                    const match2 = link.match(regex2);
+                    if (match2) {
+                        lat = parseFloat(match2[1]);
+                        lng = parseFloat(match2[2]);
+                        console.log("Matched regex2: ", lat, lng);
+                    }
+                }
+
+                if (lat === null && lng === null) {
+                    const regex3 = /maps\/place\/.*\/@@(-?\d +\.?\d *),(-?\d+\.?\d*)/;
+                    const match3 = link.match(regex3);
+                    if (match3) {
+                        lat = parseFloat(match3[1]);
+                        lng = parseFloat(match3[2]);
+                        console.log("Matched regex3: ", lat, lng);
+                    }
+                }
+
+                if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+                    const coords = { lng: lng, lat: lat };
+                    if (mapInstance && mapMarker) {
+                        placeAndAddMarker(coords);
+                        mapInstance.flyTo({ center: coords, zoom: 15 }); // Fly to new location
+                        googleMapsLinkInput.classList.remove('is-invalid');
+                        googleMapsLinkInput.classList.add('is-valid');
                     } else {
-                        console.error("Mapbox libraries still not loaded after DOMContentLoaded. Displaying error message.");
+                        console.error("Mapbox map or marker not initialized.");
+                        // Maybe show an alert
+                        alert("Bản đồ chưa sẵn sàng để định vị. Vui lòng thử lại sau.");
+                    }
+                } else {
+                    googleMapsLinkInput.classList.add('is-invalid');
+                    googleMapsLinkInput.classList.remove('is-valid');
+                    alert("Không thể trích xuất tọa độ từ liên kết Google Maps này. Vui lòng đảm bảo link có dạng `@@latitude,longitude` hoặc chứa `!3dlatitude!4dlongitude`.");
+                    console.warn("Could not parse coordinates from Google Maps link: ", link);
+                }
+            }
+
+
+            // Call initializeMapbox after DOMContentLoaded, as Mapbox scripts are included in this section
+            // No need for redundant checks as this script runs after the Mapbox library scripts.
+            // Ensure Mapbox is initialized only if token is valid.
+        @if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
+        {
+            <text>initializeMapbox();</text>
+        }
+        else
+        {
+            <text>
+                        console.warn("Mapbox Access Token is not configured. Map functionality will be disabled.");
                         const mapDiv = document.getElementById('map-mapbox');
                         if (mapDiv && !mapDiv.querySelector('.alert')) {
-                            mapDiv.innerHTML = '<div class="alert alert-danger h-100 d-flex align-items-center justify-content-center flex-column text-center p-3"><i class="fas fa-exclamation-triangle fa-2x mb-3 text-danger"></i><p class="mb-0">Không thể tải thư viện bản đồ. Vui lòng kiểm tra kết nối và thử lại.</p></div>';
+                            mapDiv.innerHTML = '<div class="alert alert-warning h-100 d-flex align-items-center justify-content-center flex-column text-center p-3"><i class="fas fa-exclamation-triangle fa-2x mb-3 text-warning"></i><p class="mb-0">Vui lòng cung cấp Mapbox Access Token hợp lệ để hiển thị bản đồ.</p></div>';
                         }
-                    }
-                });
-            }
+            </text>
+        }
         });
     </script>
 }
