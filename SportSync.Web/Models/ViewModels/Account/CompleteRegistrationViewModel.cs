@@ -9,10 +9,10 @@ namespace SportSync.Web.Models.ViewModels.Account
         public string PhoneNumber { get; set; }
 
         // Bỏ FirebaseIdToken, thêm OtpCode
-        [Required(ErrorMessage = "Mã OTP là bắt buộc.")]
-        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP phải có 6 chữ số.")]
-        [Display(Name = "Mã OTP")]
-        public string OtpCode { get; set; }
+        //[Required(ErrorMessage = "Mã OTP là bắt buộc.")]
+        //[StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP phải có 6 chữ số.")]
+        //[Display(Name = "Mã OTP")]
+        //public string OtpCode { get; set; }
 
         [Required(ErrorMessage = "Họ và Tên là bắt buộc.")]
         [StringLength(100, ErrorMessage = "Họ và Tên không được vượt quá 100 ký tự.")]
