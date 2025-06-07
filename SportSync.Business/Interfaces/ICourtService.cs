@@ -23,7 +23,5 @@ namespace SportSync.Business.Interfaces
         Task<(bool Success, string NewStatus, string ErrorMessage)> ToggleCourtStatusAsync(int courtId, string ownerUserId);
         Task<Court> GetCourtForEditAsync(int courtId, string ownerUserId); // Lấy entity để map sang ViewModel
         Task<(bool Success, IEnumerable<string> Errors)> UpdateCourtAsync(UpdateCourtDto dto, string ownerUserId);
-
-
     }
 }   

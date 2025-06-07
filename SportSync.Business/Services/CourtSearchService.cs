@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using SportSync.Data.Entities;
 
 namespace SportSync.Business.Services
 {
@@ -242,6 +243,72 @@ namespace SportSync.Business.Services
 
             return list;
         }
+        public async Task<CourtDetailDto?> GetDetailAsync(int courtId,
+                                                          DateOnly date,
+                                                          CancellationToken ct = default)
+        {
+
+            var court = await _db.Courts
+                .AsNoTracking()
+                .Include(c => c.SportType)
+                .Include(c => c.CourtAmenities)
+                    .ThenInclude(ca => ca.Amenity)
+                .Include(c => c.TimeSlots)
+                .FirstOrDefaultAsync(c => c.CourtId == courtId
+                                       && c.IsActiveByAdmin
+                                       && c.StatusByOwner == CourtStatusByOwner.Available,
+                                     ct);
+
+            if (court is null) return null;
+
+            int dow = (int)date.DayOfWeek;           
+
+            var activeSlots = court.TimeSlots
+                .Where(s => s.IsActiveByOwner &&
+                            (s.DayOfWeek == null                      
+                             || (int)s.DayOfWeek!.Value == dow))       
+                .ToList();
+
+            var available = new List<TimeSlotDto>();
+            foreach (var s in activeSlots)
+            {
+                bool booked = await _db.BookedSlots
+                    .AnyAsync(bs => bs.TimeSlotId == s.TimeSlotId
+                                 && bs.SlotDate == date, ct);
+
+                bool blocked = await _db.BlockedCourtSlots
+                    .AnyAsync(bc => bc.CourtId == courtId
+                                 && bc.BlockDate == date
+                                 && bc.StartTime == s.StartTime, ct);
+
+                if (!booked && !blocked)
+                {
+                    available.Add(new TimeSlotDto
+                    {
+                        TimeSlotId = s.TimeSlotId,
+                        Start = s.StartTime,
+                        End = s.EndTime,
+                        Price = s.Price
+                    });
+                }
+            }
+
+            var amenities = (court.CourtAmenities ?? Enumerable.Empty<CourtAmenity>())
+                .Where(ca => ca.Amenity != null)
+                .Select(ca => new AmenityDto(ca.Amenity!.Name));
+
+            return new CourtDetailDto
+            {
+                CourtId = court.CourtId,
+                Name = court.Name,
+                SportTypeName = court.SportType.Name,
+                ImageUrl = court.MainImageCloudinaryUrl,
+                Amenities = amenities,                       
+                AvailableSlots = available.OrderBy(s => s.Start)  
+                                              .ToList()
+            };
+        }
+
 
         private static double DistanceKm(
     double lat1, double lon1,
