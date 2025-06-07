@@ -1,0 +1,451 @@
+﻿    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        --card-hover-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .page-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 30px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="white" opacity="0.1"><polygon points="0,100 1000,0 1000,100"/></svg>');
+            background-size: cover;
+        }
+
+        .page-header .container {
+            position: relative;
+            z-index: 1;
+        }
+
+    .breadcrumb {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 25px;
+        padding: 0.5rem 1rem;
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .breadcrumb-item a {
+        color: rgba(255,255,255,0.9);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+        .breadcrumb-item a:hover {
+            color: white;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+    .breadcrumb-item.active {
+        color: rgba(255,255,255,0.8);
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 1rem 0 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .add-btn {
+        background: var(--success-gradient);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 24px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-hover-shadow);
+            color: white;
+        }
+
+    .court-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        border: none;
+        overflow: hidden;
+        position: relative;
+    }
+
+        .court-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .court-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+        }
+
+            .court-card:hover::before {
+                opacity: 1;
+            }
+
+    .card-img-container {
+        position: relative;
+        overflow: hidden;
+        height: 220px;
+    }
+
+    .card-img-top {
+        height: 100%;
+        width: 100%;
+        object-fit: cover;
+        transition: var(--transition);
+    }
+
+    .court-card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.3);
+        z-index: 2;
+    }
+
+    .status-available {
+        background: rgba(40, 167, 69, 0.9);
+        color: white;
+    }
+
+    .status-maintenance {
+        background: rgba(255, 193, 7, 0.9);
+        color: #212529;
+    }
+
+    .status-closed {
+        background: rgba(108, 117, 125, 0.9);
+        color: white;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    .sport-type {
+        color: #718096;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .next-slot {
+        background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #28a745;
+    }
+
+    .next-slot-time {
+        color: #28a745;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .btn-group-custom {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .btn-modern {
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-weight: 600;
+        border: 2px solid;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 0.85rem;
+    }
+
+    .btn-info-modern {
+        background: linear-gradient(135deg, #17a2b8, #20c997);
+        border-color: transparent;
+        color: white;
+    }
+
+        .btn-info-modern:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+            color: white;
+        }
+
+    .btn-primary-modern {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+    }
+
+        .btn-primary-modern:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+
+    .btn-status {
+        width: 100%;
+        border-radius: 12px;
+        padding: 12px;
+        font-weight: 600;
+        border: none;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-pause {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: #212529;
+    }
+
+        .btn-pause:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+        }
+
+    .btn-resume {
+        background: var(--success-gradient);
+        color: white;
+    }
+
+        .btn-resume:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+        }
+
+    .btn-disabled {
+        background: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        margin: 2rem 0;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: #e2e8f0;
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1rem;
+    }
+
+    .empty-description {
+        color: #718096;
+        margin-bottom: 2rem;
+    }
+
+    .back-btn {
+        background: white;
+        color: #6c757d;
+        border: 2px solid #e2e8f0;
+        border-radius: 25px;
+        padding: 12px 24px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2rem;
+    }
+
+        .back-btn:hover {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            color: #495057;
+            transform: translateY(-1px);
+        }
+
+    .alert-modern {
+        border: none;
+        border-radius: var(--border-radius);
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--card-shadow);
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        background: var(--primary-gradient);
+        color: white;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        padding: 1.5rem;
+    }
+
+    .modal-body {
+        padding: 2rem 1.5rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .btn-modal {
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 600;
+        border: none;
+        transition: var(--transition);
+    }
+
+    .btn-cancel {
+        background: #e9ecef;
+        color: #495057;
+    }
+
+        .btn-cancel:hover {
+            background: #dee2e6;
+            color: #343a40;
+        }
+
+    .btn-confirm {
+        background: var(--warning-gradient);
+        color: white;
+    }
+
+        .btn-confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+        }
+
+        .btn-confirm.btn-success {
+            background: var(--success-gradient);
+        }
+
+            .btn-confirm.btn-success:hover {
+                box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+            }
+
+    @media (max-width: 768px) {
+        .page-title
+
+    {
+        font-size: 2rem;
+    }
+
+    .btn-group-custom {
+        grid-template-columns: 1fr;
+    }
+
+    .page-header {
+        padding: 2rem 0;
+    }
+
+    }
+
+    .fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
