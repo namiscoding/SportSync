@@ -1,0 +1,27 @@
+﻿@model SportSync.Web.Models.ViewModels.SportType.SportTypeViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<h2>Sửa loại sân</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" name="sportTypeId" value="@Model.SportTypeId" />
+    <div class="form-group">
+        <label>Tên loại sân</label>
+        <input type="text" name="name" class="form-control" value="@Model.Name" required />
+    </div>
+    <div class="form-group">
+        <label>Mô tả</label>
+        <textarea name="description" class="form-control">@Model.Description</textarea>
+    </div>
+    <div class="form-group">
+        <label>Hoạt động</label>
+        <input type="checkbox" name="isActive" @(Model.IsActive ? "checked" : "") />
+    </div>
+    <button type="submit" class="btn btn-primary">Lưu</button>
+    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

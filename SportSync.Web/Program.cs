@@ -6,42 +6,34 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using SportSync.Business.Interfaces;
 using SportSync.Business.Services;
+using CloudinaryDotNet.Core;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using SportSync.Data.Interfaces;
+using SportSync.Data.Repositories;
+using SportSync.Business.Settings;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-var firebaseCredentialPath = builder.Configuration["FirebaseAdminSdk:CredentialPath"]; 
-if (string.IsNullOrEmpty(firebaseCredentialPath))
-{
-    firebaseCredentialPath = Path.Combine(builder.Environment.ContentRootPath, "firebase-adminsdk.json");
-}
 
-if (File.Exists(firebaseCredentialPath))
-{
-    FirebaseApp.Create(new AppOptions()
-    {
-        Credential = GoogleCredential.FromFile(firebaseCredentialPath),
-    });
-    Console.WriteLine("Firebase Admin SDK initialized successfully."); // Log để kiểm tra
-}
-else
-{
-    // Log lỗi hoặc xử lý nếu không tìm thấy file credential
-    // Trong môi trường production, bạn có thể muốn ứng dụng không khởi động nếu Firebase Admin không thể khởi tạo.
-    Console.Error.WriteLine($"Firebase Admin SDK credential file not found at: {firebaseCredentialPath}. Firebase Admin SDK will not be initialized.");
-    // Hoặc: throw new FileNotFoundException("Firebase Admin SDK credential file not found.", firebaseCredentialPath);
-}
+// Cấu hình Session State
+builder.Services.AddDistributedMemoryCache(); // Cần thiết cho session
+builder.Services.AddSession(options =>
 
-// Add services to the container.
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(10); // Thời gian OTP và session tồn tại (ví dụ: 10 phút)
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true; // Đảm bảo cookie session hoạt động ngay cả khi người dùng chưa chấp nhận cookie policy
+});
+builder.Services.AddScoped<ICourtSearchService, CourtSearchService>();
 builder.Services.AddControllersWithViews();
-// 1. Lấy chuỗi kết nối từ appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// 2. Đăng ký ApplicationDbContext
+builder.Services.Configure<ESmsSettings>(builder.Configuration.GetSection("ESmsSettings"));
+builder.Services.AddHttpClient();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
     {
-        // Chỉ định assembly chứa migrations nếu DbContext ở project khác (SportBookingWebsite.Data)
         sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
     }));
 
@@ -90,6 +82,21 @@ builder.Services.Configure<SportSync.Business.Settings.CloudinarySettings>(build
 builder.Services.AddScoped<SportSync.Business.Interfaces.IImageUploadService, SportSync.Business.Services.CloudinaryImageUploadService>();
 builder.Services.AddScoped<ICourtComplexService, CourtComplexService>();
 
+builder.Services.AddScoped<IApplicationUserService, ApplicationUserService>();
+builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<CourtOwnerManagementService>();
+builder.Services.AddScoped<CourtComplexManagementService>();
+builder.Services.AddScoped<ICourtService, CourtService>();
+builder.Services.AddScoped<CourtManagementService>();
+builder.Services.AddScoped<ISportTypeService, SportTypeService>();
+builder.Services.AddScoped<SportTypeManagementService>();
+builder.Services.AddScoped<ITimeSlotManagementService, TimeSlotManagementService>();
+builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
+builder.Services.AddScoped<ICourtOwnerDashboardService, CourtOwnerDashboardService>();
+builder.Services.AddScoped<SportSync.Business.Interfaces.ITimeSlotService, SportSync.Business.Services.TimeSlotService>();
+builder.Services.AddScoped<ISmsSender, ESmsSender>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -99,6 +106,12 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -106,24 +119,149 @@ using (var scope = app.Services.CreateScope())
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        await SeedRolesAsync(roleManager);
-        // Bạn có thể gọi thêm các phương thức seed data khác ở đây (ví dụ: seed admin user)
-        // await SeedAdminUserAsync(userManager, roleManager);
+        var context = services.GetRequiredService<ApplicationDbContext>();
+
+        // Đảm bảo role "Admin", "CourtOwner", "User" đã tồn tại
+        string[] roles = { "Admin", "CourtOwner", "User" };
+        foreach (var role in roles)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                await roleManager.CreateAsync(new IdentityRole(role));
+            }
+        }
+
+        // Tạo hoặc cập nhật tài khoản Admin (đã có trong ảnh của bạn)
+        var adminUser = await userManager.FindByIdAsync("abbbda5c-2b74-493c-a194-b0e276f8386");
+        if (adminUser != null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+        }
+
+        // Tạo dữ liệu mẫu cho User và CourtOwner
+        var userData = new[]
+        {
+            new { Role = "User", Phone = "+84912345678", Email = "user1@example.com", FullName = "User One" },
+            new { Role = "CourtOwner", Phone = "+84987654321", Email = "owner1@example.com", FullName = "Owner One" },
+            new { Role = "CourtOwner", Phone = "+84812345678", Email = "owner2@example.com", FullName = "Owner Two" }
+        };
+
+        foreach (var data in userData)
+        {
+            var user = await userManager.FindByEmailAsync(data.Email);
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = data.Phone,
+                    Email = data.Email,
+                    PhoneNumber = data.Phone,
+                    EmailConfirmed = true,
+                    PhoneNumberConfirmed = true
+                };
+                var result = await userManager.CreateAsync(user, "User@123"); // Mật khẩu mặc định
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(user, data.Role);
+                    context.UserProfiles.Add(new UserProfile
+                    {
+                        UserId = user.Id,
+                        FullName = data.FullName,
+                        RegisteredDate = DateTime.UtcNow,
+                        AccountStatusByAdmin = 0 // Active
+                    });
+                }
+            }
+        }
+
+        // Tạo dữ liệu mẫu cho SportTypes
+        if (!context.SportTypes.Any())
+        {
+            context.SportTypes.AddRange(new[]
+            {
+                new SportType { Name = "Bóng đá", Description = "Sân bóng đá 5 người", IsActive = true },
+                new SportType { Name = "Cầu lông", Description = "Sân cầu lông trong nhà", IsActive = true }
+            });
+        }
+
+        // Tạo dữ liệu mẫu cho Amenities
+        if (!context.Amenities.Any())
+        {
+            context.Amenities.AddRange(new[]
+            {
+                new Amenity { Name = "Đèn", Description = "Hệ thống chiếu sáng", IconCssClass = "fa-lightbulb", IsActive = true },
+                new Amenity { Name = "Mái che", Description = "Che mưa nắng", IconCssClass = "fa-umbrella", IsActive = true }
+            });
+        }
+
+        // Tạo dữ liệu mẫu cho CourtComplexes và Courts
+        var courtOwners = await userManager.GetUsersInRoleAsync("CourtOwner");
+        if (!context.CourtComplexes.Any())
+        {
+            var sportTypes = context.SportTypes.ToList();
+            int complexId = 1;
+            foreach (var owner in courtOwners)
+            {
+                var courtComplex = new CourtComplex
+                {
+                    OwnerUserId = owner.Id,
+                    Name = $"Complex {complexId}",
+                    Address = $"Address {complexId}, District {complexId}, City {complexId}",
+                    City = $"City {complexId}",
+                    District = $"District {complexId}",
+                    ApprovalStatus = SportSync.Data.Enums.ApprovalStatus.PendingApproval,
+                    IsActiveByOwner = true,
+                    IsActiveByAdmin = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.CourtComplexes.Add(courtComplex);
+
+                // Thêm Courts cho CourtComplex
+                context.Courts.AddRange(new[]
+                {
+                    new Court
+                    {
+                        CourtComplexId = complexId,
+                        SportTypeId = sportTypes[0].SportTypeId,
+                        Name = $"Sân A - {complexId}",
+                        DefaultSlotDurationMinutes = 60,
+                        AdvanceBookingDaysLimit = 7,
+                        StatusByOwner = SportSync.Data.Enums.CourtStatusByOwner.Available,
+                        IsActiveByAdmin = true,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    new Court
+                    {
+                        CourtComplexId = complexId,
+                        SportTypeId = sportTypes[1].SportTypeId,
+                        Name = $"Sân B - {complexId}",
+                        DefaultSlotDurationMinutes = 60,
+                        AdvanceBookingDaysLimit = 7,
+                        StatusByOwner = SportSync.Data.Enums.CourtStatusByOwner.Available,
+                        IsActiveByAdmin = true,
+                        CreatedAt = DateTime.UtcNow
+                    }
+                });
+                complexId++;
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
+        Console.WriteLine($"Error seeding data: {ex.Message}");
     }
 }
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 
 app.UseAuthentication(); 
-app.UseAuthorization(); 
-
+app.UseAuthorization();
+app.UseSession();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
@@ -132,7 +270,7 @@ app.Run();
 
 static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
 {
-    string[] roleNames = { "Admin", "CourtOwner", "User" };
+    string[] roleNames = { "Admin", "CourtOwner", "User", "StandardCourtOwner", "ProCourtOwner" };
     foreach (var roleName in roleNames)
     {
         var roleExist = await roleManager.RoleExistsAsync(roleName);

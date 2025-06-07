@@ -1,0 +1,232 @@
+﻿@model SportSync.Business.Dtos.BookingBillDto
+
+@{
+    ViewData["Title"] = $"Hóa Đơn Thanh Toán - #{Model.BookingId}";
+}
+
+<style>
+    .invoice-box {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 2.5rem;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 1rem;
+        line-height: 1.6rem;
+        color: #1f2937;
+    }
+
+        .invoice-box table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .invoice-box table td {
+                padding: 0.75rem;
+                vertical-align: top;
+            }
+
+            .invoice-box table tr td:nth-child(2) {
+                text-align: right;
+            }
+
+            .invoice-box table tr.top table td {
+                padding-bottom: 1.5rem;
+            }
+
+                .invoice-box table tr.top table td.title {
+                    font-size: 2.25rem;
+                    line-height: 2.25rem;
+                    color: #111827;
+                    font-weight: 700;
+                }
+
+            .invoice-box table tr.information table td {
+                padding-bottom: 2rem;
+            }
+
+            .invoice-box table tr.heading td {
+                background-color: #f1f3f5;
+                border-bottom: 2px solid #e5e7eb;
+                font-weight: 600;
+                padding: 0.75rem;
+                color: #374151;
+            }
+
+            .invoice-box table tr.item td {
+                border-bottom: 1px solid #e5e7eb;
+                padding: 1rem;
+                transition: background-color 0.2s ease;
+            }
+
+            .invoice-box table tr.item:hover {
+                background-color: #f9fafb;
+            }
+
+            .invoice-box table tr.item.last td {
+                border-bottom: none;
+            }
+
+            .invoice-box table tr.total td:nth-child(2) {
+                border-top: 2px solid #e5e7eb;
+                font-weight: 700;
+                padding-top: 1rem;
+                color: #111827;
+            }
+
+    .no-print {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+    .btn-secondary {
+        background-color: #6b7280;
+        border-color: #6b7280;
+    }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+            border-color: #4b5563;
+            transform: translateY(-2px);
+        }
+
+    @@media print {
+        body *
+
+    {
+        visibility: hidden;
+    }
+
+    .invoice-box, .invoice-box * {
+        visibility: visible;
+    }
+
+    .invoice-box {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 1rem;
+        border: none;
+        box-shadow: none;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .invoice-box
+
+    {
+        padding: 1.5rem;
+    }
+
+    .invoice-box table tr.top table td.title {
+        font-size: 1.75rem;
+        line-height: 1.75rem;
+    }
+
+    .invoice-box table td {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    .no-print .btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+
+    }
+</style>
+
+<div class="invoice-box">
+    <table>
+        <tr class="top">
+            <td colspan="2">
+                <table>
+                    <tr>
+                        <td class="title">
+                            <span class="fw-bold">Sport<span class="text-primary">Sync</span></span>
+                        </td>
+                        <td>
+                            <strong>Hóa đơn #:</strong> @Model.BookingId<br>
+                            <strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy")<br>
+                            <strong>Ngày chơi:</strong> @Model.BookingDate.ToString("dd/MM/yyyy")
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <tr class="information">
+            <td colspan="2">
+                <table>
+                    <tr>
+                        <td>
+                            <strong>@Model.CourtComplexName</strong><br>
+                            @Model.CourtComplexAddress
+                        </td>
+                        <td>
+                            <strong>Khách hàng:</strong> @Model.CustomerName<br>
+                            <strong>SĐT:</strong> @Model.CustomerPhone
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <tr class="heading">
+            <td>Dịch vụ</td>
+            <td>Thành tiền</td>
+        </tr>
+
+        @foreach (var slot in Model.BookedSlots)
+        {
+            <tr class="item">
+                <td>Thuê sân "@Model.CourtName" - Khung giờ: @slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")</td>
+                <td>@slot.Price.ToString("N0") đ</td>
+            </tr>
+        }
+
+        <tr class="total">
+            <td></td>
+            <td>Tổng cộng: @Model.TotalPrice.ToString("N0") đ</td>
+        </tr>
+    </table>
+</div>
+
+<div class="no-print">
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print me-2"></i>In Hóa Đơn
+    </button>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-tasks me-2"></i>Về trang Quản lý Đơn hàng
+    </a>
+</div>

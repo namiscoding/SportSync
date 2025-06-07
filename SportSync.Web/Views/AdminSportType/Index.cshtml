@@ -1,0 +1,39 @@
+﻿@model IEnumerable<SportSync.Web.Models.ViewModels.SportType.SportTypeViewModel>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}   
+<h2>Quản lý loại sân</h2>
+
+<a asp-action="Create">Thêm loại sân</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên loại sân</th>
+            <th>Mô tả</th>
+            <th>Hoạt động</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var sportType in Model)
+        {
+            <tr>
+                <td>@sportType.Name</td>
+                <td>@sportType.Description</td>
+                <td>@(sportType.IsActive ? "Có" : "Không")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@sportType.SportTypeId">Sửa</a>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="sportTypeId" value="@sportType.SportTypeId" />
+                        <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa loại sân này?')">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

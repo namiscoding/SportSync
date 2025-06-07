@@ -1,0 +1,116 @@
+﻿@{
+    ViewData["Title"] = "Đăng Ký Gói Chủ Sân";
+}
+
+<style>
+    .package-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease-in-out;
+    }
+
+        .package-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
+        }
+
+        .package-card .card-header {
+            background-color: #f8f9fa;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .package-card .price {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+            .package-card .price .period {
+                font-size: 1rem;
+                font-weight: 400;
+                color: #6c757d;
+            }
+
+    .feature-icon {
+        color: var(--bs-success); /* Màu xanh cho icon feature */
+    }
+</style>
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">@ViewData["Title"]</h1>
+        <p class="lead text-muted">Chọn gói phù hợp để bắt đầu quản lý và cho thuê sân thể thao của bạn trên SportSync.</p>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show col-md-8 mx-auto" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show col-md-8 mx-auto" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+
+    <div class="row justify-content-center g-4">
+        @* Gói Standard *@
+        <div class="col-lg-4 col-md-6">
+            <div class="card package-card h-100 shadow">
+                <div class="card-header text-center py-3">
+                    Gói Tiêu Chuẩn @* Cập nhật tên gói *@
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <span class="price text-primary">189.000 đ</span><span class="period">/tháng</span> @* Cập nhật giá *@
+                        <p class="text-muted small mt-1">(Dành cho bắt đầu)</p>
+                    </div>
+                    <ul class="list-unstyled mb-4 flex-grow-1">
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Quản lý thông tin khu sân</li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Thêm và quản lý sân con</li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Quản lý lịch đặt sân</li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Đặt giá theo khung giờ</li>
+                    </ul>
+                    <form asp-controller="Subscription" asp-action="Subscribe" method="post" class="mt-auto">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="packageType" value="Standard" />
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">Đăng Ký Gói Standard</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* Gói Pro *@
+        <div class="col-lg-4 col-md-6">
+            <div class="card package-card h-100 shadow-sm">
+                <div class="card-header text-center py-3 bg-success text-white">
+                    @* Thay đổi màu nền cho Pro *@
+                    Gói Pro @* Cập nhật tên gói *@
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <span class="price text-success">359.000 đ</span><span class="period">/tháng</span> @* Cập nhật giá *@
+                        <p class="text-muted small mt-1">(Nhiều tính năng hơn)</p>
+                    </div>
+                    <ul class="list-unstyled mb-4 flex-grow-1">
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i><strong>Tất cả tính năng của Standard</strong></li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Quản lý đồ ăn/thức uống</li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Quản lý đồ cho thuê</li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Báo cáo thống kê nâng cao</li>
+                        <li class="mb-2"><i class="fas fa-check-circle feature-icon me-2"></i>Hỗ trợ ưu tiên</li>
+                    </ul>
+                    <form asp-controller="Subscription" asp-action="Subscribe" method="post" class="mt-auto">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="packageType" value="Pro" />
+                        <button type="submit" class="btn btn-success w-100 btn-lg">Đăng Ký Gói Pro</button> @* Bỏ thuộc tính disabled *@
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -22,7 +22,8 @@
     display: flex;
     width: 100%;
     position: relative;
-    align-items: center; /* Đảm bảo căn giữa theo chiều dọc */
+    align-items: center;
+    justify-content: center;
 }
 
 /* Phần wrapper chứa nội dung chính */
@@ -51,8 +52,7 @@
 
 /* Logo và tiêu đề của layout */
 .auth-header {
-    margin-bottom: 30px;
-    text-align: center; /* Đảm bảo căn giữa tiêu đề và phụ đề */
+    text-align: center;         /* Đảm bảo căn giữa tiêu đề và phụ đề */
 }
 
 .auth-logo {
@@ -314,6 +314,30 @@
 #otpTimer {
     font-weight: 600;
     color: #007bff;
+}
+
+.password-input-container {
+    position: relative;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d; /* Màu icon xám mặc định */
+    padding: 0.375rem 0.75rem; /* Tạo vùng click lớn hơn */
+    z-index: 3; /* Đảm bảo icon nằm trên input */
+}
+
+/* Điều chỉnh vị trí icon khi dùng với form-floating của Bootstrap */
+.form-floating > .form-control:not(:placeholder-shown) ~ .password-toggle-icon {
+    top: calc(50% + 0.5rem);
+}
+
+.form-floating > .form-control:focus ~ .password-toggle-icon {
+    top: calc(50% + 0.5rem);
 }
 
 /* Password Toggle (Register.cshtml) */

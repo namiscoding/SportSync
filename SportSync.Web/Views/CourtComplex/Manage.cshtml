@@ -1,0 +1,492 @@
+﻿@model SportSync.Web.Models.ViewModels.CourtComplex.CourtComplexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý Khu Phức Hợp Sân";
+    var mapboxAccessToken = "pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-transparent p-0">
+            <li class="breadcrumb-item"><a asp-controller="CourtOwnerDashboard" asp-action="Index" class="text-decoration-none">Tổng quan</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Quản lý Khu Sân</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold text-primary">@ViewData["Title"]</h1>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4" role="alert">
+            <i class="fas fa-check-circle me-3 fa-lg"></i>
+            <div>
+                @TempData["SuccessMessage"]
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-3 fa-lg"></i>
+            <div>
+                @TempData["WarningMessage"]
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form asp-action="Manage" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="CourtComplexId" />
+        <div asp-validation-summary="ModelOnly" class="text-danger alert alert-danger rounded-3 shadow-sm p-3 mb-4" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i> Vui lòng kiểm tra lại các lỗi sau:
+        </div>
+
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-body p-5">
+                <div class="row g-5">
+                    <div class="col-lg-6">
+                        <h4 class="mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>Thông tin chung</h4>
+                        <div class="mb-4">
+                            <label asp-for="Name" class="form-label fw-bold"></label>
+                            <input asp-for="Name" class="form-control form-control-lg rounded-pill" placeholder="Tên khu phức hợp sân" />
+                            <span asp-validation-for="Name" class="text-danger mt-1 d-block"></span>
+                        </div>
+                        <div class="mb-4">
+                            <label asp-for="Address" class="form-label fw-bold"></label>
+                            <input asp-for="Address" class="form-control form-control-lg rounded-pill" placeholder="Số nhà, tên đường..." />
+                            <span asp-validation-for="Address" class="text-danger mt-1 d-block"></span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-4">
+                                <label for="citySelect" class="form-label fw-bold">Tỉnh/Thành phố</label>
+                                <select asp-for="City" id="citySelect" class="form-select form-select-lg rounded-pill">
+                                    <option value="">-- Đang tải... --</option>
+                                </select>
+                                <span asp-validation-for="City" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <label for="districtSelect" class="form-label fw-bold">Quận/Huyện</label>
+                                <select asp-for="District" id="districtSelect" class="form-select form-select-lg rounded-pill" disabled>
+                                    <option value="">-- Chọn Tỉnh/TP trước --</option>
+                                </select>
+                                <span asp-validation-for="District" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <label for="wardSelect" class="form-label fw-bold">Phường/Xã</label>
+                                <select asp-for="Ward" id="wardSelect" class="form-select form-select-lg rounded-pill" disabled>
+                                    <option value="">-- Chọn Quận/Huyện trước --</option>
+                                </select>
+                                <span asp-validation-for="Ward" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label asp-for="Description" class="form-label fw-bold"></label>
+                            <textarea asp-for="Description" class="form-control rounded-3" rows="5" placeholder="Mô tả chi tiết về khu phức hợp sân..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger mt-1 d-block"></span>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <h4 class="mb-4 text-primary"><i class="fas fa-map-marked-alt me-2"></i>Vị trí trên bản đồ</h4>
+                        <div id="mapbox-geocoder-container" class="mb-3"></div>
+                        <div id="map-mapbox" style="height: 400px; width: 100%; border-radius: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                        <input type="hidden" asp-for="Latitude" id="latitudeInput" />
+                        <input type="hidden" asp-for="Longitude" id="longitudeInput" />
+                        <div class="mt-3 text-muted text-sm">
+                            Tọa độ đã chọn: Vĩ độ <span id="latDisplay" class="fw-bold text-primary">@Model.Latitude?.ToString("N6")</span>, Kinh độ <span id="lngDisplay" class="fw-bold text-primary">@Model.Longitude?.ToString("N6")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-5 border-2">
+
+                <div class="row g-5">
+                    <div class="col-lg-6">
+                        <h4 class="mb-4 text-primary"><i class="fas fa-camera me-2"></i>Ảnh đại diện</h4>
+                        <div class="mb-4">
+                            <label asp-for="MainImageFile" class="form-label fw-bold">Tải lên ảnh mới (sẽ thay thế ảnh cũ)</label>
+                            <input asp-for="MainImageFile" type="file" class="form-control form-control-lg rounded-pill" accept="image/*" />
+                            <span asp-validation-for="MainImageFile" class="text-danger mt-1 d-block"></span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.MainImageCloudinaryUrl))
+                        {
+                            <div class="mt-3">
+                                <div class="border rounded-3 p-2 bg-light d-inline-block">
+                                    <img src="@Model.MainImageCloudinaryUrl" alt="Ảnh đại diện hiện tại" class="img-fluid rounded-2 shadow-sm" style="max-height: 250px; object-fit: cover;" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-lg-6">
+                        <h4 class="mb-4 text-primary"><i class="fas fa-clock me-2"></i>Cài đặt hoạt động</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="DefaultOpeningTime" class="form-label fw-bold"></label>
+                                <input asp-for="DefaultOpeningTime" type="time" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="DefaultOpeningTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="DefaultClosingTime" class="form-label fw-bold"></label>
+                                <input asp-for="DefaultClosingTime" type="time" class="form-control form-control-lg rounded-pill" />
+                                <span asp-validation-for="DefaultClosingTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                        <h4 class="mb-4 mt-3 text-primary"><i class="fas fa-address-book me-2"></i>Thông tin liên hệ</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="ContactPhoneNumber" class="form-label fw-bold"></label>
+                                <input asp-for="ContactPhoneNumber" class="form-control form-control-lg rounded-pill" placeholder="Số điện thoại" />
+                                <span asp-validation-for="ContactPhoneNumber" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="ContactEmail" class="form-label fw-bold"></label>
+                                <input asp-for="ContactEmail" type="email" class="form-control form-control-lg rounded-pill" placeholder="Địa chỉ email" />
+                                <span asp-validation-for="ContactEmail" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0 py-4 px-5 d-flex justify-content-end align-items-center rounded-bottom-4">
+                <a asp-controller="OwnerCourt" asp-action="Index" asp-route-courtComplexId="@Model.CourtComplexId" class="btn btn-outline-primary btn-lg me-3 rounded-pill shadow-sm">
+                    <i class="fas fa-th-list me-2"></i> Quản lý Sân Con
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow">
+                    <i class="fas fa-save me-2"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+    @if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
+    {
+        <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+    }
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light gray background */
+        }
+
+        .breadcrumb-item a {
+            color: #007bff; /* Primary blue for links */
+            transition: color 0.2s ease-in-out;
+        }
+
+            .breadcrumb-item a:hover {
+                color: #0056b3;
+            }
+
+        /* Đã chỉnh sửa màu sắc cho các tiêu đề chính */
+        .display-5.fw-bold {
+            color: #007bff !important; /* Đặt màu xanh primary của Bootstrap */
+        }
+
+        /* Đã chỉnh sửa màu sắc cho các sub-header */
+        .text-info {
+            color: #17a2b8 !important; /* Màu xanh info của Bootstrap, có thể tùy chỉnh */
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important; /* Stronger shadow */
+        }
+
+        .form-control, .form-select {
+            border-color: #ced4da;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #80bdff;
+                box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+                transform: translateY(-1px); /* Slight lift on hover */
+            }
+
+        .btn-outline-primary {
+            color: #007bff;
+            border-color: #007bff;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .btn-outline-primary:hover {
+                background-color: #007bff;
+                color: #fff;
+                transform: translateY(-1px);
+            }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .mapboxgl-ctrl-geocoder {
+            width: 100%;
+            max-width: none;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+            .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input {
+                height: calc(2.25em + .75rem + 2px); /* Adjust to match form-control-lg height */
+                padding: .5rem 1rem; /* Adjust padding */
+                border-radius: 2rem; /* Make it rounded like the other inputs */
+                border: 1px solid #ced4da;
+                box-shadow: none;
+            }
+
+                .mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input:focus {
+                    border-color: #80bdff;
+                    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+                    outline: none;
+                }
+        @@media (max-width: 767.98px) { /* Small devices (phones) */
+            .display-5.fw-bold
+
+        {
+            font-size: 2.5rem !important; /* Slightly smaller font for main title */
+        }
+
+        .card-body {
+            padding: 1.5rem !important; /* Reduce card padding on small screens */
+        }
+
+        .row.g-4.g-md-5 {
+            --bs-gutter-x: 1.5rem; /* Reduce horizontal gutter */
+            --bs-gutter-y: 2.5rem; /* Reduce vertical gutter */
+        }
+
+        #map-mapbox {
+            height: 250px !important; /* Make map a bit shorter on mobile */
+        }
+
+        .img-fluid.rounded-2.shadow-sm {
+            max-height: 150px !important; /* Make image smaller on mobile */
+        }
+
+        .card-footer {
+            flex-direction: column !important; /* Stack buttons vertically */
+            align-items: stretch !important; /* Stretch buttons to full width */
+            padding: 1.5rem !important; /* Adjust footer padding */
+        }
+
+            .card-footer .btn {
+                width: 100% !important; /* Make buttons full width */
+            }
+
+                .card-footer .btn.mb-3 {
+                    margin-bottom: 1rem !important; /* Adjust margin between stacked buttons */
+                }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            // === API HÀNH CHÍNH VIỆT NAM ===
+            const citySelect = document.getElementById('citySelect');
+            const districtSelect = document.getElementById('districtSelect');
+            const wardSelect = document.getElementById('wardSelect');
+            const apiBaseUrl = 'https://provinces.open-api.vn/api/';
+
+            const selectedCityName = "@Html.Raw(Model.City)";
+            const selectedDistrictName = "@Html.Raw(Model.District)";
+            const selectedWardName = "@Html.Raw(Model.Ward)";
+
+            async function populateDropdown(url, selectElement, placeholderText, dataPath) {
+                selectElement.innerHTML = `<option value="">-- ${placeholderText} --</option>`;
+                selectElement.disabled = true;
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`API call failed: ${response.status} for ${url}`);
+                    let data = await response.json();
+                    const itemsToIterate = dataPath ? data[dataPath] : data;
+
+                    if (!Array.isArray(itemsToIterate)) {
+                        throw new Error(`Data for ${placeholderText} is not an array.`);
+                    }
+
+                    itemsToIterate.forEach(item => {
+                        const option = document.createElement('option');
+                        const name = item.name_with_type || item.name;
+                        option.value = name;
+                        option.textContent = name;
+                        option.dataset.code = item.code;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.disabled = false;
+                } catch (error) {
+                    console.error(`Error fetching ${placeholderText}:`, error);
+                    selectElement.innerHTML = `<option value="">-- Lỗi tải dữ liệu --</option>`;
+                    selectElement.disabled = true;
+                }
+            }
+
+            async function initializeAddressDropdowns() {
+                // 1. Tải thành phố
+                await populateDropdown(apiBaseUrl + 'p/', citySelect, 'Chọn Tỉnh/Thành phố', null);
+
+                // 2. Chọn thành phố hiện tại (nếu có)
+                if (selectedCityName && citySelect.options.length > 1) {
+                    citySelect.value = selectedCityName;
+                    const cityCode = citySelect.options[citySelect.selectedIndex]?.dataset.code;
+                    if (cityCode) {
+                        // 3. Tải quận/huyện
+                        await populateDropdown(apiBaseUrl + `p/${cityCode}?depth=2`, districtSelect, 'Chọn Quận/Huyện', 'districts');
+
+                        // 4. Chọn quận/huyện hiện tại (nếu có)
+                        if (selectedDistrictName && districtSelect.options.length > 1) {
+                            districtSelect.value = selectedDistrictName;
+                           const districtCode = districtSelect.options[districtSelect.selectedIndex]?.dataset.code;
+                           if(districtCode) {
+                               // 5. Tải phường/xã
+                               await populateDropdown(apiBaseUrl + `d/${districtCode}?depth=2`, wardSelect, 'Chọn Phường/Xã', 'wards');
+
+                               // 6. Chọn phường/xã hiện tại (nếu có)
+                               if (selectedWardName && wardSelect.options.length > 1) {
+                                   wardSelect.value = selectedWardName;
+                               }
+                           }
+                        }
+                    }
+                }
+            }
+
+            // Event listeners cho việc thay đổi
+            citySelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const cityCode = selectedOption.dataset.code;
+                districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>'; districtSelect.disabled = true;
+                wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>'; wardSelect.disabled = true;
+                if (cityCode) { populateDropdown(apiBaseUrl + `p/${cityCode}?depth=2`, districtSelect, 'Chọn Quận/Huyện', 'districts'); }
+            });
+
+            districtSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const districtCode = selectedOption.dataset.code;
+                wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>'; wardSelect.disabled = true;
+                if (districtCode) { populateDropdown(apiBaseUrl + `d/${districtCode}?depth=2`, wardSelect, 'Chọn Phường/Xã', 'wards'); }
+            });
+
+            // Chạy logic khởi tạo
+            await initializeAddressDropdowns();
+        });
+    </script>
+
+    @* Script cho Mapbox API *@
+    @if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
+    {
+        <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+        <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const mapboxTokenConst = "@mapboxAccessToken";
+                let mapInstance;
+                let mapMarker;
+
+                function initializeMapbox() {
+                    if (!mapboxTokenConst || mapboxTokenConst === "YOUR_MAPBOX_ACCESS_TOKEN") {
+                       console.error("Mapbox Access Token is not configured.");
+                       return;
+                    }
+
+                    mapboxgl.accessToken = mapboxTokenConst;
+                    const initialLat = parseFloat(document.getElementById('latitudeInput').value);
+                    const initialLng = parseFloat(document.getElementById('longitudeInput').value);
+                    const hasInitialCoords = !isNaN(initialLat) && !isNaN(initialLng);
+
+                    mapInstance = new mapboxgl.Map({
+                        container: 'map-mapbox',
+                        style: 'mapbox://styles/mapbox/streets-v12',
+                        center: hasInitialCoords ? [initialLng, initialLat] : [105.804817, 21.028511], // Default to Hanoi if no coords
+                        zoom: hasInitialCoords ? 15 : 11
+                    });
+                    mapInstance.addControl(new mapboxgl.NavigationControl());
+
+                    mapMarker = new mapboxgl.Marker({ draggable: true, color: "#007bff" }); // Changed marker color to primary blue
+
+                    if (hasInitialCoords) {
+                        mapMarker.setLngLat([initialLng, initialLat]).addTo(mapInstance);
+                    }
+
+                    function updateCoordinates(lngLat) {
+                        if (lngLat && typeof lngLat.lng === 'number' && typeof lngLat.lat === 'number') {
+                            document.getElementById('longitudeInput').value = lngLat.lng.toFixed(6);
+                            document.getElementById('latitudeInput').value = lngLat.lat.toFixed(6);
+                            document.getElementById('lngDisplay').textContent = lngLat.lng.toFixed(6);
+                            document.getElementById('latDisplay').textContent = lngLat.lat.toFixed(6);
+                        }
+                    }
+
+                    function placeAndAddMarker(lngLat) {
+                        if (lngLat) {
+                            mapMarker.setLngLat(lngLat);
+                            if (!mapMarker.getElement().parentNode) {
+                                mapMarker.addTo(mapInstance);
+                            }
+                            updateCoordinates(lngLat);
+                        }
+                    }
+
+                    mapMarker.on('dragend', () => { placeAndAddMarker(mapMarker.getLngLat()); });
+                    mapInstance.on('click', (e) => { placeAndAddMarker(e.lngLat); mapInstance.panTo(e.lngLat); });
+
+                    const geocoder = new MapboxGeocoder({
+                        accessToken: mapboxgl.accessToken,
+                        mapboxgl: mapboxgl,
+                        marker: false,
+                        placeholder: "Tìm kiếm địa điểm..."
+                    });
+                    const geocoderContainer = document.getElementById('mapbox-geocoder-container');
+                    if(geocoderContainer) geocoderContainer.appendChild(geocoder.onAdd(mapInstance));
+                    geocoder.on('result', (e) => {
+                        if (e.result?.geometry?.coordinates) {
+                            const coords = e.result.geometry.coordinates;
+                            const lngLat = { lng: coords[0], lat: coords[1] };
+                            placeAndAddMarker(lngLat);
+                            mapInstance.flyTo({ center: lngLat, zoom: 15 });
+                        }
+                    });
+                }
+
+               if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
+                    initializeMapbox();
+                } else {
+                    console.error("Mapbox libraries not loaded.");
+                }
+            });
+        </script>
+    }
+}

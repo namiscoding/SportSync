@@ -1,0 +1,334 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Kiểm Tra OTP Firebase Tối Giản (ES5)</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+
+        input[type="tel"], input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 12px 25px;
+            margin-top: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+            button:disabled {
+                background-color: #cccccc;
+                cursor: not-allowed;
+            }
+
+            button:hover:not(:disabled) {
+                background-color: #218838;
+            }
+
+        #status, #error {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        #status {
+            background-color: #e6ffed;
+            border: 1px solid #5cb85c;
+            color: #3c763d;
+        }
+
+        #error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        hr {
+            margin: 25px 0;
+            border: 0;
+            border-top: 1px solid #eee;
+        }
+
+        .info {
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kiểm Tra Gửi OTP Firebase (ES5)</h1>
+        <label for="phoneNumber">Số điện thoại (E.164, ví dụ: +84912345678):</label>
+        <input type="tel" id="phoneNumber" placeholder="+84912345678" value="+84838026667">
+        <div id="recaptcha-container"></div>
+        <button id="sendOtpButton" disabled>Gửi Mã OTP</button>
+        <hr>
+        <label for="otpCode">Mã OTP:</label>
+        <input type="text" id="otpCode" placeholder="Nhập mã OTP nhận được">
+        <button id="verifyOtpButton" disabled>Xác Nhận OTP</button>
+        <div id="status">Trạng thái: Chưa thực hiện</div>
+        <div id="error" style="display: none;">Lỗi: Không có</div>
+        <p class="info"><em>Mở Console (F12) của trình duyệt để xem log chi tiết.</em></p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+    <script>
+        var firebaseConfig = {
+          apiKey: "AIzaSyAd6hCJJg56qOxgA5HiCYFU4gIHxL2AnCk",
+          authDomain: "sportsync-8e9da.firebaseapp.com",
+          projectId: "sportsync-8e9da",
+          storageBucket: "sportsync-8e9da.firebasestorage.app",
+          messagingSenderId: "288059783978",
+          appId: "1:288059783978:web:c035d57cb22ea32b81bc53",
+          measurementId: "G-PFDSFNFPL4"
+        };
+
+        var app;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            console.log("Firebase initialized successfully!");
+        } catch (e) {
+            console.error("Firebase initialization error:", e);
+            updateStatus("Lỗi khởi tạo Firebase.", true, e.message);
+        }
+
+        var auth = firebase.auth();
+        auth.settings.debug = true;
+
+        var phoneNumberInput = document.getElementById('phoneNumber');
+        var sendOtpButton = document.getElementById('sendOtpButton');
+        var otpCodeInput = document.getElementById('otpCode');
+        var verifyOtpButton = document.getElementById('verifyOtpButton');
+        var statusDiv = document.getElementById('status');
+        var errorDiv = document.getElementById('error');
+
+        window.confirmationResult = null;
+        window.recaptchaVerifier = null;
+        window.recaptchaWidgetId = null;
+        var isRecaptchaInitializing = false;
+
+        function updateStatus(message, isError, errorDetails) {
+            if (typeof isError === 'undefined') isError = false;
+            if (typeof errorDetails === 'undefined') errorDetails = "";
+            statusDiv.textContent = 'Trạng thái: ' + message;
+            if (isError) {
+                errorDiv.textContent = 'Lỗi chi tiết: ' + (errorDetails || "Không rõ");
+                errorDiv.style.display = 'block';
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.borderColor = '#f5c6cb';
+                statusDiv.style.color = '#721c24';
+            } else {
+                errorDiv.style.display = 'none';
+                statusDiv.style.backgroundColor = '#e6ffed';
+                statusDiv.style.borderColor = '#5cb85c';
+                statusDiv.style.color = '#3c763d';
+            }
+            console.log('Status updated: ' + message + (isError ? " | Error: " + errorDetails : ""));
+        }
+
+        function initializeRecaptcha() {
+            if (isRecaptchaInitializing) {
+                console.log("initializeRecaptcha: Already initializing, skipping.");
+                return;
+            }
+            isRecaptchaInitializing = true;
+            sendOtpButton.disabled = true;
+            updateStatus("Đang khởi tạo reCAPTCHA...");
+            console.log("initializeRecaptcha: Starting reCAPTCHA verifier...");
+
+            if (window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') {
+                try {
+                    window.recaptchaVerifier.clear();
+                    console.log("initializeRecaptcha: Cleared old verifier.");
+                } catch (e) {
+                    console.warn("initializeRecaptcha: Failed to clear old verifier:", e);
+                }
+            }
+            window.recaptchaVerifier = null;
+            window.recaptchaWidgetId = null;
+
+            try {
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                    'size': 'normal',
+                    'callback': function(response) {
+                        console.log("reCAPTCHA callback: Token created:", response);
+                        updateStatus("reCAPTCHA đã sẵn sàng (callback).");
+                        sendOtpButton.disabled = false;
+                    },
+                    'expired-callback': function() {
+                        console.warn("reCAPTCHA expired-callback: Expired.");
+                        updateStatus("Phiên reCAPTCHA đã hết hạn, đang khởi tạo lại...", true, "reCAPTCHA token expired");
+                        initializeRecaptcha();
+                    },
+                    'error-callback': function(error) {
+                        console.error("reCAPTCHA error-callback:", error);
+                        updateStatus("Lỗi trong quá trình reCAPTCHA hoạt động.", true, error ? error.message : "Unknown reCAPTCHA error");
+                        sendOtpButton.disabled = false;
+                        isRecaptchaInitializing = false;
+                    }
+                });
+
+                console.log("reCAPTCHA verifier created, attempting to render...");
+                window.recaptchaVerifier.render().then(function(widgetId) {
+                    window.recaptchaWidgetId = widgetId;
+                    console.log("initializeRecaptcha: reCAPTCHA verifier rendered. Widget ID:", widgetId);
+                    updateStatus("reCAPTCHA đã sẵn sàng. Nhập SĐT và nhấn Gửi Mã OTP.");
+                    sendOtpButton.disabled = false;
+                    isRecaptchaInitializing = false;
+                }).catch(function(err) {
+                    console.error("initializeRecaptcha: Failed to render reCAPTCHA:", err);
+                    updateStatus("Lỗi không thể render reCAPTCHA.", true, err.message);
+                    sendOtpButton.disabled = true;
+                    isRecaptchaInitializing = false;
+                    window.recaptchaVerifier = null;
+                    window.recaptchaWidgetId = null;
+                });
+            } catch (e) {
+                console.error("initializeRecaptcha: Serious error creating RecaptchaVerifier:", e);
+                updateStatus("Lỗi nghiêm trọng khi khởi tạo reCAPTCHA.", true, e.message);
+                sendOtpButton.disabled = true;
+                isRecaptchaInitializing = false;
+                window.recaptchaVerifier = null;
+                window.recaptchaWidgetId = null;
+            }
+        }
+
+        sendOtpButton.addEventListener('click', function() {
+            var sdt = phoneNumberInput.value.trim();
+            if (!sdt.match(/^\+\d{10,15}$/)) {
+                updateStatus("Định dạng số điện thoại không hợp lệ.", true, "Vui lòng nhập số điện thoại ở định dạng E.164 (ví dụ: +84912345678).");
+                return;
+            }
+
+            updateStatus('Đang gửi OTP đến ' + sdt + '...');
+            sendOtpButton.disabled = true;
+            console.log('Send OTP button clicked. Phone: ' + sdt);
+
+            if (!window.recaptchaVerifier || window.recaptchaWidgetId === null || isRecaptchaInitializing) {
+                console.warn("sendOtpButton click: reCAPTCHA not ready or initializing. Retrying initialization.");
+                updateStatus("reCAPTCHA chưa sẵn sàng, đang thử chuẩn bị. Vui lòng đợi và nhấn gửi lại.", true, "reCAPTCHA not ready");
+                initializeRecaptcha();
+                return;
+            }
+
+            sendActualOtp(sdt);
+        });
+
+        function sendActualOtp(phoneNumber) {
+            console.log("Sending OTP to:", phoneNumber);
+            console.log("reCAPTCHA verifier status:", window.recaptchaVerifier);
+            if (!window.recaptchaVerifier) {
+                console.error("No reCAPTCHA verifier available.");
+                updateStatus("Lỗi: reCAPTCHA chưa được khởi tạo.", true, "No reCAPTCHA verifier");
+                sendOtpButton.disabled = false;
+                initializeRecaptcha();
+                return;
+            }
+            auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
+                .then(function(confirmationResult) {
+                    console.log("OTP sent successfully! ConfirmationResult:", confirmationResult);
+                    updateStatus('OTP đã gửi thành công đến ' + phoneNumber + '.');
+                    window.confirmationResult = confirmationResult;
+                    verifyOtpButton.disabled = false;
+                    otpCodeInput.focus();
+                })
+                .catch(function(error) {
+                    console.error("OTP send error:", error, "Details:", JSON.stringify(error));
+                    updateStatus("Lỗi khi gửi OTP.", true, 'Code: ' + error.code + ', Message: ' + error.message);
+                    sendOtpButton.disabled = false;
+                    if (error.code === 'auth/invalid-app-credential' ||
+                        error.code === 'auth/network-request-failed' ||
+                        error.code === 'auth/too-many-requests' ||
+                        (error.message && error.message.includes("reCAPTCHA"))) {
+                        console.log("Reinitializing reCAPTCHA due to error:", error.code);
+                        initializeRecaptcha();
+                    }
+                });
+        }
+
+        verifyOtpButton.addEventListener('click', function() {
+            var code = otpCodeInput.value.trim();
+            if (!code) {
+                updateStatus("Vui lòng nhập mã OTP.", true, "Mã OTP không được để trống.");
+                return;
+            }
+
+            updateStatus("Đang xác nhận OTP...");
+            verifyOtpButton.disabled = true;
+            console.log('Verify OTP button clicked. Code: ' + code);
+
+            if (!window.confirmationResult) {
+                console.error("No confirmationResult. Please send OTP first.");
+                updateStatus("Lỗi: Vui lòng gửi OTP trước.", true, "Chưa có yêu cầu OTP nào.");
+                verifyOtpButton.disabled = false;
+                return;
+            }
+
+            window.confirmationResult.confirm(code)
+                .then(function(result) {
+                    var user = result.user;
+                    console.log("OTP verified successfully! User:", user);
+                    updateStatus('OTP đã xác nhận thành công! User UID: ' + user.uid);
+                    sendOtpButton.disabled = true;
+                })
+                .catch(function(error) {
+                    console.error("OTP verification error:", error);
+                    updateStatus("Lỗi khi xác nhận OTP.", true, 'Code: ' + error.code + ', Message: ' + error.message);
+                    verifyOtpButton.disabled = false;
+                });
+        });
+
+        window.onload = function() {
+            if (!document.getElementById('sendOtpButton') || !document.getElementById('recaptcha-container')) {
+                console.error("sendOtpButton or recaptcha-container not found on page load.");
+                updateStatus("Lỗi: Không tìm thấy phần tử giao diện cần thiết.", true);
+                return;
+            }
+            setTimeout(initializeRecaptcha, 100);
+        };
+    </script>
+</body>
+</html>

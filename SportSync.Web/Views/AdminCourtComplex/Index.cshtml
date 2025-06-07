@@ -1,0 +1,65 @@
+﻿@using SportSync.Web.Models.ViewModels.Admin
+@using SportSync.Web.Models.ViewModels.Court
+@model IEnumerable<CourtComplexViewModel>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<h2>Quản lý Hệ thống sân</h2>
+
+<form asp-action="Index" method="get">
+    <input type="text" name="searchTerm" placeholder="Tìm kiếm..." />
+    <button type="submit">Tìm</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên Hệ thống sân</th>
+            <th>Chủ sân</th>
+            <th>Số điện thoại</th>
+            <th>Địa chỉ</th>
+            <th>Thành phố</th>
+            <th>Quận</th>
+            <th>Trạng thái duyệt</th>
+            <th>Hoạt động</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var cc in Model)
+        {
+            <tr>
+                <td><a asp-action="Details" asp-route-id="@cc.CourtComplexId">@cc.Name</a></td>
+                <td>@cc.OwnerFullName</td>
+                <td>@cc.OwnerPhoneNumber</td>
+                <td>@cc.Address</td>
+                <td>@cc.City</td>
+                <td>@cc.District</td>
+                <td>@cc.ApprovalStatus</td>
+                <td>@(cc.IsActiveByAdmin ? "Có" : "Không")</td>
+                <td>
+                    @if (cc.ApprovalStatus == "PendingApproval")
+                    {
+                        <form asp-action="Approve" method="post" style="display:inline;">
+                            <input type="hidden" name="courtComplexId" value="@cc.CourtComplexId" />
+                            <button type="submit">Duyệt</button>
+                        </form>
+                        <form asp-action="Reject" method="post" style="display:inline;">
+                            <input type="hidden" name="courtComplexId" value="@cc.CourtComplexId" />
+                            <input type="text" name="rejectionReason" placeholder="Lý do từ chối" />
+                            <button type="submit">Từ chối</button>
+                        </form>
+                    }
+                    <form asp-action="ToggleCourtComplexStatus" method="post" style="display:inline;">
+                        <input type="hidden" name="courtComplexId" value="@cc.CourtComplexId" />
+                        <button type="submit">@(cc.IsActiveByAdmin ? "Gỡ" : "Khôi phục")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

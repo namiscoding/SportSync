@@ -17,9 +17,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @* **DÒNG ĐƯỢC THÊM VÀO** *@
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="d-flex flex-column min-vh-100">
     <header>
@@ -43,36 +44,59 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Search" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
-                               asp-controller="Search" asp-action="Index">
+                            <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Courts" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                               asp-controller="Courts" asp-action="Index">
                                 <i class="fas fa-search me-1"></i>Tìm sân
                             </a>
                         </li>
 
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtComplex" && ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")"
-                                   asp-controller="CourtComplex" asp-action="Create">
-                                    <i class="fas fa-plus-circle me-1"></i>Thêm sân của bạn
-                                </a>
-                            </li>
+                            var isCourtOwner = User.IsInRole("CourtOwner") || User.IsInRole("StandardCourtOwner") || User.IsInRole("ProCourtOwner");
+                            var isAdmin = User.IsInRole("Admin");
 
-                            @if (User.IsInRole("CourtOwner"))
+                            @*
+                            @if (!isCourtOwner && !isAdmin) // Chỉ hiển thị nếu chưa phải là chủ sân hoặc admin
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "CourtComplex" && ViewContext.RouteData.Values["action"]?.ToString() == "MyComplexes" ? "active" : "")"
-                                       asp-controller="CourtComplex" asp-action="MyComplexes">
-                                        <i class="fas fa-landmark me-1"></i>Khu sân của tôi
+                                    <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Subscription" ? "active" : "")"
+                                        asp-controller="Subscription" asp-action="Index">
+                                        <i class="fas fa-plus-circle me-1"></i>Đăng ký làm Chủ Sân
                                     </a>
                                 </li>
                             }
-                            @if (User.IsInRole("Admin"))
+                            *@
+                            @if (isCourtOwner) // Nếu là chủ sân
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle px-3" href="#" id="ownerMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-tachometer-alt me-1"></i>Khu vực Chủ Sân
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="ownerMenuDropdown">
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="CourtOwnerDashboard" asp-action="Index">
+                                                <i class="fas fa-chart-line me-2"></i>Tổng quan
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="CourtComplex" asp-action="Manage">
+                                                <i class="fas fa-landmark me-2"></i>Quản lý Cụm Sân
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="BookingManagement" asp-action="Index">
+                                                <i class="fas fa-calendar-alt me-2"></i>Quản lý Đơn Đặt
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                            @if (isAdmin) // Nếu là admin
                             {
                                 <li class="nav-item">
                                     <a class="nav-link px-3 @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminDashboard" ? "active" : "")"
                                        asp-controller="AdminDashboard" asp-action="Index">
-                                        <i class="fas fa-tachometer-alt me-1"></i>Quản trị
+                                        <i class="fas fa-cogs me-1"></i>Quản trị
                                     </a>
                                 </li>
                             }

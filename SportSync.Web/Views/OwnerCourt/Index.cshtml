@@ -1,0 +1,707 @@
+﻿@model IEnumerable<SportSync.Business.Dtos.CourtOutputDto>
+@using SportSync.Data.Enums
+@inject ILogger<Program> Logger
+@{
+    ViewData["Title"] = $"Các Sân Con - {ViewBag.CourtComplexName}";
+    var courtComplexId = ViewBag.CourtComplexId;
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-transparent p-0">
+            <li class="breadcrumb-item"><a asp-controller="CourtOwnerDashboard" asp-action="Index" class="text-decoration-none">Tổng quan</a></li>
+            <li class="breadcrumb-item"><a asp-controller="CourtComplex" asp-action="Manage" class="text-decoration-none">Quản lý Khu Sân</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@ViewBag.CourtComplexName</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div class="mb-3 mb-md-0">
+            <h1 class="display-5 fw-bold text-primary mb-0">Quản Lý Sân Con</h1>
+        </div>
+        <div>
+            <a asp-action="Create" asp-route-courtComplexId="@courtComplexId" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                <i class="fas fa-plus me-2"></i> Thêm Sân Mới
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4 animate-fade-in" role="alert">
+            <i class="fas fa-check-circle me-3 fa-lg"></i>
+            <div>
+                @TempData["SuccessMessage"]
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center rounded-3 shadow-sm mb-4 animate-fade-in" role="alert">
+            <i class="fas fa-exclamation-circle me-3 fa-lg"></i>
+            <div>
+                @TempData["ErrorMessage"]
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state animate-fade-in">
+            <div class="empty-icon-wrapper mb-4">
+                <i class="fas fa-tennis-ball empty-icon"></i>
+            </div>
+            <h4 class="empty-title">Chưa có sân nào trong khu phức hợp này</h4>
+            <p class="empty-description">
+                Hãy bắt đầu xây dựng danh sách sân thể thao của bạn để khách hàng có thể đặt chỗ dễ dàng.
+            </p>
+            <a asp-action="Create" asp-route-courtComplexId="@courtComplexId" class="btn btn-lg btn-primary rounded-pill shadow-sm mt-3 animate-bounce">
+                <i class="fas fa-plus me-2"></i> Thêm Sân Đầu Tiên
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col animate-slide-up">
+                    <div class="card h-100 court-card shadow-sm border-0 rounded-4 overflow-hidden">
+                        <div class="card-img-container">
+                            <img src="@(item.MainImageCloudinaryUrl ?? "https://placehold.co/600x400/8c7ae6/ffffff?text=" + System.Net.WebUtility.UrlEncode(item.Name))"
+                                 class="card-img-top"
+                                 alt="Ảnh sân @item.Name"
+                                 loading="lazy">
+
+                            @if (item.StatusByOwner == CourtStatusByOwner.Available)
+                            {
+                                <span class="status-badge status-available">
+                                    <i class="fas fa-check-circle me-1"></i>Đang hoạt động
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-closed">
+                                    <i class="fas fa-pause-circle me-1"></i>Tạm ngưng
+                                </span>
+                            }
+                        </div>
+
+                        <div class="card-body d-flex flex-column p-4">
+                            <h5 class="card-title fw-bold text-dark mb-2">@item.Name</h5>
+                            <div class="sport-type mb-3">
+                                <span class="badge bg-secondary text-white py-2 px-3 rounded-pill">
+                                    <i class="fas fa-tag me-1"></i> @item.SportTypeName
+                                </span>
+                            </div>
+
+                            <div class="mt-auto d-grid gap-2">
+                                @* d-grid and gap for stacking buttons *@
+                                <a asp-controller="BookingManagement" asp-action="Schedule" asp-route-courtId="@item.CourtId" class="btn btn-info btn-lg rounded-pill shadow-sm" title="Xem lịch đặt chỗ và đặt cho khách vãng lai">
+                                    <i class="fas fa-calendar-alt me-2"></i> Lịch Đặt & Đặt Chỗ
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.CourtId" class="btn btn-outline-primary btn-lg rounded-pill shadow-sm">
+                                    <i class="fas fa-edit me-2"></i> Chỉnh sửa
+                                </a>
+
+                                <a asp-controller="TimeSlotManagement" asp-action="Index" asp-route-courtId="@item.CourtId" class="btn btn-outline-success btn-lg rounded-pill shadow-sm" title="Quản lý Khung Giờ & Giá">
+                                    <i class="fas fa-clock me-2"></i> Khung Giờ & Giá
+                                </a>
+
+                                <form asp-action="ToggleStatus" asp-controller="OwnerCourt" method="post" id="toggleStatusForm-@item.CourtId">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="courtId" value="@item.CourtId" />
+                                    <input type="hidden" name="courtComplexId" value="@item.CourtComplexId" />
+                                    @if (item.StatusByOwner == CourtStatusByOwner.Available)
+                                    {
+                                        <button type="button" class="btn btn-outline-warning btn-lg rounded-pill w-100 mt-2 toggle-status-btn"
+                                                data-bs-toggle="modal" data-bs-target="#confirmStatusModal"
+                                                data-form-id="toggleStatusForm-@item.CourtId"
+                                                data-court-name="@item.Name"
+                                                data-action-text="tạm ngưng hoạt động">
+                                            <i class="fas fa-pause-circle me-2"></i> Tạm ngưng hoạt động
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-outline-success btn-lg rounded-pill w-100 mt-2 toggle-status-btn"
+                                                data-bs-toggle="modal" data-bs-target="#confirmStatusModal"
+                                                data-form-id="toggleStatusForm-@item.CourtId"
+                                                data-court-name="@item.Name"
+                                                data-action-text="mở lại hoạt động">
+                                            <i class="fas fa-play-circle me-2"></i> Mở lại hoạt động
+                                        </button>
+                                    }
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="text-center mt-5">
+        <a asp-controller="CourtComplex" asp-action="Manage" class="btn btn-outline-secondary btn-lg rounded-pill shadow-sm">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại Quản lý Khu Phức Hợp
+        </a>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmStatusModal" tabindex="-1" aria-labelledby="confirmStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0 pb-0">
+                <h5 class="modal-title text-primary fw-bold" id="confirmStatusModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Xác nhận thay đổi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="fas fa-question-circle fa-4x text-warning mb-3 animate-bounce-icon"></i>
+                </div>
+                <p class="fs-5 mb-3 text-dark" id="modalBodyContent">
+                </p>
+                <p class="text-muted small">
+                    Hành động này sẽ thay đổi trạng thái hoạt động của sân và có thể ảnh hưởng đến việc đặt chỗ.
+                </p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-secondary rounded-pill me-2 px-4 shadow-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="confirmActionButton">
+                    <i class="fas fa-check me-1"></i> Xác nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light gray background */
+        }
+
+        .breadcrumb-item a {
+            color: #007bff;
+            transition: color 0.2s ease-in-out;
+        }
+
+            .breadcrumb-item a:hover {
+                color: #0056b3;
+            }
+
+        .display-5.fw-bold {
+            color: #007bff !important; /* Primary blue for main title */
+        }
+
+        .lead-text {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        /* Alerts */
+        .alert {
+            font-size: 1.1rem;
+            padding: 1rem 1.5rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        /* Empty State */
+        .empty-state {
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            margin-top: 3rem;
+        }
+
+        .empty-icon-wrapper {
+            width: 100px;
+            height: 100px;
+            background-color: #e9ecef;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-icon {
+            font-size: 3.5rem;
+            color: #6c757d;
+        }
+
+        .empty-title {
+            color: #343a40;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .empty-description {
+            color: #6c757d;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+        }
+
+        .empty-state .btn {
+            font-size: 1.1rem;
+            padding: 0.75rem 2rem;
+        }
+
+        /* Court Card Styles */
+        .court-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+            .court-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.12) !important;
+            }
+
+        .card-img-container {
+            position: relative;
+            height: 220px; /* Fixed height for image container */
+            overflow: hidden;
+            border-top-left-radius: 1.5rem; /* Match card border radius */
+            border-top-right-radius: 1.5rem;
+        }
+
+        .card-img-top {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures image fills the container */
+            transition: transform 0.3s ease;
+        }
+
+        .court-card:hover .card-img-top {
+            transform: scale(1.05); /* Zoom effect on hover */
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            font-size: 0.9rem;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status-available {
+            background-color: #28a745; /* Bootstrap Green */
+            color: white;
+        }
+
+        .status-closed {
+            background-color: #dc3545; /* Bootstrap Red */
+            color: white;
+        }
+
+        .card-title {
+            color: #343a40;
+            font-size: 1.6rem;
+        }
+
+        .sport-type .badge {
+            background-color: #6c757d !important; /* Secondary color for badge */
+            font-size: 0.95rem;
+            padding: 0.4em 0.8em;
+        }
+
+        .next-slot {
+            margin-top: 10px;
+        }
+
+        .next-slot-time {
+            font-size: 1rem;
+        }
+
+        /* Button Group Custom - Updated */
+        .d-grid {
+            grid-template-columns: 1fr; /* Ensures stacking by default */
+        }
+
+            .d-grid > .btn {
+                margin-bottom: 0.5rem; /* Spacing between buttons */
+            }
+
+                .d-grid > .btn:last-child {
+                    margin-bottom: 0;
+                }
+
+        .btn-info {
+            background-color: #17a2b8; /* Bootstrap Info */
+            border-color: #17a2b8;
+            color: white;
+        }
+
+            .btn-info:hover {
+                background-color: #138496;
+                border-color: #138496;
+                color: white;
+            }
+
+        .btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-secondary {
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Status Toggle Buttons */
+        .toggle-status-btn {
+            font-weight: 500;
+        }
+
+        .btn-outline-warning {
+            color: #ffc107;
+            border-color: #ffc107;
+        }
+
+            .btn-outline-warning:hover {
+                background-color: #ffc107;
+                color: #212529; /* Dark text on hover */
+            }
+
+        .btn-outline-success {
+            color: #28a745;
+            border-color: #28a745;
+        }
+
+            .btn-outline-success:hover {
+                background-color: #28a745;
+                color: white;
+            }
+
+
+        /* Modal styles */
+        .modal-content {
+            border: none;
+        }
+
+        .modal-header {
+            background-color: #f8f9fa; /* Light background for header */
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+        }
+
+        .modal-body {
+            font-size: 1.1rem;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding-top: 0;
+        }
+
+            .modal-footer .btn {
+                font-size: 1rem;
+                padding: 0.6rem 1.5rem;
+            }
+
+        /* Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .animate-bounce {
+            animation: bounce 0.8s ease-in-out infinite alternate;
+        }
+
+        .animate-bounce-icon {
+            animation: bounceIcon 1s ease-in-out infinite alternate;
+        }
+
+        @@keyframes fadeIn {
+            from
+
+        {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+
+        }
+
+        @@keyframes slideUp {
+            from
+
+        {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        }
+
+        @@keyframes bounce {
+            0%, 100%
+
+        {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+
+        }
+        @@keyframes bounceIcon {
+            0%, 100%
+
+        {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+
+        }
+
+
+        /* --- Responsive Adjustments --- */
+        @@media (max-width: 767.98px) { /* Small devices (phones) */
+            .display-5.fw-bold
+
+        {
+            font-size: 2.2rem !important; /* Smaller title on mobile */
+        }
+
+        .lead-text {
+            font-size: 1rem;
+        }
+
+        .d-flex.flex-column.flex-md-row {
+            flex-direction: column !important;
+            align-items: center !important;
+        }
+
+            .d-flex.flex-column.flex-md-row > div:first-child {
+                text-align: center;
+                margin-bottom: 1.5rem !important; /* Space between title block and add button */
+            }
+
+        .empty-state {
+            padding: 3rem 1.5rem;
+        }
+
+        .empty-icon-wrapper {
+            width: 80px;
+            height: 80px;
+        }
+
+        .empty-icon {
+            font-size: 2.5rem;
+        }
+
+        .empty-title {
+            font-size: 1.3rem;
+        }
+
+        .empty-description {
+            font-size: 0.95rem;
+        }
+
+        .empty-state .btn {
+            width: 100%; /* Full width button */
+            font-size: 1rem;
+        }
+
+        .card-img-container {
+            height: 180px; /* Shorter image container on mobile */
+        }
+
+        .card-body {
+            padding: 1.25rem !important; /* Reduce card body padding */
+        }
+
+        .card-title {
+            font-size: 1.4rem; /* Smaller card title */
+        }
+
+        .next-slot-time {
+            font-size: 0.9rem;
+        }
+
+        .d-grid {
+            grid-template-columns: 1fr; /* Ensure all buttons stack vertically */
+            gap: 0.75rem; /* Space between stacked buttons */
+        }
+
+            .d-grid > .btn {
+                font-size: 1rem; /* Smaller button font size */
+                padding: 0.6rem 1rem; /* Smaller button padding */
+                width: 100% !important; /* Make all buttons full width */
+                margin-bottom: 0 !important; /* Remove individual margins */
+            }
+
+        .toggle-status-btn {
+            margin-top: 0.75rem !important; /* Add top margin for status button */
+        }
+
+        }
+
+        @@media (min-width: 768px) and (max-width: 991.98px) { /* Medium devices (tablets) */
+            .card-img-container
+
+        {
+            height: 200px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+        }
+
+        }
+    </style>
+}
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Animation cho cards khi load trang
+            const cards = document.querySelectorAll('.court-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('animate-slide-up'); // Add class to trigger animation
+            });
+
+            // Animation cho empty state
+            const emptyState = document.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.classList.add('animate-fade-in');
+                const emptyStateButton = emptyState.querySelector('.animate-bounce');
+                if (emptyStateButton) {
+                    emptyStateButton.style.animationDelay = '0.5s'; // Delay button animation
+                }
+            }
+
+
+            var confirmStatusModal = document.getElementById('confirmStatusModal');
+            if(confirmStatusModal) {
+                confirmStatusModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var courtName = button.getAttribute('data-court-name');
+                    var actionText = button.getAttribute('data-action-text');
+                    var formIdToSubmit = button.getAttribute('data-form-id');
+
+                    var modalTitle = confirmStatusModal.querySelector('.modal-title');
+                    var modalBody = confirmStatusModal.querySelector('#modalBodyContent');
+                    var confirmButton = confirmStatusModal.querySelector('#confirmActionButton');
+
+                    modalTitle.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> Xác nhận ${actionText}`;
+                    modalBody.innerHTML = `
+                        Bạn có chắc chắn muốn <strong class="text-primary">${actionText}</strong> sân
+                        "<strong class="text-success">${courtName}</strong>" không?
+                    `;
+
+                    confirmButton.setAttribute('data-form-id', formIdToSubmit);
+
+                    // Đặt style cho nút xác nhận
+                    if (actionText.includes('tạm ngưng')) {
+                        confirmButton.className = 'btn btn-danger rounded-pill px-4 shadow-sm';
+                        confirmButton.innerHTML = '<i class="fas fa-pause me-1"></i> Xác nhận Tạm ngưng';
+                    } else {
+                        confirmButton.className = 'btn btn-success rounded-pill px-4 shadow-sm';
+                        confirmButton.innerHTML = '<i class="fas fa-play me-1"></i> Xác nhận Mở lại';
+                    }
+                });
+
+                var confirmActionButton = document.getElementById('confirmActionButton');
+                if (confirmActionButton) {
+                    confirmActionButton.addEventListener('click', function () {
+                        var formId = this.getAttribute('data-form-id');
+                        if (formId) {
+                            var formToSubmit = document.getElementById(formId);
+                            if (formToSubmit) {
+                                // Thêm loading state
+                                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang xử lý...';
+                                this.disabled = true;
+
+                                // Prevent multiple submissions
+                                this.closest('.modal-footer').querySelector('.btn-secondary').disabled = true;
+
+                                setTimeout(() => {
+                                    formToSubmit.submit();
+                                }, 500); // Small delay for animation
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Smooth scroll cho alerts
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert.classList.contains('show')) {
+                        alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            });
+
+            // Lazy loading cho images (cải tiến nhỏ)
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            // Only update src if it's a placeholder (e.g., if you used data-src)
+                            // For directly set src, lazy loading attribute does the job.
+                            if (img.dataset.src) { // Example: if you had data-src attribute for actual image
+                                img.src = img.dataset.src;
+                            }
+                            img.classList.add('loaded'); // Add a class when loaded
+                            observer.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '0px',
+                    threshold: 0.1
+                });
+
+                document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+                    imageObserver.observe(img);
+                });
+            }
+        });
+    </script>
+}
