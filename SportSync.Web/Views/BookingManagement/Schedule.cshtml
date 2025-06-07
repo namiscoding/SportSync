@@ -1,0 +1,560 @@
+﻿@model SportSync.Business.Dtos.WeeklyScheduleDto
+@using System.Globalization;
+@using System.Text.Json;
+
+@{
+    ViewData["Title"] = $"Lịch Đặt Chỗ - {Model.CourtName}";
+    var cultureInfo = new CultureInfo("vi-VN");
+    var startDateOfWeek = Model.StartDateOfWeek;
+    var currentDateTime = DateTime.Now;
+}
+
+@section Styles {
+    <style>
+        body {
+            background-color: #f4f6f9;
+            padding-bottom: 100px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .schedule-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 120px repeat(7, 1fr);
+            gap: 2px;
+            background-color: #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .grid-header, .grid-slot, .grid-time-header {
+            background-color: #ffffff;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .grid-header {
+            background-color: #f1f3f5;
+            font-weight: 600;
+            text-align: center;
+            padding: 1rem 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .grid-time-header {
+            font-weight: 500;
+            text-align: center;
+            font-size: 0.85rem;
+            background-color: #f1f3f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-slot {
+            min-height: 90px;
+            font-size: 0.9rem;
+            position: relative;
+            transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+            .grid-slot.available {
+                background-color: #d4f4e2;
+                cursor: pointer;
+            }
+
+                .grid-slot.available:hover {
+                    background-color: #b3e6cc;
+                    transform: scale(1.02);
+                    border: 2px solid #10b981;
+                }
+
+            .grid-slot.closed, .grid-slot.past {
+                background-color: #e9ecef;
+                color: #6b7280;
+                cursor: not-allowed;
+            }
+
+            .grid-slot.booked {
+                background-color: #fee2e2;
+                color: #991b1b;
+                border-left: 6px solid #ef4444;
+                cursor: not-allowed;
+            }
+
+            .grid-slot.past {
+                background-color: #d1d5db;
+                font-style: italic;
+            }
+
+            .grid-slot.is-selected {
+                background-color: #bfdbfe !important;
+                box-shadow: inset 0 0 0 3px #3b82f6;
+                transform: scale(1.02);
+            }
+
+        #bulkActionToolbar {
+            position: fixed;
+            bottom: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.3s ease-in-out;
+            z-index: 1000;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+        }
+
+            #bulkActionToolbar.show {
+                bottom: 30px;
+            }
+
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: none;
+            padding: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 1rem 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            transition: background-color 0.2s ease;
+        }
+
+            .btn-primary:hover {
+                background-color: #2563eb;
+                border-color: #2563eb;
+            }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 8px;
+        }
+
+        .schedule-container.loading .loading-overlay {
+            display: flex;
+        }
+
+        @@media (max-width: 768px) {
+            .schedule-grid
+
+        {
+            grid-template-columns: 100px 1fr;
+            grid-template-rows: auto;
+        }
+
+        .grid-header:not(:first-child) {
+            display: none;
+        }
+
+        .grid-slot, .grid-time-header {
+            font-size: 0.8rem;
+            padding: 0.5rem;
+            min-height: 60px;
+        }
+
+        .schedule-container {
+            padding: 1rem;
+        }
+
+        #bulkActionToolbar {
+            width: 90%;
+            padding: 0.75rem;
+        }
+
+            #bulkActionToolbar .btn {
+                font-size: 0.85rem;
+                padding: 0.5rem;
+            }
+
+        }
+    </style>
+}
+
+<div class="container my-5">
+    <form id="antiForgeryForm" class="d-none">@Html.AntiForgeryToken()</form>
+
+    <div class="schedule-container">
+        <div class="loading-overlay d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb bg-transparent p-0 mb-2">
+                        <li class="breadcrumb-item"><a asp-controller="CourtOwnerDashboard" asp-action="Index">Tổng quan</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="OwnerCourt" asp-action="Index" asp-route-courtComplexId="@Model.CourtComplexId">@Model.CourtComplexName</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.CourtName</li>
+                    </ol>
+                </nav>
+                <h1 class="display-5 fw-bold">Lịch Đặt Chỗ</h1>
+            </div>
+            <div>
+                <a asp-controller="TimeSlotManagement" asp-action="Index" asp-route-courtId="@Model.CourtId" class="btn btn-outline-secondary">
+                    <i class="fas fa-edit me-1"></i> Thiết Lập Lịch Mẫu
+                </a>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-4">
+            <a asp-action="Schedule" asp-route-courtId="@Model.CourtId" asp-route-date="@startDateOfWeek.AddDays(-7).ToString("yyyy-MM-dd")"
+               class="btn btn-secondary">
+                <i class="fas fa-chevron-left"></i> Tuần Trước
+            </a>
+            <h4 class="mb-0">Tuần từ @startDateOfWeek.ToString("dd/MM", cultureInfo) đến @startDateOfWeek.AddDays(6).ToString("dd/MM/yyyy", cultureInfo)</h4>
+            <a asp-action="Schedule" asp-route-courtId="@Model.CourtId" asp-route-date="@startDateOfWeek.AddDays(7).ToString("yyyy-MM-dd")"
+               class="btn btn-secondary">
+                Tuần Sau <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+
+        <div id="status-container"></div>
+
+        <div class="schedule-grid">
+            <div class="grid-header">Thời gian</div>
+            @for (int i = 0; i < 7; i++)
+            {
+                var day = startDateOfWeek.AddDays(i);
+                <div class="grid-header">
+                    <div>@cultureInfo.DateTimeFormat.GetDayName(day.DayOfWeek)</div>
+                    <div class="small text-muted">@day.ToString("dd/MM/yyyy", cultureInfo)</div>
+                </div>
+            }
+
+            @if (Model.Slots.Any())
+            {
+                var timeGroups = Model.Slots.GroupBy(s => s.StartTime).OrderBy(g => g.Key);
+                foreach (var group in timeGroups)
+                {
+                    <div class="grid-time-header">
+                        @group.Key.ToString("HH:mm") - @group.First().EndTime.ToString("HH:mm")
+                    </div>
+
+                    @for (int i = 0; i < 7; i++)
+                    {
+                        var day = startDateOfWeek.AddDays(i);
+                        var slot = group.FirstOrDefault(s => s.Date.Date == day.Date);
+                        var isPast = slot != null && (slot.Date.Date < currentDateTime.Date || (slot.Date.Date == currentDateTime.Date && slot.StartTime < TimeOnly.FromTimeSpan(currentDateTime.TimeOfDay)));
+
+                        if (slot != null)
+                        {
+                            var statusClass = isPast ? "past" : slot.Status.ToLower();
+                            <div class="grid-slot @statusClass"
+                                 data-slot-date="@slot.Date.ToString("yyyy-MM-dd")"
+                                 data-start-time="@slot.StartTime.ToString("HH:mm:ss")"
+                                 role="button"
+                                 aria-label="@(slot.Status == "Available" && !isPast ? $"Chọn khung giờ {slot.StartTime:HH:mm} ngày {slot.Date:dd/MM} còn trống" : slot.Status == "Booked" ? $"Đã đặt bởi {slot.CustomerName}" : "Không khả dụng")"
+                            @(slot.Status == "Available" && !isPast ? "tabindex='0'" : "")
+                                 title="@(slot.Status == "Available" && !isPast ? "Nhấp hoặc kéo để chọn" : "")">
+                                @if (slot.Status == "Booked")
+                                {
+                                    <div class="fw-bold">@slot.CustomerName</div>
+                                    <div class="small">@slot.CustomerPhone</div>
+                                    <div class="small text-muted mt-1">@slot.Price.ToString("N0") đ</div>
+                                }
+                                else if (slot.Status == "Available" && !isPast)
+                                {
+                                    <div class="fw-bold">@slot.Price.ToString("N0") đ</div>
+                                    <div class="small text-success">Còn trống</div>
+                                }
+                                else if (isPast)
+                                {
+                                    <div class="small">Đã qua</div>
+                                }
+                                else
+                                {
+                                    <div class="small">Đóng</div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="grid-slot closed"><div class="small">N/A</div></div>
+                        }
+                    }
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<div id="bulkActionToolbar" class="card shadow-lg p-2 bg-light border-primary">
+    <div class="d-flex align-items-center gap-3">
+        <span class="fw-bold me-2 text-primary">Đã chọn: <span id="selectedCount">0</span> slot</span>
+        <button class="btn btn-primary" id="bulkBookBtn" aria-label="Đặt chỗ cho khách vãng lai">
+            <i class="fas fa-user-plus me-1"></i> Đặt cho khách vãng lai
+        </button>
+        <button class="btn btn-danger" id="bulkDeselectAllBtn" title="Bỏ chọn tất cả" aria-label="Bỏ chọn tất cả slot">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="manualBookingForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookingModalLabel">Đặt chỗ cho khách vãng lai</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        <strong>Sân:</strong> @Model.CourtName <br />
+                        <strong>Số lượng slot đã chọn:</strong> <span id="modalSlotCount" class="fw-bold"></span> <br />
+                        <strong>Khung giờ:</strong>
+                        <ul id="selectedSlotsList" class="list-unstyled mt-2"></ul>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Tên khách hàng<span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="customerName" placeholder="Nguyễn Văn A" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerPhone" class="form-label">Số điện thoại khách hàng<span class="text-danger">*</span></label>
+                        <input type="tel" class="form-control" id="customerPhone" placeholder="0901234567" required pattern="0[0-9]{9}">
+                        <div class="invalid-feedback">Vui lòng nhập số điện thoại hợp lệ (10 số, bắt đầu bằng 0).</div>
+                    </div>
+                    <div id="modalError" class="text-danger small mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="confirmBookingBtn">
+                        <span class="button-text">Xác nhận Đặt chỗ</span>
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        console.log("DATA RECEIVED BY VIEW:", @Html.Raw(Json.Serialize(Model)));
+        document.addEventListener('DOMContentLoaded', function () {
+            const scheduleContainer = document.querySelector('.schedule-container');
+            const scheduleGrid = document.querySelector('.schedule-grid');
+            const bulkActionToolbar = document.getElementById('bulkActionToolbar');
+            const selectedCountSpan = document.getElementById('selectedCount');
+            const bookingModalEl = document.getElementById('bookingModal');
+            const bookingModal = new bootstrap.Modal(bookingModalEl);
+            const bookingForm = document.getElementById('manualBookingForm');
+            const statusContainer = document.getElementById('status-container');
+            const modalErrorDiv = document.getElementById('modalError');
+            const antiForgeryToken = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value;
+
+            let selectedSlots = new Set();
+            let isMouseDown = false;
+            let isDragging = false;
+
+            scheduleContainer.classList.add('loading');
+            setTimeout(() => scheduleContainer.classList.remove('loading'), 500);
+
+            function updateBulkToolbar() {
+                const count = selectedSlots.size;
+                if (selectedCountSpan) selectedCountSpan.textContent = count;
+                if (bulkActionToolbar) bulkActionToolbar.classList.toggle('show', count > 0);
+            }
+
+            function deselectAll() {
+                selectedSlots.clear();
+                document.querySelectorAll('.grid-slot.is-selected').forEach(el => el.classList.remove('is-selected'));
+                updateBulkToolbar();
+            }
+
+            function debounce(func, wait) {
+                let timeout;
+                return function (...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            }
+
+            scheduleGrid.addEventListener('mousedown', function (e) {
+                const slotDiv = e.target.closest('.grid-slot.available');
+                if (!slotDiv) return;
+                e.preventDefault();
+                isMouseDown = true;
+                isDragging = false;
+                const slotIdentifier = `${slotDiv.dataset.slotDate}|${slotDiv.dataset.startTime}`;
+                slotDiv.classList.toggle('is-selected');
+                if (slotDiv.classList.contains('is-selected')) {
+                    selectedSlots.add(slotIdentifier);
+                } else {
+                    selectedSlots.delete(slotIdentifier);
+                }
+                updateBulkToolbar();
+            });
+
+            scheduleGrid.addEventListener('mouseover', debounce(function (e) {
+                if (!isMouseDown) return;
+                isDragging = true;
+                const slotDiv = e.target.closest('.grid-slot.available');
+                if (slotDiv) {
+                    const slotIdentifier = `${slotDiv.dataset.slotDate}|${slotDiv.dataset.startTime}`;
+                    if (!selectedSlots.has(slotIdentifier)) {
+                        slotDiv.classList.add('is-selected');
+                        selectedSlots.add(slotIdentifier);
+                        updateBulkToolbar();
+                    }
+                }
+            }, 50));
+
+            scheduleGrid.addEventListener('keydown', function (e) {
+                const slotDiv = e.target.closest('.grid-slot.available');
+                if (!slotDiv) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const slotIdentifier = `${slotDiv.dataset.slotDate}|${slotDiv.dataset.startTime}`;
+                    slotDiv.classList.toggle('is-selected');
+                    if (slotDiv.classList.contains('is-selected')) {
+                        selectedSlots.add(slotIdentifier);
+                    } else {
+                        selectedSlots.delete(slotIdentifier);
+                    }
+                    updateBulkToolbar();
+                }
+            });
+
+            document.addEventListener('mouseup', function () {
+                isMouseDown = false;
+                isDragging = false;
+            });
+
+            scheduleGrid.addEventListener('click', function (e) {
+                if (isDragging) return;
+            });
+
+            document.getElementById('bulkDeselectAllBtn')?.addEventListener('click', deselectAll);
+            document.getElementById('bulkBookBtn')?.addEventListener('click', function () {
+                if (selectedSlots.size === 0) return;
+                document.getElementById('modalSlotCount').textContent = selectedSlots.size;
+                modalErrorDiv.textContent = '';
+                const slotsList = document.getElementById('selectedSlotsList');
+                slotsList.innerHTML = '';
+                selectedSlots.forEach(slot => {
+                    const [date, time] = slot.split('|');
+                    const slotItem = document.createElement('li');
+                    slotItem.textContent = `${new Date(date).toLocaleDateString('vi-VN')} - ${time}`;
+                    slotsList.appendChild(slotItem);
+                });
+                bookingForm.reset();
+                bookingModal.show();
+            });
+
+            bookingForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                modalErrorDiv.textContent = '';
+                const submitButton = document.getElementById('confirmBookingBtn');
+                const buttonText = submitButton.querySelector('.button-text');
+                const spinner = submitButton.querySelector('.spinner-border');
+                submitButton.disabled = true;
+                buttonText.textContent = 'Đang xử lý...';
+                spinner.classList.remove('d-none');
+                const slotsToBook = Array.from(selectedSlots).map(id => {
+                    const [date, time] = id.split('|');
+                    return { slotDate: date, startTime: time };
+                });
+                const dto = {
+                    courtId: @Model.CourtId,
+                    slots: slotsToBook,
+                    customerName: document.getElementById('customerName').value,
+                    customerPhone: document.getElementById('customerPhone').value
+                };
+                try {
+                    const response = await fetch('/BookingManagement/CreateBulkManualBooking', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': antiForgeryToken
+                        },
+                        body: JSON.stringify(dto)
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        bookingModal.hide();
+                        showStatus(result.message || 'Đặt chỗ thành công!', 'success');
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        modalErrorDiv.textContent = result.message || 'Đã xảy ra lỗi.';
+                    }
+                } catch (error) {
+                    console.error("Error creating bulk manual booking:", error);
+                    modalErrorDiv.textContent = 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
+                } finally {
+                    submitButton.disabled = false;
+                    buttonText.textContent = 'Xác nhận Đặt chỗ';
+                    spinner.classList.add('d-none');
+                }
+            });
+
+            function showStatus(message, type = 'info') {
+                if (!statusContainer) return;
+                const icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="fas fa-${icon} me-2"></i>
+                        <div>${message}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                statusContainer.innerHTML = alertHtml;
+                setTimeout(() => {
+                    const alert = statusContainer.querySelector('.alert');
+                    if (alert) alert.classList.remove('show');
+                }, 3000);
+            }
+
+            function adjustGridForMobile() {
+                if (window.innerWidth <= 768) {
+                    const headers = document.querySelectorAll('.grid-header:not(:first-child)');
+                    headers.forEach((header, index) => {
+                        const daySlots = document.querySelectorAll(`.grid-slot:nth-child(${(index + 2) * 8}n + ${(index + 2)})`);
+                        daySlots.forEach(slot => slot.style.display = 'none');
+                    });
+                }
+            }
+
+            window.addEventListener('resize', adjustGridForMobile);
+            adjustGridForMobile();
+        });
+    </script>
+}

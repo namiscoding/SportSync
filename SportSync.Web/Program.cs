@@ -10,6 +10,7 @@ using CloudinaryDotNet.Core;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using SportSync.Data.Interfaces;
 using SportSync.Data.Repositories;
+using SportSync.Business.Settings;
 
 
 
@@ -26,12 +27,10 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true; // Đảm bảo cookie session hoạt động ngay cả khi người dùng chưa chấp nhận cookie policy
 });
 builder.Services.AddScoped<ICourtSearchService, CourtSearchService>();
-// Add services to the container.
 builder.Services.AddControllersWithViews();
-// 1. Lấy chuỗi kết nối từ appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// 2. Đăng ký ApplicationDbContext
+builder.Services.Configure<ESmsSettings>(builder.Configuration.GetSection("ESmsSettings"));
+builder.Services.AddHttpClient();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
     {
@@ -91,8 +90,11 @@ builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<CourtManagementService>();
 builder.Services.AddScoped<ISportTypeService, SportTypeService>();
 builder.Services.AddScoped<SportTypeManagementService>();
-
-builder.Services.AddTransient<ISmsSender, DebugSmsSender>();
+builder.Services.AddScoped<ITimeSlotManagementService, TimeSlotManagementService>();
+builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
+builder.Services.AddScoped<ICourtOwnerDashboardService, CourtOwnerDashboardService>();
+builder.Services.AddScoped<SportSync.Business.Interfaces.ITimeSlotService, SportSync.Business.Services.TimeSlotService>();
+builder.Services.AddScoped<ISmsSender, ESmsSender>();
 
 
 var app = builder.Build();
