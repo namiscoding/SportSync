@@ -6,38 +6,30 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <a asp-controller="Home" asp-action="Index" class="auth-logo-link">
-                <span class="fw-bold fs-3">Sport<span class="text-primary">Sync</span></span>
-            </a>
             <h1 class="auth-title mt-3">Đăng Ký Tài Khoản</h1>
             <p class="auth-subtitle">Tạo tài khoản mới để trải nghiệm dịch vụ của chúng tôi</p>
         </div>
 
-        <div class="registration-progress mb-4">
+        <div class="registration-progress mb-4" style="display: none;">
+            @* Ẩn thanh tiến độ nếu chỉ có 1 bước *@
             <div class="progress-bar">
-                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                <div class="progress-fill" id="progressFill" style="width: 100%;"></div> @* Luôn hiển thị 100% nếu chỉ có 1 bước *@
             </div>
             <div class="progress-steps">
                 <div class="step active" id="step1">
+                    @* Giữ lại để dễ tùy biến nếu muốn thêm bước sau này *@
                     <div class="step-number">1</div>
-                    <div class="step-label">Nhập SĐT</div>
-                </div>
-                <div class="step" id="step2">
-                    <div class="step-number">2</div>
-                    <div class="step-label">Nhập OTP</div>
-                </div>
-                <div class="step" id="step3">
-                    <div class="step-number">3</div>
                     <div class="step-label">Hoàn tất</div>
                 </div>
+                @* Bỏ các bước 2 và 3 liên quan đến OTP *@
             </div>
         </div>
 
         <div class="registration-form">
-            @* Bước 1: Nhập Số Điện Thoại *@
-            <div id="phoneNumberSection" class="register-step active">
-                <h2 class="step-title visually-hidden">Xác thực số điện thoại</h2>
-                <p class="step-description text-center mb-3">Chúng tôi sẽ gửi mã OTP đến số điện thoại của bạn.</p>
+            @* Bước 1: Nhập Số Điện Thoại, Họ tên, Mật khẩu (kết hợp các bước cũ) *@
+            <div id="completeInfoSection" class="register-step active">
+                @* Đổi ID và luôn active *@
+                <h2 class="step-title visually-hidden">Hoàn tất thông tin tài khoản</h2>
 
                 <div class="form-floating mb-3">
                     <input type="tel" id="phoneNumberInput" class="form-control form-control-lg" placeholder="Nhập số điện thoại">
@@ -45,55 +37,6 @@
                     <div class="form-text">Nhập số điện thoại bắt đầu bằng 0 hoặc +84.</div>
                     <div id="phoneNumberError" class="invalid-feedback d-block"></div>
                 </div>
-
-                <div class="d-grid gap-2">
-                    <button type="button" id="sendOtpButton" class="btn btn-primary btn-lg">
-                        <span class="button-text">Gửi Mã OTP</span>
-                        <div id="loader" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;">
-                            <span class="visually-hidden">Đang xử lý...</span>
-                        </div>
-                    </button>
-                </div>
-            </div>
-
-            @* Bước 2: Nhập Mã OTP *@
-            <div id="otpSection" class="register-step" style="display:none;">
-                <h2 class="step-title visually-hidden">Xác nhận mã OTP</h2>
-                <p class="step-description text-center mb-3">Mã OTP (6 chữ số) đã được gửi đến <strong id="otpPhoneNumberDisplay"></strong>.</p>
-
-                <div class="otp-container mb-3">
-                    <input type="text" class="otp-input form-control-lg text-center" maxlength="1" data-index="0">
-                    <input type="text" class="otp-input form-control-lg text-center" maxlength="1" data-index="1">
-                    <input type="text" class="otp-input form-control-lg text-center" maxlength="1" data-index="2">
-                    <input type="text" class="otp-input form-control-lg text-center" maxlength="1" data-index="3">
-                    <input type="text" class="otp-input form-control-lg text-center" maxlength="1" data-index="4">
-                    <input type="text" class="otp-input form-control-lg text-center" maxlength="1" data-index="5">
-                </div>
-                <input type="hidden" id="otpInputHidden">
-                <div id="otpError" class="text-danger text-center mb-3"></div>
-
-                <div class="otp-timer text-center mb-3">
-                    <span>Mã còn hiệu lực trong: <span id="otpTimer" class="fw-bold">02:00</span></span>
-                </div>
-                <div class="text-center mb-3">
-                    <button type="button" id="resendOtpButton" class="btn btn-link p-0" disabled>Gửi lại mã</button>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button type="button" id="verifyOtpAndProceedButton" class="btn btn-primary btn-lg">
-                        <span class="button-text">Xác Thực OTP & Tiếp Tục</span>
-                        <div id="otpVerifyLoader" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></div>
-                    </button>
-                </div>
-                <div class="text-center mt-3">
-                    <button type="button" id="cancelOtpEntryButton" class="btn btn-link text-secondary">Thay đổi SĐT</button>
-                </div>
-            </div>
-
-            @* Bước 3: Hoàn tất thông tin (Họ tên, Mật khẩu) *@
-            <div id="completeInfoSection" class="register-step" style="display:none;">
-                <h2 class="step-title visually-hidden">Hoàn tất thông tin tài khoản</h2>
-                <p class="step-description text-center mb-3">Tạo tài khoản cho số điện thoại <strong id="finalPhoneNumberDisplay"></strong>.</p>
 
                 <div class="form-floating mb-3">
                     <input type="text" id="fullNameInput" class="form-control form-control-lg" placeholder="Nhập họ và tên">
@@ -122,10 +65,11 @@
                         <div id="registrationLoader" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></div>
                     </button>
                 </div>
-                <div class="text-center mt-3">
-                    <button type="button" id="backToOtpButton" class="btn btn-link text-secondary">Quay lại nhập OTP</button>
-                </div>
             </div>
+
+            @* Xóa hoàn toàn các section liên quan đến OTP *@
+            <div id="phoneNumberSection" class="register-step" style="display:none;"></div>
+            <div id="otpSection" class="register-step" style="display:none;"></div>
         </div>
 
         <div id="authStatus" class="alert mt-4" role="alert" style="display: none;"></div>
@@ -136,55 +80,49 @@
     </div>
 </div>
 
-
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // DOM Elements
             const phoneNumberInput = document.getElementById('phoneNumberInput');
-            const sendOtpButton = document.getElementById('sendOtpButton');
-            const loader = document.getElementById('loader');
-            const authStatus = document.getElementById('authStatus');
-            const phoneNumberError = document.getElementById('phoneNumberError');
-
-            const phoneNumberSection = document.getElementById('phoneNumberSection');
-            const otpSection = document.getElementById('otpSection');
-            const completeInfoSection = document.getElementById('completeInfoSection');
-
-            const otpPhoneNumberDisplay = document.getElementById('otpPhoneNumberDisplay');
-            const otpInputs = document.querySelectorAll('.otp-input');
-            const otpInputHidden = document.getElementById('otpInputHidden');
-            const verifyOtpAndProceedButton = document.getElementById('verifyOtpAndProceedButton');
-            const cancelOtpEntryButton = document.getElementById('cancelOtpEntryButton');
-            const resendOtpButton = document.getElementById('resendOtpButton');
-            const otpVerifyLoader = document.getElementById('otpVerifyLoader');
-            const otpError = document.getElementById('otpError');
-            const otpTimerDisplay = document.getElementById('otpTimer');
-
-            const finalPhoneNumberDisplay = document.getElementById('finalPhoneNumberDisplay');
             const fullNameInput = document.getElementById('fullNameInput');
-            const fullNameError = document.getElementById('fullNameError');
             const passwordInput = document.getElementById('passwordInput');
             const confirmPasswordInput = document.getElementById('confirmPasswordInput');
             const completeRegistrationButton = document.getElementById('completeRegistrationButton');
             const registrationLoader = document.getElementById('registrationLoader');
+
+            const authStatus = document.getElementById('authStatus');
+            const phoneNumberError = document.getElementById('phoneNumberError');
+            const fullNameError = document.getElementById('fullNameError');
             const passwordError = document.getElementById('passwordError');
             const confirmPasswordError = document.getElementById('confirmPasswordError');
-            const backToOtpButton = document.getElementById('backToOtpButton');
+
+            // Xóa bỏ các biến liên quan đến OTP không còn dùng
+            // const otpInputs = document.querySelectorAll('.otp-input');
+            // const otpInputHidden = document.getElementById('otpInputHidden');
+            // const otpPhoneNumberDisplay = document.getElementById('otpPhoneNumberDisplay');
+            // const otpTimerDisplay = document.getElementById('otpTimer');
+            // const sendOtpButton = document.getElementById('sendOtpButton');
+            // const resendOtpButton = document.getElementById('resendOtpButton');
+            // const verifyOtpAndProceedButton = document.getElementById('verifyOtpAndProceedButton');
+            // const cancelOtpEntryButton = document.getElementById('cancelOtpEntryButton');
+            // const backToOtpButton = document.getElementById('backToOtpButton');
+            // const loader = document.getElementById('loader');
+            // const otpVerifyLoader = document.getElementById('otpVerifyLoader');
+            // const otpError = document.getElementById('otpError');
+            // let otpTimerInterval = null;
+            // let otpRemainingTime = 120;
+
 
             const progressFill = document.getElementById('progressFill');
             const stepIndicators = [
-                document.getElementById('step1'),
-                document.getElementById('step2'),
-                document.getElementById('step3')
+                document.getElementById('step1') // Chỉ giữ lại step 1
             ];
 
-            let currentNormalizedPhoneNumber = null;
-            let otpTimerInterval = null;
-            let otpRemainingTime = 120;
+            let currentNormalizedPhoneNumber = null; // Vẫn cần để gửi lên server
 
             // --- Helper Functions ---
-            function showStatus(message, type = 'info') { /* ... (giữ nguyên) ... */
+            function showStatus(message, type = 'info') {
                 if (authStatus) {
                     authStatus.textContent = message;
                     authStatus.className = `alert alert-${type} mt-4`;
@@ -194,20 +132,24 @@
                     }
                 } else { console.warn("AuthStatus element not found"); }
             }
-            function clearStatus() { /* ... (giữ nguyên) ... */
-                 if (authStatus) authStatus.style.display = 'none';
+
+            function clearStatus() {
+                if (authStatus) authStatus.style.display = 'none';
                 if (phoneNumberError) phoneNumberError.textContent = '';
-                if (otpError) otpError.textContent = '';
+                // Xóa bỏ các error liên quan đến OTP
+                // if (otpError) otpError.textContent = '';
                 if (fullNameError) fullNameError.textContent = '';
                 if (passwordError) passwordError.textContent = '';
                 if (confirmPasswordError) confirmPasswordError.textContent = '';
                 document.querySelectorAll('.form-control.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             }
-            function showInputError(inputEl, errorEl, message) { /* ... (giữ nguyên) ... */
+
+            function showInputError(inputEl, errorEl, message) {
                 if (inputEl) inputEl.classList.add('is-invalid');
                 if (errorEl) errorEl.textContent = message;
             }
-            function formatPhoneNumberToE164(phoneNumber) { /* ... (giữ nguyên) ... */
+
+            function formatPhoneNumberToE164(phoneNumber) {
                 let cleaned = phoneNumber.replace(/\D/g, '');
                 if (cleaned.startsWith("84")) { if (cleaned.length > 9 && cleaned.length < 12) return "+" + cleaned; }
                 else if (cleaned.startsWith("0")) { if (cleaned.length === 10) return "+84" + cleaned.substring(1); }
@@ -216,39 +158,29 @@
                 return null;
             }
 
-            // --- Progress Bar & Step Navigation ---
-            function updateProgress(currentStep) { /* ... (giữ nguyên) ... */
-                let progressPercentage = 0;
-                if (currentStep === 1) progressPercentage = 0;
-                else if (currentStep === 2) progressPercentage = 33;
-                else if (currentStep === 3) progressPercentage = 66;
-
-                if (progressFill) progressFill.style.width = `${progressPercentage}%`;
-
+            // --- Progress Bar & Step Navigation (Đơn giản hóa) ---
+            function updateProgress(currentStep) {
+                // Với luồng đăng ký không OTP, luôn hiển thị 100% và chỉ có 1 bước active
+                if (progressFill) progressFill.style.width = `100%`;
                 stepIndicators.forEach((stepEl, index) => {
                     if (stepEl) {
                         stepEl.classList.remove('active', 'completed');
-                        if (index < currentStep - 1) {
-                            stepEl.classList.add('completed');
-                        } else if (index === currentStep - 1) {
-                            stepEl.classList.add('active');
+                        if (index === 0) { // Step 1 luôn là active/completed
+                            stepEl.classList.add('active'); // Hoặc 'completed' tùy ý muốn hiển thị
                         }
                     } else { console.warn(`Step indicator at index ${index} is null.`); }
                 });
 
+                // Ẩn tất cả các section không cần thiết, chỉ hiển thị completeInfoSection
                 document.querySelectorAll('.register-step').forEach(section => {
-                    if (section) {
+                    if (section && section.id !== 'completeInfoSection') { // Giữ lại id của section bạn muốn hiển thị
                         section.style.opacity = '0';
                         section.style.display = 'none';
                         section.classList.remove('active');
                     }
                 });
 
-                let activeSection;
-                if (currentStep === 1) activeSection = phoneNumberSection;
-                else if (currentStep === 2) activeSection = otpSection;
-                else if (currentStep === 3) activeSection = completeInfoSection;
-
+                const activeSection = document.getElementById('completeInfoSection');
                 if(activeSection) {
                     activeSection.classList.add('active');
                     activeSection.style.display = 'block';
@@ -256,199 +188,79 @@
                 }
             }
 
-            // --- OTP Input Handling ---
-            if (otpInputs && otpInputs.length > 0) { /* ... (giữ nguyên) ... */
-                otpInputs.forEach((input, idx) => {
-                    input.addEventListener('input', (e) => {
-                        const value = e.target.value;
-                        if (value && idx < otpInputs.length - 1) {
-                            otpInputs[idx + 1].focus();
-                        }
-                        collectAndSetOtp();
-                    });
-                    input.addEventListener('keydown', (e) => {
-                        if (e.key === 'Backspace' && !e.target.value && idx > 0) {
-                            otpInputs[idx - 1].focus();
-                        }
-                    });
-                     input.addEventListener('paste', (e) => {
-                        e.preventDefault();
-                        const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
-                        if (pasteData.length === 6) {
-                            otpInputs.forEach((otpField, index) => {
-                                otpField.value = pasteData[index] || '';
-                            });
-                            collectAndSetOtp();
-                            otpInputs[otpInputs.length - 1].focus();
-                        }
-                    });
-                });
-            }
-            function collectAndSetOtp() { /* ... (giữ nguyên) ... */
-                let otpValue = "";
-                otpInputs.forEach(input => otpValue += input.value);
-                if (otpInputHidden) otpInputHidden.value = otpValue;
-            }
-
-            // --- OTP Timer ---
-            function startOtpTimer() { /* ... (giữ nguyên) ... */
-                clearInterval(otpTimerInterval);
-                otpRemainingTime = 120;
-                if (resendOtpButton) resendOtpButton.disabled = true;
-                updateOtpTimerDisplay();
-                otpTimerInterval = setInterval(() => {
-                    otpRemainingTime--;
-                    updateOtpTimerDisplay();
-                    if (otpRemainingTime <= 0) {
-                        clearInterval(otpTimerInterval);
-                        if (otpTimerDisplay) otpTimerDisplay.textContent = "Hết hạn";
-                        if (resendOtpButton) resendOtpButton.disabled = false;
-                    }
-                }, 1000);
-            }
-            function updateOtpTimerDisplay() { /* ... (giữ nguyên) ... */
-                if (otpTimerDisplay) {
-                    const minutes = Math.floor(otpRemainingTime / 60);
-                    const seconds = otpRemainingTime % 60;
-                    otpTimerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                }
-            }
-
-            // --- Event Listeners ---
-            if (sendOtpButton) { /* ... (giữ nguyên) ... */
-                sendOtpButton.addEventListener('click', () => sendOtpLogic(false));
-            }
-            if (resendOtpButton) { /* ... (giữ nguyên) ... */
-                resendOtpButton.addEventListener('click', () => sendOtpLogic(true));
-            }
-
-            if (verifyOtpAndProceedButton) { /* ... (giữ nguyên) ... */
-                verifyOtpAndProceedButton.addEventListener('click', async function() {
-                    clearStatus();
-                    const otpCode = otpInputHidden ? otpInputHidden.value.trim() : "";
-                    if (!otpCode || otpCode.length !== 6) {
-                        showInputError(otpInputs[0], otpError, 'Vui lòng nhập đủ 6 chữ số OTP.');
-                        if (otpInputs[0]) otpInputs[0].focus();
-                        return;
-                    }
-
-                    if (!currentNormalizedPhoneNumber) {
-                        showStatus('Lỗi: Không tìm thấy số điện thoại đã gửi OTP. Vui lòng thử lại.', 'danger');
-                        updateProgress(1);
-                        return;
-                    }
-
-                    const buttonTextEl = this.querySelector('.button-text');
-                    const spinnerEl = this.querySelector('.spinner-border');
-                    if(buttonTextEl) buttonTextEl.style.display = 'none';
-                    if(spinnerEl) spinnerEl.style.display = 'inline-block';
-                    this.disabled = true;
-
-                    try {
-                        const response = await fetch('/Account/VerifyRegistrationOtp', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                            body: JSON.stringify({ PhoneNumber: currentNormalizedPhoneNumber, OtpCode: otpCode })
-                        });
-                        const data = await response.json();
-
-                        if (response.ok && data.success) {
-                            showStatus(data.message || 'Xác thực OTP thành công!', 'success');
-                            console.log("OTP verified with server, proceeding to final info step.");
-                            updateProgress(3);
-                            if (finalPhoneNumberDisplay) finalPhoneNumberDisplay.textContent = currentNormalizedPhoneNumber;
-                            if (fullNameInput) fullNameInput.focus();
-                        } else {
-                            showStatus(data.message || 'Mã OTP không chính xác hoặc đã hết hạn.', 'danger');
-                            showInputError(otpInputs[0], otpError, data.message || 'Mã OTP không chính xác.');
-                            if (otpInputs[0]) otpInputs[0].focus();
-                        }
-                    } catch (error) {
-                        console.error("Lỗi khi gọi VerifyRegistrationOtp:", error);
-                        showStatus('Lỗi kết nối máy chủ khi xác thực OTP.', 'danger');
-                    } finally {
-                        if(buttonTextEl) buttonTextEl.style.display = 'inline-block';
-                        if(spinnerEl) spinnerEl.style.display = 'none';
-                        this.disabled = false;
-                    }
-                });
-            }
-
-            if (cancelOtpEntryButton) { /* ... (giữ nguyên) ... */
-                 cancelOtpEntryButton.addEventListener('click', function() {
-                    clearStatus();
-                    updateProgress(1);
-                    if (phoneNumberInput) phoneNumberInput.value = '';
-                    otpInputs.forEach(input => input.value = '');
-                    if (otpInputHidden) otpInputHidden.value = '';
-                    currentNormalizedPhoneNumber = null;
-                    if (phoneNumberInput) phoneNumberInput.focus();
-                    if (sendOtpButton) sendOtpButton.disabled = false;
-                    clearInterval(otpTimerInterval);
-                    if (otpTimerDisplay) otpTimerDisplay.textContent = "02:00";
-                });
-            }
-            if (backToOtpButton) { /* ... (giữ nguyên) ... */
-                backToOtpButton.addEventListener('click', function() {
-                    clearStatus();
-                    updateProgress(2);
-                    if (otpInputs[0]) otpInputs[0].focus();
-                });
-            }
+            // --- Event Listener cho nút Hoàn Tất Đăng Ký ---
             if (completeRegistrationButton) {
                 completeRegistrationButton.addEventListener('click', async function() {
                     clearStatus();
-                    const otpCode = otpInputHidden ? otpInputHidden.value.trim() : "";
+
+                    const rawPhoneNumber = phoneNumberInput ? phoneNumberInput.value.trim() : "";
+                    currentNormalizedPhoneNumber = formatPhoneNumberToE164(rawPhoneNumber);
+
                     const fullName = fullNameInput ? fullNameInput.value.trim() : "";
                     const password = passwordInput ? passwordInput.value : "";
                     const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : "";
                     let isValid = true;
 
-                    if (!currentNormalizedPhoneNumber) { showStatus('Vui lòng bắt đầu lại từ bước nhập số điện thoại.', 'danger'); isValid = false; }
-                    if (!otpCode || otpCode.length !== 6) {
-                        showStatus('Mã OTP chưa được nhập hoặc không hợp lệ. Vui lòng quay lại bước nhập OTP.', 'warning');
-                        updateProgress(2);
+                    // Validate inputs
+                    if (!currentNormalizedPhoneNumber) {
+                        showInputError(phoneNumberInput, phoneNumberError, 'Số điện thoại không hợp lệ.');
                         isValid = false;
                     }
-                    if (!fullName) { showInputError(fullNameInput, fullNameError, 'Vui lòng nhập họ và tên'); if(isValid && fullNameInput) fullNameInput.focus(); isValid = false; }
-                    if (!password || password.length < 6) { showInputError(passwordInput, passwordError, 'Mật khẩu ít nhất 6 ký tự.'); if(isValid && passwordInput) passwordInput.focus(); isValid = false; }
-                    if (password !== confirmPassword) { showInputError(confirmPasswordInput, confirmPasswordError, 'Mật khẩu không khớp.'); if(isValid && confirmPasswordInput) confirmPasswordInput.focus(); isValid = false; }
+                    if (!fullName) {
+                        showInputError(fullNameInput, fullNameError, 'Vui lòng nhập họ và tên.');
+                        if(isValid) fullNameInput.focus(); // Focus vào trường lỗi đầu tiên
+                        isValid = false;
+                    }
+                    // Validate password complexity (you might want a more robust regex here)
+                    if (!password || password.length < 6 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+                        showInputError(passwordInput, passwordError, 'Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, chữ thường và số.');
+                        if(isValid) passwordInput.focus();
+                        isValid = false;
+                    }
+                    if (password !== confirmPassword) {
+                        showInputError(confirmPasswordInput, confirmPasswordError, 'Mật khẩu xác nhận không khớp.');
+                        if(isValid) confirmPasswordInput.focus();
+                        isValid = false;
+                    }
 
-                    if (!isValid) return;
+                    if (!isValid) {
+                        showStatus('Vui lòng kiểm tra lại thông tin đăng ký.', 'danger');
+                        return;
+                    }
 
                     completeRegistrationButton.disabled = true;
                     if (registrationLoader) registrationLoader.style.display = 'inline-block';
                     showStatus('Đang hoàn tất đăng ký...', 'info');
 
                     try {
-                        const response = await fetch('/Account/CompleteRegistration', {
+                        const response = await fetch('/Account/Register', { // Giả định bạn có một action Register mới trên server
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                             body: JSON.stringify({
-                                PhoneNumber: currentNormalizedPhoneNumber, OtpCode: otpCode,
-                                FullName: fullName, Password: password, ConfirmPassword: confirmPassword
+                                PhoneNumber: currentNormalizedPhoneNumber,
+                                FullName: fullName,
+                                Password: password,
+                                ConfirmPassword: confirmPassword
                             })
                         });
                         const data = await response.json();
+
                         if (response.ok && data.success) {
                             showStatus('Đăng ký thành công! Đang chuyển hướng...', 'success');
-                            stepIndicators.forEach(s => { if(s) {s.classList.remove('active'); s.classList.add('completed');} });
-                            if (progressFill) progressFill.style.width = '100%';
+                            // Tùy chọn: Xóa form hoặc chuyển hướng
                             setTimeout(() => { window.location.href = data.redirectUrl || '/'; }, 1500);
                         } else {
                             let serverErrorMessage = data.message || 'Không thể hoàn tất đăng ký.';
                             if (data.errors && Array.isArray(data.errors)) {
-                                serverErrorMessage = data.errors.join(' '); // Nối các lỗi thành một chuỗi
+                                serverErrorMessage = data.errors.join(' ');
+                                // Xử lý lỗi cụ thể từ server nếu cần, ví dụ:
                                 data.errors.forEach(err => {
                                     const errLower = err.toLowerCase();
-                                    if (errLower.includes("otp")) {
-                                        showInputError(otpInputs[0], otpError, err);
-                                        updateProgress(2); // Quay lại bước OTP nếu OTP sai từ server
-                                    }
-                                    else if (errLower.includes("mật khẩu") && passwordError) {
+                                    if (errLower.includes("số điện thoại") && phoneNumberError) {
+                                        showInputError(phoneNumberInput, phoneNumberError, err);
+                                    } else if (errLower.includes("mật khẩu") && passwordError) {
                                         showInputError(passwordInput, passwordError, err);
-                                    }
-                                    else if (errLower.includes("họ và tên") && fullNameError) {
+                                    } else if (errLower.includes("họ và tên") && fullNameError) {
                                         showInputError(fullNameInput, fullNameError, err);
                                     }
                                 });
@@ -465,77 +277,8 @@
                 });
             }
 
-            async function sendOtpLogic(isResend = false) { /* ... (giữ nguyên) ... */
-                clearStatus();
-                if (!isResend && phoneNumberInput) {
-                    const rawPhoneNumber = phoneNumberInput.value.trim();
-                    currentNormalizedPhoneNumber = formatPhoneNumberToE164(rawPhoneNumber);
-                }
-
-                if (!currentNormalizedPhoneNumber) { showInputError(phoneNumberInput, phoneNumberError, 'SĐT không hợp lệ.'); if (phoneNumberInput) phoneNumberInput.focus(); return false; }
-
-                if (sendOtpButton) sendOtpButton.disabled = true;
-                if (resendOtpButton) resendOtpButton.disabled = true;
-                if (loader) loader.style.display = 'inline-block';
-                let otpSentSuccessfully = false;
-
-                try {
-                    if (!isResend) {
-                        const checkResponse = await fetch(`/Account/CheckPhoneNumberExistence?phoneNumber=${encodeURIComponent(currentNormalizedPhoneNumber)}`);
-                        const checkData = await checkResponse.json();
-                        if (checkResponse.ok && checkData.exists) {
-                            showStatus(checkData.message || 'Số điện thoại này đã được đăng ký.', 'warning');
-                        } else if (!checkResponse.ok) {
-                            showStatus('Không thể kiểm tra SĐT: ' + (checkData.message || 'Lỗi không xác định'), 'danger');
-                        } else {
-                            const response = await fetch('/Account/SendRegistrationOtp', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                                body: JSON.stringify({ PhoneNumber: currentNormalizedPhoneNumber })
-                            });
-                            const data = await response.json();
-                            if (response.ok && data.success) {
-                                showStatus(data.message || 'Mã OTP đã được gửi.', 'success');
-                                if (otpPhoneNumberDisplay) otpPhoneNumberDisplay.textContent = currentNormalizedPhoneNumber;
-                                updateProgress(2);
-                                otpInputs.forEach(input => input.value = ''); if (otpInputHidden) otpInputHidden.value = '';
-                                if (otpInputs[0]) otpInputs[0].focus();
-                                startOtpTimer();
-                                otpSentSuccessfully = true;
-                            } else {
-                                showStatus(data.message || 'Lỗi gửi OTP. Vui lòng thử lại.', 'danger');
-                            }
-                        }
-                    } else {
-                         const response = await fetch('/Account/SendRegistrationOtp', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                            body: JSON.stringify({ PhoneNumber: currentNormalizedPhoneNumber })
-                        });
-                        const data = await response.json();
-                        if (response.ok && data.success) {
-                            showStatus('Mã OTP mới đã được gửi lại.', 'success');
-                            startOtpTimer();
-                            if (otpInputs[0]) otpInputs[0].focus();
-                            otpSentSuccessfully = true;
-                        } else {
-                            showStatus(data.message || 'Lỗi gửi lại OTP.', 'danger');
-                        }
-                    }
-                } catch (error) {
-                    console.error("Lỗi khi gửi hoặc kiểm tra OTP:", error);
-                    showStatus('Lỗi kết nối máy chủ khi gửi OTP.', 'danger');
-                } finally {
-                    if (loader) loader.style.display = 'none';
-                    if (!otpSentSuccessfully && !isResend && sendOtpButton) {
-                        sendOtpButton.disabled = false;
-                    }
-                }
-                return otpSentSuccessfully;
-            }
-
-            // Password visibility toggle
-            document.querySelectorAll('.password-toggle').forEach(button => { /* ... (giữ nguyên) ... */
+            // Password visibility toggle (giữ nguyên)
+            document.querySelectorAll('.password-toggle').forEach(button => {
                 button.addEventListener('click', function () {
                     const target = document.getElementById(this.dataset.target);
                     const icon = this.querySelector('i');
@@ -552,10 +295,10 @@
                     }
                 });
             });
-             // Initial setup
-            updateProgress(1);
-            if(sendOtpButton) sendOtpButton.disabled = false;
+
+            // Initial setup - Luôn hiển thị bước hoàn tất thông tin
+            updateProgress(1); // Mặc định chỉ có 1 bước
+            if(completeRegistrationButton) completeRegistrationButton.disabled = false;
         });
     </script>
-}
-
+} 

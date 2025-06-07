@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SportSync.Web.Controllers
 {
-    [Authorize(Roles = "StandardCourtOwner,ProCourtOwner,CourtOwner,Admin")]
+    [Authorize(Roles = "StandardCourtOwner,ProCourtOwner")]
     public class CourtOwnerDashboardController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
