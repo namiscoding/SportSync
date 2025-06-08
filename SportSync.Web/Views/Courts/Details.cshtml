@@ -1,40 +1,40 @@
 ﻿@model SportSync.Business.Dtos.CourtDetailDto
 @{
+    Layout = "_Layout";
 
-    DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
-    if (Context.Request.Query.ContainsKey("date")
-        && DateOnly.TryParse(Context.Request.Query["date"], out var d))
-    {
-        selectedDate = d;
-    }
-
-    Layout = "_Layout";      
+    /* lấy ngày từ query */
+    DateOnly selDate = DateOnly.FromDateTime(DateTime.Today);
+    if (Context.Request.Query.TryGetValue("date", out var q) &&
+        DateOnly.TryParse(q, out var d))
+        selDate = d;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var loginUrl = Url.Action("Login", "Account", new { returnUrl });
 }
 
 <link rel="stylesheet"
       href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" />
 
-
 <div class="container-lg" id="court-detail">
 
-    <a asp-controller="CourtComplex" asp-action="Details"
-       asp-route-id="@Model.CourtId" class="btn btn-link px-0 mb-3">
-        ← Quay lại hệ thống sân
-    </a>
+<a asp-controller="CourtComplex"
+   asp-action="Details"
+   asp-route-id="@Model.ComplexId"  
+   class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold mb-3">
+    ← Quay lại
+</a>
 
     <div class="row g-4">
-
+        <!-- ========== THÔNG TIN & SLOT ========== -->
         <div class="col-lg-8">
-
             <div class="card shadow-sm">
                 @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
                 {
                     <img src="@Model.ImageUrl" class="card-img-top"
-                         alt="Ảnh sân" style="object-fit:cover;max-height:360px">
+                         style="object-fit:cover;max-height:360px" />
                 }
 
                 <div class="card-body">
-                    <h2 class="card-title mb-1">
+                    <h2 class="mb-1">
                         @Model.Name
                         <small class="text-muted fst-italic">
                             (@Model.SportTypeName)
@@ -43,55 +43,52 @@
 
                     @if (Model.Amenities.Any())
                     {
-                        <p class="mb-1">
+                        <p class="mt-1 mb-2">
                             @foreach (var a in Model.Amenities)
                             {
-                                <span class="badge bg-info-subtle text-info me-1" style="border: 1.5px solid;
-                                                                                         border-radius: 5px;">
-                                    @a.Name
-                                </span>
+                                <span class="badge bg-info-subtle text-info border
+                                             me-1">@a.Name</span>
                             }
                         </p>
                     }
 
+                    <!-- bộ lọc ngày -->
                     <form method="get" class="row g-2 align-items-end mb-3">
                         <input type="hidden" name="id" value="@Model.CourtId" />
                         <div class="col-auto">
                             <label class="form-label fw-semibold">Chọn ngày</label>
                             <input type="date" name="date"
-                                   value="@selectedDate.ToString("yyyy-MM-dd")"
+                                   value="@selDate.ToString("yyyy-MM-dd")"
                                    class="form-control" />
                         </div>
                         <div class="col-auto">
-                            <button class="btn btn-primary">
-                                Xem slot
-                            </button>
+                            <button class="btn btn-primary">Xem slot</button>
                         </div>
                     </form>
 
+                    @* ========== DANH SÁCH SLOT ========== *@
                     @if (Model.AvailableSlots.Any())
                     {
-                        <h5 class="fw-semibold mb-2">
-                            Slot trống (@selectedDate)
-                        </h5>
+                        <h5 class="fw-semibold mb-2">Slot trống (@selDate)</h5>
 
-                        <form asp-controller="Booking"
-                              asp-action="Create"
+                        <form id="bookingForm"
+                              asp-controller="Booking" asp-action="Create"
                               method="post" class="vstack gap-3">
-
                             <input type="hidden" name="CourtId" value="@Model.CourtId" />
-                            <input type="hidden" name="Date"    value="@selectedDate" />
+                            <input type="hidden" name="Date" value="@selDate" />
 
                             <div class="row row-cols-2 row-cols-md-3 g-2">
                                 @foreach (var s in Model.AvailableSlots)
                                 {
-                                    string slotId = $"slot-{s.TimeSlotId}";
+                                    var slotId = $"slot-{s.TimeSlotId}";
                                     <div class="col">
-                                        <input type="checkbox" class="btn-check"
-                                               autocomplete="off"
+                                        <input type="checkbox"
+                                               class="btn-check"
                                                id="@slotId"
                                                name="SelectedSlotIds"
-                                               value="@s.TimeSlotId" />
+                                               value="@s.TimeSlotId"
+                                               data-price="@s.Price"
+                                               data-time="@($"{s.Start:hh\\:mm}-{s.End:hh\\:mm}")" />
                                         <label class="btn btn-outline-primary w-100"
                                                for="@slotId">
                                             <div class="small fw-semibold">
@@ -105,7 +102,9 @@
                                 }
                             </div>
 
-                            <button class="btn btn-success align-self-start mt-1">
+                            <button type="button"
+                                    id="btnShowInvoice"
+                                    class="btn btn-success mt-1">
                                 Đặt ngay
                             </button>
                         </form>
@@ -120,44 +119,133 @@
             </div>
         </div>
 
+        <!-- ========== MAP ========== -->
         <div class="col-lg-4">
             @if (ViewBag.Lat is double lat && ViewBag.Lng is double lng)
             {
-                <div id="miniMap" class="rounded shadow-sm"
-                     style="height:360px"></div>
+                <div id="miniMap" class="rounded shadow-sm" style="height:360px"></div>
             }
         </div>
     </div>
 </div>
+
+<!-- ========== MODAL HÓA ĐƠN ========== -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận đặt sân</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Đơn giá</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slotTable"></tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th>Tổng</th>
+                            <th id="totalPrice" class="text-danger fs-5"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Huỷ
+                </button>
+                <button type="button" class="btn btn-primary"
+                        id="btnConfirmInvoice">
+                    Xác nhận
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-circle"></i> Cần đăng nhập
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Bạn phải đăng nhập để thực hiện thao tác này.
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+                <a class="btn btn-primary" href="@loginUrl">Đăng nhập</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
-
-
-    @{
-        double? lat = ViewBag.Lat as double?;
-        double? lng = ViewBag.Lng as double?;
-    }
-
-    @if (lat is not null && lng is not null)
-    {
-        <script>
-            mapboxgl.accessToken =
-              'pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ';
-
-            /* Razor in thẳng số ra JS với dấu chấm */
-            const lat  = @lat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            const lng  = @lng.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            /* Đảm bảo DOM đã có thẻ #miniMap  */
-            document.addEventListener('DOMContentLoaded', () => {
-                const map = new mapboxgl.Map({
+    <script>
+        const isAuth = @(User.Identity.IsAuthenticated.ToString().ToLower());   
+        /* ===== MAP MINI ===== */
+        @if (ViewBag.Lat is double lat && ViewBag.Lng is double lng)
+        {
+            <text>
+                mapboxgl.accessToken =
+                  'pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ';
+                const mapMini = new mapboxgl.Map({
                     container: 'miniMap',
-                    style:     'mapbox://styles/mapbox/streets-v12',
-                    center:    [lng, lat],
-                    zoom:      15
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: [@lng.ToString("G", System.Globalization.CultureInfo.InvariantCulture),
+                @lat.ToString("G", System.Globalization.CultureInfo.InvariantCulture)],
+                    zoom: 15
                 });
-                map.addControl(new mapboxgl.Marker().setLngLat([lng, lat]));
+                mapMini.addControl(new mapboxgl.Marker()
+                                   .setLngLat(mapMini.getCenter()));
+            </text>
+        }
+
+        /* ===== INVOICE MODAL ===== */
+        const invoiceModal = new bootstrap.Modal('#invoiceModal');
+        const loginModal   = new bootstrap.Modal('#loginModal');
+        const slotTable    = document.getElementById('slotTable');
+        const totalPriceEl = document.getElementById('totalPrice');
+        const form         = document.getElementById('bookingForm');
+
+        document.getElementById('btnShowInvoice').addEventListener('click', () => {
+
+             if (!isAuth) { loginModal.show(); return; }
+
+            const checked = [...form.querySelectorAll('input[type=checkbox]:checked')];
+            if (checked.length === 0) {
+                alert('Vui lòng chọn ít nhất 1 slot!');
+                return;
+            }
+            // vẽ bảng
+            slotTable.innerHTML = '';
+            let total = 0;
+            checked.forEach(cb => {
+                const price = parseFloat(cb.dataset.price);
+                total += price;
+                slotTable.insertAdjacentHTML('beforeend',
+                    `<tr><td>${cb.dataset.time}</td><td>${price.toLocaleString()} đ</td></tr>`);
             });
-        </script>
-    }
+            totalPriceEl.textContent = total.toLocaleString() + ' đ';
+
+            invoiceModal.show();
+        });
+
+        document.getElementById('btnConfirmInvoice')
+                .addEventListener('click', () => {
+                    invoiceModal.hide();
+                    form.submit();          // gửi Booking
+                });
+    </script>
 }
