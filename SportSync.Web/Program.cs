@@ -91,7 +91,7 @@ builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<CourtManagementService>();
 builder.Services.AddScoped<ISportTypeService, SportTypeService>();
 builder.Services.AddScoped<SportTypeManagementService>();
-
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddTransient<ISmsSender, DebugSmsSender>();
 
 
