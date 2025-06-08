@@ -4,11 +4,10 @@
     Layout = "_Layout";
 }
 
-<!--  wrapper riêng để style cục bộ -->
 <div class="invoice-page container-lg py-4">
 
     <style>
-        /* chỉ áp dụng trong .invoice-page */
+
         .invoice-page {
             --ss-blue: #0d6efd;
             --ss-green: #28a745;
@@ -28,18 +27,17 @@
             }
     </style>
 
-    <!-- ===== TIÊU ĐỀ ===== -->
+
     <div class="d-flex align-items-center gap-3 mb-4">
         <i class="bi bi-check-circle hero-icon"></i>
         <h2 class="m-0 fw-bold text-success">Đặt sân thành công!</h2>
     </div>
 
-    <!-- ===== HÓA ĐƠN ===== -->
     <div class="card shadow-sm">
         <div class="card-body">
             <h4 class="card-title fw-semibold">@Model.ComplexName</h4>
             <p class="mb-1"><strong>Sân:</strong> @Model.CourtName</p>
-            <p class="mb-3"><strong>Ngày:</strong> @Model.BookingDate:dd/MM/yyyy</p>
+            <p class="mb-3"><strong>Ngày:</strong> @Model.BookingDate</p>
 
             <table class="table table-sm align-middle">
                 <thead class="table-light">
@@ -73,7 +71,6 @@
         </div>
     </div>
 
-    <!-- ===== HƯỚNG DẪN THANH TOÁN ===== -->
     <div class="row row-cols-1 row-cols-md-3 g-3 mt-4">
 
         <!-- Bước 1 -->
@@ -100,10 +97,10 @@
                 </div>
                 <div class="card-body">
                     <p class="mb-1">Truy cập Zalo & gửi hoá đơn:</p>
-                    <a href="https://zalo.me/1234567890"
+                    <a href="https://zalo.me/@Model.PhoneNumber"
                        class="btn btn-outline-primary w-100"
                        target="_blank">
-                        <i class="bi bi-chat-dots"></i>   Nhóm CSKH (bấm để mở Zalo)
+                        <i class="bi bi-chat-dots"></i>   Liên hệ của chủ sân (bấm để mở Zalo)
                     </a>
                     <p class="small text-muted mt-2 mb-0">
                         * Hoặc tìm ID: <strong>sportsync.support</strong>
@@ -120,7 +117,7 @@
                 </div>
                 <div class="card-body">
                     <p class="mb-0">
-                        Admin sẽ kiểm tra &amp; gửi thông báo
+                        Owner sẽ kiểm tra &amp; gửi thông báo
                         xác nhận vào Zalo và email của bạn
                         trong vòng <strong>15&nbsp;phút</strong>.
                     </p>

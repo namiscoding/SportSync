@@ -26,14 +26,13 @@ namespace SportSync.Business.Services
                                  .FirstOrDefaultAsync(c => c.CourtId == dto.CourtId, ct);
             if (court == null) return (false, "Sân không tồn tại", null);
 
-            // 2. Lấy các TimeSlot được chọn
             var slots = await _db.TimeSlots
                                  .Where(ts => dto.SlotIds.Contains(ts.TimeSlotId))
                                  .ToListAsync(ct);
             if (slots.Count != dto.SlotIds.Count)
                 return (false, "Có slot không hợp lệ", null);
 
-            // 3. Kiểm tra trùng (đã bị đặt hay blocked)
+            //Kiểm tra trùng 
             var clashing = await _db.BookedSlots
                 .AnyAsync(bs => dto.SlotIds.Contains(bs.TimeSlotId) &&
                                 bs.SlotDate == dto.Date, ct);
@@ -50,7 +49,7 @@ namespace SportSync.Business.Services
                 CourtId = court.CourtId,
                 BookingDate = dto.Date,
                 TotalPrice = total,
-                BookingStatus = BookingStatusType.Confirmed,
+                BookingStatus = BookingStatusType.PendingOwnerConfirmation,
                 PaymentType = dto.PaymentType,
                 PaymentStatus = PaymentStatusType.Unpaid,
                 NotesFromBooker = dto.NotesFromBooker
@@ -84,6 +83,7 @@ namespace SportSync.Business.Services
                 {
                     BookingId = b.BookingId,
                     CourtName = b.Court.Name,
+                    PhoneNumber = b.CourtComplex.OwnerUser.PhoneNumber,
                     ComplexName = b.CourtComplex.Name,
                     BookingDate = b.BookingDate,
                     Slots = b.BookedSlots.Select(s => new InvoiceSlotDto
