@@ -17,23 +17,23 @@ namespace SportSync.Business.Dtos
 
         /* tuỳ chọn */
         public string? NotesFromBooker { get; init; }
-        public PaymentMethodType PaymentType { get; init; } = PaymentMethodType.PayAtCourt;
+        public PaymentMethodType PaymentType { get; init; } = PaymentMethodType.BankTransfer;
     }
     public sealed class BookingInvoiceDto
     {
         public long BookingId { get; init; }
+
         public string ComplexName { get; init; } = null!;
         public string CourtName { get; init; } = null!;
         public string? CourtAddress { get; init; }   // tuỳ thích
         public DateOnly BookingDate { get; init; }
 
-        /// <summary>Các slot đã đặt kèm đơn giá tại thời điểm đặt.</summary>
+        public string? PhoneNumber { get; set; } 
         public IReadOnlyList<InvoiceSlotDto> Slots { get; init; } = [];
 
         public decimal TotalPrice { get; init; }
     }
 
-    /// <summary>Dòng chi tiết cho từng slot.</summary>
     public sealed class InvoiceSlotDto
     {
         public string TimeRange { get; init; } = null!; // “07:00-08:00”
