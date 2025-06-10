@@ -9,6 +9,7 @@ namespace SportSync.Business.Dtos
     public sealed class CourtDetailDto
     {
         public int CourtId { get; init; }
+        public int ComplexId { get; init; }
         public string Name { get; init; } = null!;
         public string SportTypeName { get; init; } = null!;
         public string? ImageUrl { get; init; }
@@ -16,11 +17,4 @@ namespace SportSync.Business.Dtos
         public IEnumerable<TimeSlotDto> AvailableSlots { get; init; } = [];
     }
 
-    public sealed class CreateBookingDto
-    {
-        public int CourtId { get; init; }
-        public DateOnly Date { get; init; }
-        public IList<int> SlotIds { get; init; } = [];
-        public string? Note { get; init; }
-    }
 }
