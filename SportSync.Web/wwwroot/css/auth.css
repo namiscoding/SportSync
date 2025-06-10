@@ -316,6 +316,30 @@
     color: #007bff;
 }
 
+.password-input-container {
+    position: relative;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d; /* Màu icon xám mặc định */
+    padding: 0.375rem 0.75rem; /* Tạo vùng click lớn hơn */
+    z-index: 3; /* Đảm bảo icon nằm trên input */
+}
+
+/* Điều chỉnh vị trí icon khi dùng với form-floating của Bootstrap */
+.form-floating > .form-control:not(:placeholder-shown) ~ .password-toggle-icon {
+    top: calc(50% + 0.5rem);
+}
+
+.form-floating > .form-control:focus ~ .password-toggle-icon {
+    top: calc(50% + 0.5rem);
+}
+
 /* Password Toggle (Register.cshtml) */
 .password-container {
     position: relative;

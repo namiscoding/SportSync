@@ -1,4 +1,4 @@
-﻿namespace SportSync.Web.Models.ViewModels
+﻿namespace SportSync.Web.Models.ViewModels.Court
 {
     public class CourtComplexViewModel
     {

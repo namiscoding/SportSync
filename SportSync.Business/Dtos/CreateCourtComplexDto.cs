@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace SportSync.Business.Dtos
 {
     public class CreateCourtComplexDto
     {
-        // Các thuộc tính tương tự như CourtComplexViewModel, trừ IFormFile
         public string Name { get; set; }
         public string Address { get; set; }
         public string City { get; set; }
@@ -19,9 +19,9 @@ namespace SportSync.Business.Dtos
         public string? ContactEmail { get; set; }
         public TimeOnly? DefaultOpeningTime { get; set; }
         public TimeOnly? DefaultClosingTime { get; set; }
-        public decimal? Latitude { get; set; } 
-        public decimal? Longitude { get; set; } 
-        // Thay thế IFormFile bằng thông tin cần thiết cho việc upload
-        public ImageInputDto? MainImage { get; set; }
+        public IFormFile? MainImageFile { get; set; } // Sử dụng IFormFile
+
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
     }
 }
