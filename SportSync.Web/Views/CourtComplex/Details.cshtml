@@ -233,24 +233,30 @@
                                     </div>
                                 }
 
-                                @if (c.AvailableSlots.Any())
-                                {
-                                    <div>
-                                        @foreach (var s in c.AvailableSlots)
-                                        {
-                                            <span class="badge badge-time slot-wrap">
-                                                @($"{s.Start:hh\\:mm}-{s.End:hh\\:mm}")
-                                            </span>
-                                            <span class="badge badge-price slot-wrap">
-                                                @s.Price.ToString("N0")đ
-                                            </span>
-                                        }
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="text-danger fw-semibold">Hết slot trống</div>
-                                }
+                                    @if (c.AvailableSlots.Any())
+                                    {
+                                        var lowestPrice = c.AvailableSlots.Min(slot => slot.Price); // Get the lowest price from the available slots
+
+                                        <div>
+
+                                            @foreach (var s in c.AvailableSlots.Take(5))
+                                            {
+                                                <span class="badge badge-time slot-wrap">
+                                                    @($"{s.Start:hh\\:mm}-{s.End:hh\\:mm}")
+                                                </span>
+
+
+
+                                            }
+                                        </div>
+                                        <span class="badge badge-price slot-wrap">
+                                            Chỉ từ @lowestPrice.ToString("N0")đ
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-danger fw-semibold">Hết slot trống</div>
+                                    }
                             </div>
                         </div>
                     </div>
