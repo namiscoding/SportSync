@@ -2,42 +2,46 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using SportSync.Data.Entities; // Namespace của ApplicationUser
+using SportSync.Business.Interfaces; // Thêm
+using SportSync.Data.Entities;
 using System.Threading.Tasks;
 
-namespace SportSync.Web.Controllers // Hoặc SportBookingWebsite.Web.Controllers
+namespace SportSync.Web.Controllers
 {
-    [Authorize(Roles = "StandardCourtOwner,ProCourtOwner")] // Các vai trò được phép truy cập
+    [Authorize(Roles = "StandardCourtOwner,ProCourtOwner")]
     public class CourtOwnerDashboardController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<CourtOwnerDashboardController> _logger;
+        private readonly ICourtOwnerDashboardService _dashboardService; // Sử dụng service mới
 
         public CourtOwnerDashboardController(
             UserManager<ApplicationUser> userManager,
-            ILogger<CourtOwnerDashboardController> logger)
+            ILogger<CourtOwnerDashboardController> logger,
+            ICourtOwnerDashboardService dashboardService) // Inject service mới
         {
             _userManager = userManager;
             _logger = logger;
+            _dashboardService = dashboardService;
         }
 
-        // GET: /CourtOwnerDashboard/Index
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
+            if (user == null) return Challenge();
+
+            _logger.LogInformation("User {UserId} accessing CourtOwnerDashboard.", user.Id);
+
+            var dashboardData = await _dashboardService.GetDashboardDataAsync(user.Id);
+
+            if (!dashboardData.HasComplex)
             {
-                return Challenge(); // Không tìm thấy người dùng
+                _logger.LogInformation("User {UserId} has no court complex. Redirecting to Create page.", user.Id);
+                TempData["InfoMessage"] = "Chào mừng đến với khu vực Chủ sân! Hãy bắt đầu bằng cách tạo khu phức hợp sân của bạn.";
+                return RedirectToAction("Create", "CourtComplex");
             }
 
-            _logger.LogInformation("User {UserId} accessed CourtOwnerDashboard.", user.Id);
-
-            // Bạn có thể truyền thêm dữ liệu vào View nếu cần, ví dụ:
-            // ViewBag.UserName = user.UserName; // Hoặc FullName từ UserProfile nếu đã load
-            // var courtComplexes = await _courtComplexService.GetCourtComplexesByOwnerAsync(user.Id);
-            // return View(courtComplexes); // Nếu muốn hiển thị danh sách sân ngay trên dashboard
-
-            return View(); // Trả về View dashboard đơn giản
+            return View(dashboardData);
         }
     }
 }

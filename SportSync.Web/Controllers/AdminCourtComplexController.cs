@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SportSync.Business.Services;
 using SportSync.Data.Enums;
 using SportSync.Web.Models.ViewModels;
+using SportSync.Web.Models.ViewModels.Court;
 using System.Linq;
 using System.Threading.Tasks;
 
