@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SportSync.Data.Enums
 {
-    public enum BookingStatusType // Default 1 trong DB design. Cần làm rõ ý nghĩa.
+    public enum BookingStatusType
     {
         /// <summary>
         /// Khách hàng đã chọn slot nhưng chưa tải lên bằng chứng thanh toán. 

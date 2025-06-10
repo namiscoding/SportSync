@@ -1,0 +1,777 @@
+﻿@model SportSync.Web.Models.ViewModels.CourtComplex.CourtComplexViewModel
+
+
+
+@{
+
+	ViewData["Title"] = "Thêm Khu Phức Hợp Sân Mới";
+
+	var mapboxAccessToken = "pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ";
+
+}
+
+
+
+<h1>@ViewData["Title"]</h1>
+
+<p class="text-muted">Điền thông tin chi tiết về khu phức hợp sân của bạn. Sử dụng bản đồ để chọn vị trí chính xác.</p>
+
+<hr />
+
+<div class="row">
+
+	<div class="col-md-12">
+
+		<form asp-action="Create" method="post" enctype="multipart/form-data" id="createComplexForm">
+
+			<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+
+
+			<div class="row">
+
+				<div class="col-md-6">
+
+					<div class="mb-3">
+
+						<label asp-for="Name" class="form-label fw-semibold"></label>
+
+						<input asp-for="Name" class="form-control" />
+
+						<span asp-validation-for="Name" class="text-danger"></span>
+
+					</div>
+
+
+
+					@* API Hành chính Việt Nam *@
+
+					<div class="mb-3">
+
+						<label for="citySelect" class="form-label fw-semibold">Tỉnh/Thành phố</label>
+
+						<select asp-for="City" id="citySelect" class="form-select">
+
+							<option value="">-- Chọn Tỉnh/Thành phố --</option>
+
+						</select>
+
+						<span asp-validation-for="City" class="text-danger"></span>
+
+					</div>
+
+
+
+					<div class="mb-3">
+
+						<label for="districtSelect" class="form-label fw-semibold">Quận/Huyện</label>
+
+						<select asp-for="District" id="districtSelect" class="form-select" disabled>
+
+							<option value="">-- Chọn Quận/Huyện --</option>
+
+						</select>
+
+						<span asp-validation-for="District" class="text-danger"></span>
+
+					</div>
+
+
+
+					<div class="mb-3">
+
+						<label for="wardSelect" class="form-label fw-semibold">Phường/Xã</label>
+
+						<select asp-for="Ward" id="wardSelect" class="form-select" disabled>
+
+							<option value="">-- Chọn Phường/Xã --</option>
+
+						</select>
+
+						<span asp-validation-for="Ward" class="text-danger"></span>
+
+					</div>
+
+
+
+					<div class="mb-3">
+
+						<label asp-for="Address" class="form-label fw-semibold"></label>
+
+						<input asp-for="Address" class="form-control" placeholder="Ví dụ: Số 123, Đường ABC" />
+
+						<span asp-validation-for="Address" class="text-danger"></span>
+
+						<small class="form-text text-muted">Nhập số nhà và tên đường.</small>
+
+					</div>
+
+
+
+					<div class="mb-3">
+
+						<label asp-for="Description" class="form-label fw-semibold"></label>
+
+						<textarea asp-for="Description" class="form-control" rows="3"></textarea>
+
+						<span asp-validation-for="Description" class="text-danger"></span>
+
+					</div>
+
+				</div>
+
+
+
+				<div class="col-md-6">
+
+					@* Mapbox Integration *@
+
+					<div class="mb-3">
+
+						<label class="form-label fw-semibold">Chọn vị trí trên bản đồ</label>
+
+						@* Ô tìm kiếm của Mapbox Geocoder sẽ được thêm vào đây bằng JavaScript *@
+
+						<div id="mapbox-geocoder-container" class="mb-2"></div>
+
+						<div id="map-mapbox" style="height: 350px; width: 100%; border-radius: 0.375rem; border: 1px solid #ced4da;">
+
+							@if (string.IsNullOrEmpty(mapboxAccessToken) || mapboxAccessToken == "YOUR_MAPBOX_ACCESS_TOKEN")
+
+							{
+
+								<div class="alert alert-warning h-100 d-flex align-items-center justify-content-center">
+
+									Vui lòng cung cấp Mapbox Access Token hợp lệ để hiển thị bản đồ.
+
+								</div>
+
+							}
+
+						</div>
+
+						<small class="form-text text-muted">Nhấp vào bản đồ để đặt marker hoặc tìm kiếm địa chỉ.</small>
+
+					</div>
+
+					<input type="hidden" asp-for="Latitude" id="latitudeInput" />
+
+					<input type="hidden" asp-for="Longitude" id="longitudeInput" />
+
+					<div class="mb-3">
+
+						<p class="small">Tọa độ: Vĩ độ <span id="latDisplay" class="fw-bold">N/A</span>, Kinh độ <span id="lngDisplay" class="fw-bold">N/A</span></p>
+
+					</div>
+
+				</div>
+
+			</div>
+
+
+
+			<hr class="my-4">
+
+			<h5 class="mb-3">Thông tin bổ sung</h5>
+
+
+
+			<div class="row">
+
+				<div class="col-md-6 mb-3">
+
+					<label asp-for="MainImageFile" class="form-label fw-semibold"></label>
+
+					<input asp-for="MainImageFile" type="file" class="form-control" />
+
+					<span asp-validation-for="MainImageFile" class="text-danger"></span>
+
+					@if (TempData["InfoMessage"] != null)
+
+					{
+
+						<small class="form-text text-muted">@TempData["InfoMessage"]</small>
+
+					}
+
+				</div>
+
+			</div>
+
+
+
+			<div class="row">
+
+				<div class="col-md-4 mb-3">
+
+					<label asp-for="ContactPhoneNumber" class="form-label fw-semibold"></label>
+
+					<input asp-for="ContactPhoneNumber" class="form-control" />
+
+					<span asp-validation-for="ContactPhoneNumber" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-4 mb-3">
+
+					<label asp-for="ContactEmail" class="form-label fw-semibold"></label>
+
+					<input asp-for="ContactEmail" type="email" class="form-control" />
+
+					<span asp-validation-for="ContactEmail" class="text-danger"></span>
+
+				</div>
+
+			</div>
+
+
+
+			<div class="row">
+
+				<div class="col-md-4 mb-3">
+
+					<label asp-for="DefaultOpeningTime" class="form-label fw-semibold"></label>
+
+					<input asp-for="DefaultOpeningTime" type="time" class="form-control" />
+
+					<span asp-validation-for="DefaultOpeningTime" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-4 mb-3">
+
+					<label asp-for="DefaultClosingTime" class="form-label fw-semibold"></label>
+
+					<input asp-for="DefaultClosingTime" type="time" class="form-control" />
+
+					<span asp-validation-for="DefaultClosingTime" class="text-danger"></span>
+
+				</div>
+
+			</div>
+
+
+
+			<div class="mb-3 mt-4">
+
+				<button type="submit" class="btn btn-primary btn-lg px-5">Tạo Khu Phức Hợp</button>
+
+				<a asp-action="MyComplexes" class="btn btn-outline-secondary btn-lg ms-2 px-4">Hủy</a>
+
+			</div>
+
+		</form>
+
+	</div>
+
+</div>
+
+@section Styles { 
+
+	@if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
+
+	{
+
+		<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+
+		<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+
+	}
+
+	<style>
+
+		#map-mapbox { /* ... */
+		}
+
+		.mapboxgl-ctrl-geocoder {
+			width: 100%;
+			max-width: none;
+			font-size: 1rem;
+			line-height: 1.5;
+			margin-bottom: 0.5rem;
+		}
+
+			.mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--input {
+				height: calc(1.5em + .75rem + 2px);
+				padding: .375rem .75rem;
+			}
+
+	</style>
+
+}
+
+
+
+@section Scripts {
+
+	<partial name="_ValidationScriptsPartial" />
+
+
+
+	<script>
+
+		document.addEventListener('DOMContentLoaded', function () {
+
+			const citySelect = document.getElementById('citySelect');
+
+			const districtSelect = document.getElementById('districtSelect');
+
+			const wardSelect = document.getElementById('wardSelect');
+
+			const apiBaseUrl = 'https://provinces.open-api.vn/api/';
+
+
+
+			async function populateDropdown(url, selectElement, placeholderText, dataPath) {
+
+				selectElement.innerHTML = `<option value="">-- ${placeholderText} --</option>`; 
+
+				selectElement.disabled = true;
+
+				try {
+
+					const response = await fetch(url);
+
+					if (!response.ok) throw new Error(`API call failed: ${response.status} for ${url}`);
+
+					let data = await response.json();
+
+					const itemsToIterate = dataPath ? data[dataPath] : data;
+
+
+
+					if (!Array.isArray(itemsToIterate)) {
+
+						console.error(`Expected an array for ${placeholderText} at path '${dataPath}', but got:`, itemsToIterate);
+
+						throw new Error(`Dữ liệu trả về cho ${placeholderText} không phải là một mảng.`);
+
+					}
+
+
+
+					itemsToIterate.forEach(item => {
+
+						const option = document.createElement('option');
+
+						option.value = item.name_with_type || item.name; 
+
+						option.textContent = item.name_with_type || item.name;
+
+						option.dataset.code = item.code; 
+
+						selectElement.appendChild(option);
+
+					});
+
+					selectElement.disabled = false;
+
+				} catch (error) {
+
+					console.error(`Error fetching ${placeholderText}:`, error);
+
+					selectElement.innerHTML = `<option value="">-- Lỗi tải dữ liệu --</option>`;
+
+					selectElement.disabled = true;
+
+				}
+
+			}
+
+			populateDropdown(apiBaseUrl + 'p/', citySelect, 'Chọn Tỉnh/Thành phố', null); 
+
+			citySelect.addEventListener('change', function() {
+
+				const selectedOption = this.options[this.selectedIndex];
+
+				const cityCode = selectedOption.dataset.code; 
+
+				districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>'; districtSelect.disabled = true;
+
+				wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>'; wardSelect.disabled = true;
+
+				if (cityCode) { populateDropdown(apiBaseUrl + `p/${cityCode}?depth=2`, districtSelect, 'Chọn Quận/Huyện', 'districts'); }
+
+			});
+
+			districtSelect.addEventListener('change', function() {
+
+				const selectedOption = this.options[this.selectedIndex];
+
+				const districtCode = selectedOption.dataset.code;
+
+				wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>'; wardSelect.disabled = true;
+
+				if (districtCode) { populateDropdown(apiBaseUrl + `d/${districtCode}?depth=2`, wardSelect, 'Chọn Phường/Xã', 'wards'); }
+
+			});
+
+		});
+
+	</script>
+
+
+
+	@* Script cho Mapbox API *@
+
+	@if (!string.IsNullOrEmpty(mapboxAccessToken) && mapboxAccessToken != "YOUR_MAPBOX_ACCESS_TOKEN")
+
+	{
+
+		<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+
+		<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+
+		<script>
+
+			const mapboxTokenConst = "@mapboxAccessToken"; // Đổi tên biến để tránh xung đột nếu mapboxgl.accessToken được dùng ở đâu đó
+
+			let mapInstance; // Đổi tên biến map
+
+			let mapMarker;   // Đổi tên biến marker
+
+
+
+			function initializeMapbox() {
+
+				if (!mapboxTokenConst || mapboxTokenConst === "YOUR_MAPBOX_ACCESS_TOKEN") {
+
+					console.error("Mapbox Access Token is not configured.");
+
+					const mapDiv = document.getElementById('map-mapbox');
+
+					if (mapDiv && !mapDiv.querySelector('.alert')) { 
+
+						 mapDiv.innerHTML = '<div class="alert alert-danger h-100 d-flex align-items-center justify-content-center">Mapbox Access Token không hợp lệ hoặc bị thiếu.</div>';
+
+					}
+
+					return;
+
+				}
+
+
+
+				mapboxgl.accessToken = mapboxTokenConst;
+
+				mapInstance = new mapboxgl.Map({
+
+					container: 'map-mapbox',
+
+					style: 'mapbox://styles/mapbox/streets-v12',
+
+					center: [105.804817, 21.028511], // [lng, lat] Hà Nội
+
+					zoom: 11
+
+				});
+
+
+
+				mapInstance.addControl(new mapboxgl.NavigationControl());
+
+
+
+				// Tạo marker nhưng CHƯA add vào map
+
+				mapMarker = new mapboxgl.Marker({
+
+					draggable: true,
+
+					color: "#d02922"
+
+				});
+
+
+
+				function updateCoordinates(lngLat) {
+
+					if (lngLat && typeof lngLat.lng === 'number' && typeof lngLat.lat === 'number') {
+
+						document.getElementById('longitudeInput').value = lngLat.lng.toFixed(6);
+
+						document.getElementById('latitudeInput').value = lngLat.lat.toFixed(6);
+
+						document.getElementById('lngDisplay').textContent = lngLat.lng.toFixed(6);
+
+						document.getElementById('latDisplay').textContent = lngLat.lat.toFixed(6);
+
+					} else {
+
+						console.warn("updateCoordinates called with invalid lngLat:", lngLat);
+
+					}
+
+				}
+
+
+
+				// Hàm để đặt marker và add vào map nếu chưa có
+
+				function placeAndAddMarker(lngLat) {
+
+					if (lngLat && typeof lngLat.lng === 'number' && typeof lngLat.lat === 'number') {
+
+						mapMarker.setLngLat(lngLat);
+
+						if (!mapMarker.getElement().parentNode) { // Kiểm tra xem marker đã được add vào map chưa
+
+							mapMarker.addTo(mapInstance);
+
+							 console.log("Marker added to map at:", lngLat);
+
+						}
+
+						updateCoordinates(lngLat);
+
+					}
+
+				}
+
+
+
+
+
+				mapMarker.on('dragend', () => {
+
+					const lngLat = mapMarker.getLngLat();
+
+					updateCoordinates(lngLat); // Chỉ cập nhật tọa độ, marker đã ở trên map rồi
+
+				});
+
+
+
+				mapInstance.on('click', (e) => {
+
+					if (e.lngLat) { 
+
+						placeAndAddMarker(e.lngLat);
+
+						mapInstance.panTo(e.lngLat); // Di chuyển map đến vị trí click
+
+					}
+
+				});
+
+
+
+				const geocoder = new MapboxGeocoder({
+
+					accessToken: mapboxgl.accessToken,
+
+					mapboxgl: mapboxgl,
+
+					marker: false, // Chúng ta tự quản lý marker
+
+					placeholder: "Tìm kiếm địa điểm..."
+
+				});
+
+
+
+				const geocoderContainer = document.getElementById('mapbox-geocoder-container');
+
+				if (geocoderContainer) {
+
+					geocoderContainer.innerHTML = ''; // Xóa nội dung cũ nếu có
+
+					geocoderContainer.appendChild(geocoder.onAdd(mapInstance));
+
+				} else {
+
+					console.error("Mapbox geocoder container not found.");
+
+				}
+
+
+
+				geocoder.on('result', (e) => {
+
+					if (e.result && e.result.geometry && e.result.geometry.coordinates) { 
+
+						const coords = e.result.geometry.coordinates; // [lng, lat]
+
+						const lngLat = { lng: coords[0], lat: coords[1] };
+
+						placeAndAddMarker(lngLat);
+
+						mapInstance.flyTo({ center: lngLat, zoom: 15 });
+
+					} else {
+
+						console.warn("Geocoder result is invalid:", e.result);
+
+					}
+
+				});
+
+
+
+				mapInstance.on('load', () => {
+
+					console.log("Mapbox map loaded.");
+
+					const latitudeInputElement = document.getElementById('latitudeInput');
+
+					const longitudeInputElement = document.getElementById('longitudeInput');
+
+
+
+					if (latitudeInputElement && longitudeInputElement) {
+
+						const initialLatStr = latitudeInputElement.value;
+
+						const initialLngStr = longitudeInputElement.value;
+
+
+
+						if(initialLatStr && initialLngStr){ 
+
+							const initialLat = parseFloat(initialLatStr);
+
+							const initialLng = parseFloat(initialLngStr);
+
+
+
+							if (!isNaN(initialLat) && !isNaN(initialLng)) {
+
+								const initialPos = {lng: initialLng, lat: initialLat};
+
+								placeAndAddMarker(initialPos); // Đặt marker và add vào map
+
+								mapInstance.setCenter(initialPos); 
+
+								console.log("Map loaded and marker set on initial coordinates:", initialPos);
+
+							} else {
+
+								console.log("Map loaded, no valid initial coords. Attempting geolocation.");
+
+								attemptGeolocation();
+
+							}
+
+						} else {
+
+							 console.log("Map loaded, input coordinate fields are empty. Attempting geolocation.");
+
+							 attemptGeolocation();
+
+						}
+
+					} else {
+
+						 console.log("Map loaded, coordinate input fields not found. Attempting geolocation.");
+
+						 attemptGeolocation();
+
+					}
+
+				});
+
+
+
+				function attemptGeolocation() {
+
+					if (navigator.geolocation) {
+
+						navigator.geolocation.getCurrentPosition(position => {
+
+							const userLngLat = [position.coords.longitude, position.coords.latitude];
+
+							mapInstance.setCenter(userLngLat);
+
+							console.log("Map centered on user's geolocation. User can click to place marker.");
+
+						}, () => {
+
+							console.warn('Không thể lấy vị trí hiện tại của người dùng.');
+
+						});
+
+					} else {
+
+						 console.warn("Geolocation is not supported.");
+
+					}
+
+				}
+
+
+
+			} // Kết thúc hàm initializeMapbox
+
+
+
+			if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
+
+				// Đảm bảo DOMContentLoaded đã xong và các script Mapbox đã sẵn sàng
+
+				// Gọi hàm initializeMapbox khi DOM sẵn sàng
+
+				if (document.readyState === 'loading') { // Nếu DOM chưa load xong
+
+					document.addEventListener('DOMContentLoaded', initializeMapbox);
+
+				} else { // Nếu DOM đã load xong
+
+					initializeMapbox();
+
+				}
+
+			} else {
+
+				console.error("Mapbox GL JS hoặc MapboxGeocoder chưa được tải. Chờ tải xong...");
+
+				// Có thể thêm một cơ chế chờ hoặc đảm bảo script Mapbox tải trước khi script này chạy.
+
+				// và chúng được tải theo đúng thứ tự, thì thường sẽ không gặp vấn đề này.
+
+				// Một cách đơn giản là gọi initializeMapbox trong DOMContentLoaded.
+
+				 document.addEventListener('DOMContentLoaded', function() {
+
+					 if (typeof mapboxgl !== 'undefined' && typeof MapboxGeocoder !== 'undefined') {
+
+						initializeMapbox();
+
+					 } else {
+
+						console.error("Thư viện Mapbox vẫn chưa tải xong sau DOMContentLoaded.");
+
+						const mapDiv = document.getElementById('map-mapbox');
+
+						 if (mapDiv && !mapDiv.querySelector('.alert')) {
+
+							 mapDiv.innerHTML = '<div class="alert alert-danger h-100 d-flex align-items-center justify-content-center">Không thể tải thư viện bản đồ. Vui lòng kiểm tra kết nối và thử lại.</div>';
+
+						 }
+
+					 }
+
+				 });
+
+			}
+
+		</script>
+
+	}
+
+	else
+
+	{
+
+		<script>
+
+			document.addEventListener('DOMContentLoaded', function() {
+
+				 console.warn("Mapbox Access Token is not configured. Map functionality will be disabled.");
+
+			});
+
+		</script>
+
+	}
+
+}

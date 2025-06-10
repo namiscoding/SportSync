@@ -1,4 +1,4 @@
-﻿using SportSync.Web.Models.ViewModels;
+﻿using SportSync.Web.Models.ViewModels.Court;
 using System;
 using System.Collections.Generic;
 
