@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportSync.Data.Entities;
 using SportSync.Data;
-using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using SportSync.Business.Interfaces;
 using SportSync.Business.Services;
