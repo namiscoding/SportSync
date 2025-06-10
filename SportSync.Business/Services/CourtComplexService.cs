@@ -307,8 +307,8 @@ namespace SportSync.Business.Services
             return await _context.CourtComplexes
                 .AsNoTracking()
                 .Where(c => c.CourtComplexId == complexId &&
-                            c.ApprovalStatus == ApprovalStatus.Approved &&
-                            c.IsActiveByOwner && c.IsActiveByAdmin)
+                            
+                            c.IsActiveByOwner )
                 .Select(c => new CourtComplexDetailDto
                 {
                     ComplexId = c.CourtComplexId,

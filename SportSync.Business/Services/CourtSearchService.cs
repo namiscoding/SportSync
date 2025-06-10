@@ -26,8 +26,7 @@ namespace SportSync.Business.Services
             var complexesQ = _db.CourtComplexes
                 .AsNoTracking()
                 .Include(c => c.Courts)
-                .Where(c => 
-                            c.IsActiveByOwner);
+                .Where(c => c.IsActiveByOwner);
 
             if (!string.IsNullOrWhiteSpace(rq.City))
             {
@@ -141,8 +140,7 @@ namespace SportSync.Business.Services
             var complexesQ = _db.CourtComplexes
                 .AsNoTracking()
                 .Include(c => c.Courts)
-                .Where(c => c.ApprovalStatus == ApprovalStatus.Approved &&
-                            c.IsActiveByOwner && c.IsActiveByAdmin);
+                .Where(c => c.IsActiveByOwner);
 
             if (!string.IsNullOrWhiteSpace(rq?.City))
                 complexesQ = complexesQ.Where(c => c.City == rq.City);
