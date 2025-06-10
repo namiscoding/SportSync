@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportSync.Data.Entities;
 using SportSync.Data;
-using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using SportSync.Business.Interfaces;
 using SportSync.Business.Services;
@@ -90,11 +89,15 @@ builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<CourtManagementService>();
 builder.Services.AddScoped<ISportTypeService, SportTypeService>();
 builder.Services.AddScoped<SportTypeManagementService>();
+
+builder.Services.AddScoped<IBookingService, BookingService>();
+
 builder.Services.AddScoped<ITimeSlotManagementService, TimeSlotManagementService>();
 builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
 builder.Services.AddScoped<ICourtOwnerDashboardService, CourtOwnerDashboardService>();
 builder.Services.AddScoped<SportSync.Business.Interfaces.ITimeSlotService, SportSync.Business.Services.TimeSlotService>();
 builder.Services.AddScoped<ISmsSender, ESmsSender>();
+
 
 
 var app = builder.Build();
