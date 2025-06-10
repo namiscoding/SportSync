@@ -142,6 +142,7 @@ namespace SportSync.Business.Services
                 .Include(c => c.Courts)
                 .Where(c => c.IsActiveByOwner);
 
+
             if (!string.IsNullOrWhiteSpace(rq?.City))
                 complexesQ = complexesQ.Where(c => c.City == rq.City);
 
