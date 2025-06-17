@@ -19,18 +19,5 @@ namespace SportSync.Business.Services
             return await _courtService.GetCourtByIdAsync(courtId);
         }
 
-        public async Task ToggleCourtStatusAsync(int courtId)
-        {
-            var court = await _courtService.GetCourtByIdAsync(courtId);
-            if (court == null)
-            {
-                throw new Exception("Court not found.");
-            }
-
-            court.IsActiveByAdmin = !court.IsActiveByAdmin;
-            court.UpdatedAt = DateTime.UtcNow;
-
-            await _courtService.UpdateCourtAsync(court);
-        }
     }
 }

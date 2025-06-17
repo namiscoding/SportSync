@@ -12,8 +12,8 @@ using SportSync.Data;
 namespace SportSync.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250519122445_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250617024828_InitialCreateNewSchema")]
+    partial class InitialCreateNewSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -265,7 +265,7 @@ namespace SportSync.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BlockedSlotId"));
 
-                    b.Property<DateOnly>("BlockDate")
+                    b.Property<DateTime>("BlockDate")
                         .HasColumnType("DATE");
 
                     b.Property<int>("CourtId")
@@ -278,16 +278,17 @@ namespace SportSync.Data.Migrations
 
                     b.Property<string>("CreatedByUserId")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<TimeOnly>("EndTime")
+                    b.Property<TimeSpan>("EndTime")
                         .HasColumnType("TIME");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<TimeOnly>("StartTime")
+                    b.Property<TimeSpan>("StartTime")
                         .HasColumnType("TIME");
 
                     b.HasKey("BlockedSlotId");
@@ -300,42 +301,6 @@ namespace SportSync.Data.Migrations
                     b.ToTable("BlockedCourtSlots", (string)null);
                 });
 
-            modelBuilder.Entity("SportSync.Data.Entities.BookedSlot", b =>
-                {
-                    b.Property<long>("BookedSlotId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("BookedSlotId"));
-
-                    b.Property<TimeOnly>("ActualEndTime")
-                        .HasColumnType("TIME");
-
-                    b.Property<TimeOnly>("ActualStartTime")
-                        .HasColumnType("TIME");
-
-                    b.Property<long>("BookingId")
-                        .HasColumnType("bigint");
-
-                    b.Property<decimal>("PriceAtBookingTime")
-                        .HasColumnType("DECIMAL(18,2)");
-
-                    b.Property<DateOnly>("SlotDate")
-                        .HasColumnType("DATE");
-
-                    b.Property<int>("TimeSlotId")
-                        .HasColumnType("int");
-
-                    b.HasKey("BookedSlotId");
-
-                    b.HasIndex("BookingId");
-
-                    b.HasIndex("TimeSlotId", "SlotDate", "ActualStartTime")
-                        .IsUnique();
-
-                    b.ToTable("BookedSlots", (string)null);
-                });
-
             modelBuilder.Entity("SportSync.Data.Entities.Booking", b =>
                 {
                     b.Property<long>("BookingId")
@@ -344,23 +309,21 @@ namespace SportSync.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("BookingId"));
 
+                    b.Property<DateTime>("BookedEndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("BookedStartTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("BookerUserId")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateOnly>("BookingDate")
-                        .HasColumnType("DATE");
-
-                    b.Property<int>("BookingSource")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0)
-                        .HasColumnName("BookingSource");
 
                     b.Property<int>("BookingStatus")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasDefaultValue(1);
+                        .HasDefaultValue(2);
 
                     b.Property<int>("CourtComplexId")
                         .HasColumnType("int");
@@ -382,22 +345,10 @@ namespace SportSync.Data.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("NotesFromBooker")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<string>("NotesFromOwner")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PaymentStatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0)
-                        .HasColumnName("PaymentStatus");
-
-                    b.Property<int>("PaymentType")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0)
-                        .HasColumnName("PaymentType");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("DECIMAL(18,2)");
@@ -416,6 +367,49 @@ namespace SportSync.Data.Migrations
                     b.ToTable("Bookings", (string)null);
                 });
 
+            modelBuilder.Entity("SportSync.Data.Entities.BookingProduct", b =>
+                {
+                    b.Property<long>("BookingProductId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("BookingProductId"));
+
+                    b.Property<DateTime>("AddedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long>("BookingId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RentalEndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RentalStartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("DECIMAL(18,2)");
+
+                    b.Property<decimal>("UnitPriceAtTimeOfAddition")
+                        .HasColumnType("DECIMAL(18,2)");
+
+                    b.HasKey("BookingProductId");
+
+                    b.HasIndex("BookingId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("BookingProducts", (string)null);
+                });
+
             modelBuilder.Entity("SportSync.Data.Entities.Court", b =>
                 {
                     b.Property<int>("CourtId")
@@ -423,14 +417,6 @@ namespace SportSync.Data.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CourtId"));
-
-                    b.Property<int>("AdvanceBookingDaysLimit")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(7);
-
-                    b.Property<TimeOnly?>("ClosingTime")
-                        .HasColumnType("TIME");
 
                     b.Property<int>("CourtComplexId")
                         .HasColumnType("int");
@@ -440,34 +426,13 @@ namespace SportSync.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<int>("DefaultSlotDurationMinutes")
-                        .HasColumnType("int");
-
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActiveByAdmin")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("MainImageCloudinaryPublicId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("MainImageCloudinaryUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<TimeOnly?>("OpeningTime")
-                        .HasColumnType("TIME");
-
-                    b.Property<int>("SportTypeId")
-                        .HasColumnType("int");
 
                     b.Property<int>("StatusByOwner")
                         .ValueGeneratedOnAdd()
@@ -481,24 +446,7 @@ namespace SportSync.Data.Migrations
 
                     b.HasIndex("CourtComplexId");
 
-                    b.HasIndex("SportTypeId");
-
                     b.ToTable("Courts", (string)null);
-                });
-
-            modelBuilder.Entity("SportSync.Data.Entities.CourtAmenity", b =>
-                {
-                    b.Property<int>("CourtId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AmenityId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CourtId", "AmenityId");
-
-                    b.HasIndex("AmenityId");
-
-                    b.ToTable("CourtAmenities", (string)null);
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.CourtComplex", b =>
@@ -509,21 +457,22 @@ namespace SportSync.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CourtComplexId"));
 
+                    b.Property<string>("AccountName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("AccountNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Address")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("ApprovalStatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<DateTime?>("ApprovedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ApprovedByAdminId")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("BankCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -543,42 +492,34 @@ namespace SportSync.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<TimeOnly?>("DefaultClosingTime")
+                    b.Property<TimeSpan?>("DefaultClosingTime")
                         .HasColumnType("TIME");
 
-                    b.Property<TimeOnly?>("DefaultOpeningTime")
+                    b.Property<TimeSpan?>("DefaultOpeningTime")
                         .HasColumnType("TIME");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<string>("District")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IsActiveByAdmin")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                    b.Property<string>("GoogleMapsLink")
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<bool>("IsActiveByOwner")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
-                    b.Property<decimal?>("Latitude")
-                        .HasColumnType("DECIMAL(9,6)");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasColumnType("DECIMAL(9,6)");
-
                     b.Property<string>("MainImageCloudinaryPublicId")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("MainImageCloudinaryUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -587,11 +528,11 @@ namespace SportSync.Data.Migrations
 
                     b.Property<string>("OwnerUserId")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("RejectionReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<int>("SportTypeId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -602,11 +543,27 @@ namespace SportSync.Data.Migrations
 
                     b.HasKey("CourtComplexId");
 
-                    b.HasIndex("ApprovedByAdminId");
+                    b.HasIndex("OwnerUserId")
+                        .IsUnique();
 
-                    b.HasIndex("OwnerUserId");
+                    b.HasIndex("SportTypeId");
 
                     b.ToTable("CourtComplexes", (string)null);
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.CourtComplexAmenity", b =>
+                {
+                    b.Property<int>("CourtComplexId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AmenityId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CourtComplexId", "AmenityId");
+
+                    b.HasIndex("AmenityId");
+
+                    b.ToTable("CourtComplexAmenities", (string)null);
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.CourtComplexImage", b =>
@@ -628,7 +585,7 @@ namespace SportSync.Data.Migrations
 
                     b.Property<string>("CloudinaryUrl")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<int>("CourtComplexId")
                         .HasColumnType("int");
@@ -645,40 +602,44 @@ namespace SportSync.Data.Migrations
                     b.ToTable("CourtComplexImages", (string)null);
                 });
 
-            modelBuilder.Entity("SportSync.Data.Entities.CourtImage", b =>
+            modelBuilder.Entity("SportSync.Data.Entities.HourlyPriceRate", b =>
                 {
-                    b.Property<int>("CourtImageId")
+                    b.Property<int>("HourlyPriceRateId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CourtImageId"));
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("CloudinaryPublicId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("CloudinaryUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HourlyPriceRateId"));
 
                     b.Property<int>("CourtId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsPrimary")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
-                    b.HasKey("CourtImageId");
+                    b.Property<int?>("DayOfWeek")
+                        .HasColumnType("int");
 
-                    b.HasIndex("CourtId");
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("TIME");
 
-                    b.ToTable("CourtImages", (string)null);
+                    b.Property<decimal>("PricePerHour")
+                        .HasColumnType("DECIMAL(18,2)");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("TIME");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("HourlyPriceRateId");
+
+                    b.HasIndex("CourtId", "DayOfWeek", "StartTime")
+                        .IsUnique()
+                        .HasFilter("[DayOfWeek] IS NOT NULL");
+
+                    b.ToTable("HourlyPriceRates", (string)null);
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.Notification", b =>
@@ -697,8 +658,7 @@ namespace SportSync.Data.Migrations
                     b.Property<int>("DeliveryMethod")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasDefaultValue(0)
-                        .HasColumnName("DeliveryMethod");
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsRead")
                         .ValueGeneratedOnAdd()
@@ -707,17 +667,17 @@ namespace SportSync.Data.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<int>("NotificationType")
-                        .HasColumnType("int")
-                        .HasColumnName("NotificationType");
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("RecipientUserId")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ReferenceId")
@@ -740,6 +700,143 @@ namespace SportSync.Data.Migrations
                     b.ToTable("Notifications", (string)null);
                 });
 
+            modelBuilder.Entity("SportSync.Data.Entities.OwnerSubscription", b =>
+                {
+                    b.Property<long>("OwnerSubscriptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("OwnerSubscriptionId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("LastPaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NextBillingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OwnerUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlanId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("OwnerSubscriptionId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("PlanId");
+
+                    b.ToTable("OwnerSubscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.Product", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductId"));
+
+                    b.Property<int>("CourtComplexId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("ProductCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductType")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StockQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("DECIMAL(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ProductId");
+
+                    b.HasIndex("CourtComplexId");
+
+                    b.HasIndex("ProductCategoryId");
+
+                    b.ToTable("Products", (string)null);
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.ProductCategory", b =>
+                {
+                    b.Property<int>("ProductCategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductCategoryId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ProductCategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("ProductCategories", (string)null);
+                });
+
             modelBuilder.Entity("SportSync.Data.Entities.SportType", b =>
                 {
                     b.Property<int>("SportTypeId")
@@ -751,13 +848,6 @@ namespace SportSync.Data.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("IconCloudinaryPublicId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("IconCloudinaryUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -777,6 +867,50 @@ namespace SportSync.Data.Migrations
                     b.ToTable("SportTypes", (string)null);
                 });
 
+            modelBuilder.Entity("SportSync.Data.Entities.SubscriptionPlan", b =>
+                {
+                    b.Property<int>("PlanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlanId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Features")
+                        .HasColumnType("nvarchar(MAX)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("MonthlyPrice")
+                        .HasColumnType("DECIMAL(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("PlanId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionPlans", (string)null);
+                });
+
             modelBuilder.Entity("SportSync.Data.Entities.SystemConfiguration", b =>
                 {
                     b.Property<string>("ConfigurationKey")
@@ -785,7 +919,7 @@ namespace SportSync.Data.Migrations
 
                     b.Property<string>("ConfigurationValue")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(MAX)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -797,6 +931,7 @@ namespace SportSync.Data.Migrations
                         .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("UpdatedByAdminId")
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("ConfigurationKey");
@@ -804,47 +939,6 @@ namespace SportSync.Data.Migrations
                     b.HasIndex("UpdatedByAdminId");
 
                     b.ToTable("SystemConfigurations", (string)null);
-                });
-
-            modelBuilder.Entity("SportSync.Data.Entities.TimeSlot", b =>
-                {
-                    b.Property<int>("TimeSlotId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TimeSlotId"));
-
-                    b.Property<int>("CourtId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DayOfWeek")
-                        .HasColumnType("int");
-
-                    b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("TIME");
-
-                    b.Property<bool>("IsActiveByOwner")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("DECIMAL(18,2)");
-
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("TIME");
-
-                    b.HasKey("TimeSlotId");
-
-                    b.HasIndex("CourtId", "StartTime", "DayOfWeek")
-                        .IsUnique()
-                        .HasFilter("[DayOfWeek] IS NOT NULL");
-
-                    b.ToTable("TimeSlots", (string)null);
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.UserProfile", b =>
@@ -936,7 +1030,7 @@ namespace SportSync.Data.Migrations
                     b.HasOne("SportSync.Data.Entities.ApplicationUser", "CreatedByUser")
                         .WithMany("CreatedBlockedSlots")
                         .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Court");
@@ -944,31 +1038,12 @@ namespace SportSync.Data.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
-            modelBuilder.Entity("SportSync.Data.Entities.BookedSlot", b =>
-                {
-                    b.HasOne("SportSync.Data.Entities.Booking", "Booking")
-                        .WithMany("BookedSlots")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportSync.Data.Entities.TimeSlot", "TimeSlot")
-                        .WithMany("BookedSlots")
-                        .HasForeignKey("TimeSlotId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("TimeSlot");
-                });
-
             modelBuilder.Entity("SportSync.Data.Entities.Booking", b =>
                 {
                     b.HasOne("SportSync.Data.Entities.ApplicationUser", "BookerUser")
                         .WithMany("Bookings")
                         .HasForeignKey("BookerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("SportSync.Data.Entities.CourtComplex", "CourtComplex")
@@ -990,6 +1065,25 @@ namespace SportSync.Data.Migrations
                     b.Navigation("CourtComplex");
                 });
 
+            modelBuilder.Entity("SportSync.Data.Entities.BookingProduct", b =>
+                {
+                    b.HasOne("SportSync.Data.Entities.Booking", "Booking")
+                        .WithMany("BookingProducts")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportSync.Data.Entities.Product", "Product")
+                        .WithMany("BookingProducts")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("SportSync.Data.Entities.Court", b =>
                 {
                     b.HasOne("SportSync.Data.Entities.CourtComplex", "CourtComplex")
@@ -998,52 +1092,45 @@ namespace SportSync.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("CourtComplex");
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.CourtComplex", b =>
+                {
+                    b.HasOne("SportSync.Data.Entities.ApplicationUser", "OwnerUser")
+                        .WithOne("OwnedCourtComplex")
+                        .HasForeignKey("SportSync.Data.Entities.CourtComplex", "OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SportSync.Data.Entities.SportType", "SportType")
-                        .WithMany("Courts")
+                        .WithMany("CourtComplexes")
                         .HasForeignKey("SportTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("CourtComplex");
+                    b.Navigation("OwnerUser");
 
                     b.Navigation("SportType");
                 });
 
-            modelBuilder.Entity("SportSync.Data.Entities.CourtAmenity", b =>
+            modelBuilder.Entity("SportSync.Data.Entities.CourtComplexAmenity", b =>
                 {
                     b.HasOne("SportSync.Data.Entities.Amenity", "Amenity")
-                        .WithMany("CourtAmenities")
+                        .WithMany("CourtComplexAmenities")
                         .HasForeignKey("AmenityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SportSync.Data.Entities.Court", "Court")
-                        .WithMany("CourtAmenities")
-                        .HasForeignKey("CourtId")
+                    b.HasOne("SportSync.Data.Entities.CourtComplex", "CourtComplex")
+                        .WithMany("CourtComplexAmenities")
+                        .HasForeignKey("CourtComplexId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Amenity");
 
-                    b.Navigation("Court");
-                });
-
-            modelBuilder.Entity("SportSync.Data.Entities.CourtComplex", b =>
-                {
-                    b.HasOne("SportSync.Data.Entities.ApplicationUser", "ApprovedByAdmin")
-                        .WithMany("ApprovedCourtComplexesByAdmin")
-                        .HasForeignKey("ApprovedByAdminId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("SportSync.Data.Entities.ApplicationUser", "OwnerUser")
-                        .WithMany("OwnedCourtComplexes")
-                        .HasForeignKey("OwnerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedByAdmin");
-
-                    b.Navigation("OwnerUser");
+                    b.Navigation("CourtComplex");
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.CourtComplexImage", b =>
@@ -1057,10 +1144,10 @@ namespace SportSync.Data.Migrations
                     b.Navigation("CourtComplex");
                 });
 
-            modelBuilder.Entity("SportSync.Data.Entities.CourtImage", b =>
+            modelBuilder.Entity("SportSync.Data.Entities.HourlyPriceRate", b =>
                 {
                     b.HasOne("SportSync.Data.Entities.Court", "Court")
-                        .WithMany("CourtImages")
+                        .WithMany("HourlyPriceRates")
                         .HasForeignKey("CourtId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1079,25 +1166,51 @@ namespace SportSync.Data.Migrations
                     b.Navigation("RecipientUser");
                 });
 
+            modelBuilder.Entity("SportSync.Data.Entities.OwnerSubscription", b =>
+                {
+                    b.HasOne("SportSync.Data.Entities.ApplicationUser", "OwnerUser")
+                        .WithMany("OwnerSubscriptions")
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportSync.Data.Entities.SubscriptionPlan", "Plan")
+                        .WithMany("OwnerSubscriptions")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OwnerUser");
+
+                    b.Navigation("Plan");
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.Product", b =>
+                {
+                    b.HasOne("SportSync.Data.Entities.CourtComplex", "CourtComplex")
+                        .WithMany("Products")
+                        .HasForeignKey("CourtComplexId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportSync.Data.Entities.ProductCategory", "ProductCategory")
+                        .WithMany("Products")
+                        .HasForeignKey("ProductCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CourtComplex");
+
+                    b.Navigation("ProductCategory");
+                });
+
             modelBuilder.Entity("SportSync.Data.Entities.SystemConfiguration", b =>
                 {
                     b.HasOne("SportSync.Data.Entities.ApplicationUser", "UpdatedByAdmin")
                         .WithMany("UpdatedSystemConfigurationsByAdmin")
-                        .HasForeignKey("UpdatedByAdminId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("UpdatedByAdminId");
 
                     b.Navigation("UpdatedByAdmin");
-                });
-
-            modelBuilder.Entity("SportSync.Data.Entities.TimeSlot", b =>
-                {
-                    b.HasOne("SportSync.Data.Entities.Court", "Court")
-                        .WithMany("TimeSlots")
-                        .HasForeignKey("CourtId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Court");
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.UserProfile", b =>
@@ -1113,20 +1226,20 @@ namespace SportSync.Data.Migrations
 
             modelBuilder.Entity("SportSync.Data.Entities.Amenity", b =>
                 {
-                    b.Navigation("CourtAmenities");
+                    b.Navigation("CourtComplexAmenities");
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.ApplicationUser", b =>
                 {
-                    b.Navigation("ApprovedCourtComplexesByAdmin");
-
                     b.Navigation("Bookings");
 
                     b.Navigation("CreatedBlockedSlots");
 
                     b.Navigation("Notifications");
 
-                    b.Navigation("OwnedCourtComplexes");
+                    b.Navigation("OwnedCourtComplex");
+
+                    b.Navigation("OwnerSubscriptions");
 
                     b.Navigation("UpdatedSystemConfigurationsByAdmin");
 
@@ -1136,7 +1249,7 @@ namespace SportSync.Data.Migrations
 
             modelBuilder.Entity("SportSync.Data.Entities.Booking", b =>
                 {
-                    b.Navigation("BookedSlots");
+                    b.Navigation("BookingProducts");
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.Court", b =>
@@ -1145,30 +1258,40 @@ namespace SportSync.Data.Migrations
 
                     b.Navigation("Bookings");
 
-                    b.Navigation("CourtAmenities");
-
-                    b.Navigation("CourtImages");
-
-                    b.Navigation("TimeSlots");
+                    b.Navigation("HourlyPriceRates");
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.CourtComplex", b =>
                 {
                     b.Navigation("Bookings");
 
+                    b.Navigation("CourtComplexAmenities");
+
                     b.Navigation("CourtComplexImages");
 
                     b.Navigation("Courts");
+
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.Product", b =>
+                {
+                    b.Navigation("BookingProducts");
+                });
+
+            modelBuilder.Entity("SportSync.Data.Entities.ProductCategory", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("SportSync.Data.Entities.SportType", b =>
                 {
-                    b.Navigation("Courts");
+                    b.Navigation("CourtComplexes");
                 });
 
-            modelBuilder.Entity("SportSync.Data.Entities.TimeSlot", b =>
+            modelBuilder.Entity("SportSync.Data.Entities.SubscriptionPlan", b =>
                 {
-                    b.Navigation("BookedSlots");
+                    b.Navigation("OwnerSubscriptions");
                 });
 #pragma warning restore 612, 618
         }
