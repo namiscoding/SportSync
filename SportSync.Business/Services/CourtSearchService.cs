@@ -65,7 +65,7 @@ namespace SportSync.Business.Services
                             ImageUrl = co.MainImageCloudinaryUrl,
 
                             Amenities = co.CourtAmenities
-                                          .Select(a => a.Amenity.Name),
+                                          .Select(a => a.Amenity.Name).Take(3),
 
                             Slots = co.TimeSlots
                                 .Where(ts => ts.IsActiveByOwner &&
@@ -83,14 +83,17 @@ namespace SportSync.Business.Services
                                              bs.TimeSlotId == ts.TimeSlotId &&
                                              bs.SlotDate == rq.Date &&
                                              bs.Booking.BookingStatus == BookingStatusType.Confirmed))
+                                .OrderBy(ts => ts.Price)
+                                .Take(2)
                                 .Select(ts => new TimeSlotDto
                                 {
                                     TimeSlotId = ts.TimeSlotId,
                                     Start = ts.StartTime,
                                     End = ts.EndTime,
-                                    Price = ts.Price
+                                    Price = ts.Price,
+                                    PriceLowest = ts.Price
                                 })
-                        })
+                        }).Take(2)
                 })
                 .ToListAsync(ct);
 
@@ -170,7 +173,7 @@ namespace SportSync.Business.Services
                             SportTypeName = co.SportType.Name,
                             ImageUrl = co.MainImageCloudinaryUrl,
 
-                            Amenities = co.CourtAmenities.Select(a => a.Amenity.Name).ToList(),
+                            Amenities = co.CourtAmenities.Select(a => a.Amenity.Name).Take(3).ToList(),
 
                             Slots = co.TimeSlots
                                 .Where(ts => ts.IsActiveByOwner &&
@@ -186,15 +189,17 @@ namespace SportSync.Business.Services
                                     bs.TimeSlotId == ts.TimeSlotId &&
                                     bs.SlotDate == queryDateOnly &&
                                     bs.Booking.BookingStatus == BookingStatusType.Confirmed))
+                                .OrderBy(ts => ts.Price).Take(2)
                                 .Select(ts => new TimeSlotDto
                                 {
                                     TimeSlotId = ts.TimeSlotId,
                                     Start = ts.StartTime,
                                     End = ts.EndTime,
-                                    Price = ts.Price
+                                    Price = ts.Price,
+                                    PriceLowest = ts.Price
                                 })
                                 .ToList()
-                        })
+                        }).Take(2)
                         .ToList()
                 })
                 .ToListAsync(ct);

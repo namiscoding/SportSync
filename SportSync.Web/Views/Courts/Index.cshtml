@@ -21,6 +21,9 @@
         margin-left: 1rem;
     }
 </style>
+@section Styles {
+    <link rel="stylesheet" href="~/css/SearchCourtComplex.css" />
+}
 
 <h2 class="mb-3">Tìm sân</h2>
 
@@ -98,65 +101,136 @@
             zoom:12
         });
 
-        function setUserLocation(lat,lng){
+               // Mảng lưu các marker
+        let markers = [];
+
+        function clearMarkers() {
+            // Xóa tất cả các marker khỏi bản đồ
+            markers.forEach(marker => marker.remove());
+            markers = []; // Xóa tất cả các marker khỏi mảng
+        }
+
+        // Thêm marker vào bản đồ và lưu vào mảng markers
+        function addMarker(c) {
+            if (c.latitude == null || c.longitude == null) return;
+
+            const marker = new mapboxgl.Marker()
+                .setLngLat([c.longitude, c.latitude])
+                .setPopup(new mapboxgl.Popup().setHTML(`
+                    <b>${c.name}</b><br>${c.address}
+                `))
+                .addTo(map);
+
+            // Thêm marker vào mảng markers để quản lý
+            markers.push(marker);
+
+            // Đảm bảo popup luôn mở cho marker
+            marker.togglePopup();
+        }
+
+        // Lấy vị trí người dùng và thêm marker
+        function setUserLocation(lat, lng) {
             document.getElementById('UserLat').value = lat;
             document.getElementById('UserLng').value = lng;
-            new mapboxgl.Marker({color:'#0d6efd'})
-                .setLngLat([lng,lat])
-                .setPopup(new mapboxgl.Popup().setHTML("Bạn ở đây"))
+
+            const userMarker = new mapboxgl.Marker({ color: '#0d6efd' })
+                .setLngLat([lng, lat])
+                .setPopup(new mapboxgl.Popup().setHTML("<b>Vị trí của bạn</b>"))
                 .addTo(map);
-            map.flyTo({center:[lng,lat],zoom:13});
+
+            // Đảm bảo popup luôn mở cho người dùng
+            userMarker.togglePopup();
+            map.flyTo({ center: [lng, lat], zoom: 13 });
         }
 
-        navigator.geolocation?.getCurrentPosition(
-            p=>setUserLocation(p.coords.latitude,p.coords.longitude),
-            e=>console.warn('GPS denied',e));
+        // Xử lý khi gửi form tìm kiếm
+              document.getElementById('filterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMarkers(); // Xóa các marker trước khi tìm kiếm mới
 
-        let markers=[];
-        function clearMarkers(){markers.forEach(m=>m.remove());markers=[];}
-        function addMarker(c){
-            if(c.latitude==null||c.longitude==null) return;
-            const mk=new mapboxgl.Marker()
-                .setLngLat([c.longitude,c.latitude])
-                .setPopup(new mapboxgl.Popup().setHTML(`<b>${c.name}</b><br>${c.address}`))
-                .addTo(map);
-            markers.push(mk);
-        }
-        function fitMap(){ if(!markers.length) return;
-            const b=new mapboxgl.LngLatBounds();
-            markers.forEach(m=>b.extend(m.getLngLat()));
-            map.fitBounds(b,{padding:50,maxZoom:15,duration:800});
-        }
+            document.getElementById('resultList').innerHTML = '<p>Đang tải…</p>';
 
-        function renderList(data){
-            const box=document.getElementById('resultList');
-            box.innerHTML='';
-        const selectedDate =
-               document.querySelector('input[name="Date"]').value || '';
-            data.forEach(c=>{
-                const card=document.createElement('div');
-                card.className='card mb-3 shadow-sm';
-                card.innerHTML=`<div class="card-header bg-light">
-                    <h5 class="mb-0">
-                       <a href="/CourtComplex/Details/${c.complexId}?date=${selectedDate}">
-                           ${c.name}
-                       </a>
-                    </h5>
-                    <small class="text-muted">${c.address}</small>
-                </div>
-                <div class="card-body p-2">
-                    ${c.courts.map(co=>`
-                        <h6>${co.name} <span class="badge bg-success">${co.minPrice.toLocaleString()} đ</span></h6>
-                        <div>${co.amenities.join(', ')}</div>
-                        <div>${co.availableSlots.map(s=>`
-                            <span class="badge bg-primary card-slot">
-                                ${s.start.substring(0,5)}-${s.end.substring(0,5)}
-                            </span>`).join('')}
-                        </div>`).join('')}
-                </div>`;
+            const fd = new FormData(e.target);
+
+            if (!fd.get('UserLat') || !fd.get('UserLng')) fd.delete('RadiusKm');
+
+            const res = await fetch('/Courts/Search?' + new URLSearchParams(fd));
+            if (!res.ok) { alert('Lỗi tìm kiếm'); return; }
+
+            const data = await res.json();
+            if (!data.length) {
+                document.getElementById('resultList').innerHTML = '<p>Không tìm thấy sân.</p>';
+                return;
+            }
+
+            renderList(data); // Gọi hàm renderList để hiển thị các CourtComplex
+            data.forEach(addMarker); // Thêm marker cho mỗi CourtComplex
+            fitMap(); // Đảm bảo bản đồ hiển thị toàn bộ các marker sau khi thêm
+        });
+
+        // Hàm fitMap để zoom vào các marker
+        function fitMap() {
+            if (!markers.length) return; // Nếu không có marker thì không làm gì
+            const bounds = new mapboxgl.LngLatBounds();
+            markers.forEach(m => bounds.extend(m.getLngLat())); // Mở rộng phạm vi để chứa tất cả các marker
+            map.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 800 }); // Zoom vào toàn bộ các marker
+        }
+        function renderList(data) {
+            const box = document.getElementById('resultList');
+            box.innerHTML = '';
+
+            const selectedDate = document.querySelector('input[name="Date"]').value || '';
+            data.slice(0, 2).forEach(c => {
+                if (!c.name || !c.address) return;
+
+                const backgroundUrl = c.MainImageCloudinaryUrl || '/assets/sportsync-background.png';
+
+                const card = document.createElement('div');
+                card.className = 'card mb-3 shadow-sm search-card';
+                card.onclick = () => window.location.href = `/CourtComplex/Details/${c.complexId}?date=${selectedDate}`;
+
+                card.innerHTML = `
+                    <div class="card-header" style="background-image: url('${backgroundUrl}'); background-size: cover; background-position: center;">
+                        <div class="background-tag"></div>
+                    </div>
+                    <div class="card-body">
+                        <div class="court-complex-info">
+                            <div class="court-info-section">
+                                <h5 class="mb-0 court-name">
+                                    ${c.name}
+                                </h5>
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> ${c.address}
+                                </small>
+                                <div class="amenities">
+                                    <strong>Amenities: </strong>${(c.amenities ?? []).join(', ')}
+                                </div>
+                            </div>
+                            <div class="court-details-section">
+                                ${c.courts.map(co => `
+                                    <div class="court-info mb-3">
+                                        <div><strong>${co.name}</strong></div>
+                                        <div>
+                                            <strong>Chỉ từ: </strong>
+                                            ${co.minPrice.toLocaleString()}
+                                            <span class="slot-text">đ/Slot</span>
+                                        </div>
+                                        ${co.availableSlots.slice(0, 2).map(s => `
+                                            <span class="highlight-slot">
+                                                ${s.start.substring(0, 5)} - ${s.end.substring(0, 5)}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
                 box.appendChild(card);
             });
         }
+
 
         document.getElementById('filterForm').addEventListener('submit',async e=>{
             e.preventDefault();
