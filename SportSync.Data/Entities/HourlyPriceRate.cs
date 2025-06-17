@@ -6,24 +6,22 @@ using System.Threading.Tasks;
 
 namespace SportSync.Data.Entities
 {
-    public class BlockedCourtSlot
+    public class HourlyPriceRate
     {
-        public int BlockedSlotId { get; set; } 
+        public int HourlyPriceRateId { get; set; } 
 
         public int CourtId { get; set; } = default!; 
         public Court Court { get; set; } = default!;
 
-        public DateTime BlockDate { get; set; } 
+        public DayOfWeek? DayOfWeek { get; set; }
 
         public TimeSpan StartTime { get; set; } 
 
         public TimeSpan EndTime { get; set; } 
 
-        public string? Reason { get; set; }
-
-        public string CreatedByUserId { get; set; } = default!; 
-        public ApplicationUser CreatedByUser { get; set; } = default!;
+        public decimal PricePerHour { get; set; }
 
         public DateTime CreatedAt { get; set; } 
+        public DateTime? UpdatedAt { get; set; }
     }
 }

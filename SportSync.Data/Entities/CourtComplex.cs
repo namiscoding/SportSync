@@ -9,45 +9,62 @@ namespace SportSync.Data.Entities
 {
     public class CourtComplex
     {
-        public int CourtComplexId { get; set; } // PK, Identity
-        public string OwnerUserId { get; set; } // FK references AspNetUsers(Id), NOT NULL
-        public string Name { get; set; } // NOT NULL, MaxLength(255)
-        public string Address { get; set; } // NOT NULL, MaxLength(500)
-        public string City { get; set; } // NOT NULL, MaxLength(100)
-        public string District { get; set; } // NOT NULL, MaxLength(100)
-        public string? Ward { get; set; } // NULL, MaxLength(100)
-        public decimal? Latitude { get; set; } // NULL, DECIMAL(9,6)
-        public decimal? Longitude { get; set; } // NULL, DECIMAL(9,6)
-        public string? Description { get; set; } // NULL, NVARCHAR(MAX)
-        public string? MainImageCloudinaryPublicId { get; set; } // NULL, MaxLength(255)
-        public string? MainImageCloudinaryUrl { get; set; } // NULL, NVARCHAR(MAX)
-        public string? ContactPhoneNumber { get; set; } // NULL, MaxLength(20)
-        public string? ContactEmail { get; set; } // NULL, MaxLength(255)
-        public TimeOnly? DefaultOpeningTime { get; set; } // NULL, TIME
-        public TimeOnly? DefaultClosingTime { get; set; } // NULL, TIME
-        public ApprovalStatus ApprovalStatus { get; set; } // NOT NULL, DEFAULT 0 (PendingApproval)
-        public bool IsActiveByOwner { get; set; } // NOT NULL, DEFAULT 1
-        public bool IsActiveByAdmin { get; set; } // NOT NULL, DEFAULT 1
-        public DateTime CreatedAt { get; set; } // NOT NULL, DEFAULT GETDATE()
-        public DateTime? UpdatedAt { get; set; } // NULL
-        public string? ApprovedByAdminId { get; set; } // FK references AspNetUsers(Id), NULL
-        public DateTime? ApprovedAt { get; set; } // NULL
-        public string? RejectionReason { get; set; } // NULL, MaxLength(500)
+        public int CourtComplexId { get; set; } // PK, IDENTITY(1,1) handled in DbContext
 
-        // Navigation Properties
-        public virtual ApplicationUser OwnerUser { get; set; }
-        public virtual ApplicationUser? ApprovedByAdmin { get; set; }
-        public virtual ICollection<Court> Courts { get; set; }
-        public virtual ICollection<CourtComplexImage> CourtComplexImages { get; set; }
-        public virtual ICollection<Booking> Bookings { get; set; } // Bookings thuộc về CourtComplex nào
+        public string OwnerUserId { get; set; } = default!; // FK to ApplicationUser
+        public ApplicationUser OwnerUser { get; set; } = default!;
+
+        public int SportTypeId { get; set; } // FK to SportType
+        public SportType SportType { get; set; } = default!;
+
+        public string Name { get; set; } = default!; // Required, StringLength handled in DbContext
+
+        public string Address { get; set; } = default!; // Required, StringLength handled in DbContext
+
+        public string City { get; set; } = default!; // Required, StringLength handled in DbContext
+
+        public string District { get; set; } = default!; // Required, StringLength handled in DbContext
+
+        public string? Ward { get; set; }
+
+        public string? GoogleMapsLink { get; set; }
+
+        public string? Description { get; set; }
+
+        public string? MainImageCloudinaryPublicId { get; set; }
+        public string? MainImageCloudinaryUrl { get; set; }
+
+        public string? ContactPhoneNumber { get; set; }
+
+        public string? ContactEmail { get; set; }
+
+        public TimeSpan? DefaultOpeningTime { get; set; }
+
+        public TimeSpan? DefaultClosingTime { get; set; }
+
+        public bool IsActiveByOwner { get; set; } // Default value handled in DbContext
+
+        public string? BankCode { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? AccountName { get; set; }
+
+        public DateTime CreatedAt { get; set; } // Default value handled in DbContext
+        public DateTime? UpdatedAt { get; set; }
+
+        // Navigation properties
+        public ICollection<Court>? Courts { get; set; }
+        public ICollection<CourtComplexImage>? CourtComplexImages { get; set; }
+        public ICollection<Booking>? Bookings { get; set; }
+        public ICollection<CourtComplexAmenity>? CourtComplexAmenities { get; set; }
+        public ICollection<Product>? Products { get; set; }
 
         public CourtComplex()
         {
             Courts = new HashSet<Court>();
             CourtComplexImages = new HashSet<CourtComplexImage>();
             Bookings = new HashSet<Booking>();
-            // Các giá trị mặc định như ApprovalStatus, IsActiveByOwner, IsActiveByAdmin, CreatedAt
-            // sẽ được cấu hình bằng Fluent API.
+            CourtComplexAmenities = new HashSet<CourtComplexAmenity>();
+            Products = new HashSet<Product>();
         }
     }
 }
