@@ -90,11 +90,16 @@ builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<CourtManagementService>();
 builder.Services.AddScoped<ISportTypeService, SportTypeService>();
 builder.Services.AddScoped<SportTypeManagementService>();
+<<<<<<< HEAD
 builder.Services.AddScoped<ITimeSlotManagementService, TimeSlotManagementService>();
 builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
 builder.Services.AddScoped<ICourtOwnerDashboardService, CourtOwnerDashboardService>();
 builder.Services.AddScoped<SportSync.Business.Interfaces.ITimeSlotService, SportSync.Business.Services.TimeSlotService>();
 builder.Services.AddScoped<ISmsSender, ESmsSender>();
+=======
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddTransient<ISmsSender, DebugSmsSender>();
+>>>>>>> 94185aa (Finish Booking and create Invoice)
 
 
 var app = builder.Build();

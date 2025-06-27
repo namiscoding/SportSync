@@ -300,6 +300,7 @@ namespace SportSync.Business.Services
             return new CourtDetailDto
             {
                 CourtId = court.CourtId,
+                ComplexId = court.CourtComplexId,
                 Name = court.Name,
                 SportTypeName = court.SportType.Name,
                 ImageUrl = court.MainImageCloudinaryUrl,
