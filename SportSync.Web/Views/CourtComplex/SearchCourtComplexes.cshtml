@@ -1,0 +1,83 @@
+﻿@model IReadOnlyList<SportSync.Business.Dtos.CourtComplexResultDto>
+
+@{
+    ViewBag.Title = "Tìm sân";
+}
+
+<h2>Tìm sân</h2>
+
+<!-- Hiển thị thông báo nếu không tìm thấy kết quả -->
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Form tìm kiếm -->
+<form id="filterForm" class="row g-3 mb-2">
+    <div class="col-md-3">
+        <label class="form-label">Loại sân</label>
+        <select class="form-select" name="SportTypeId">
+            <option value="">-- Tất cả --</option>
+            @foreach (var t in (IEnumerable<dynamic>)ViewBag.SportTypes)
+            {
+                <option value="@t.SportTypeId">@t.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Thành phố</label>
+        <select class="form-control" name="City" id="CitySelect" onchange="loadDistricts()">
+            <option value="">-- Chọn Thành phố --</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Quận/Huyện</label>
+        <select class="form-control" name="District" id="DistrictSelect">
+            <option value="">-- Chọn Quận/Huyện --</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Ngày</label>
+        <input type="date" class="form-control" name="Date" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label">Từ</label>
+        <input type="time" class="form-control" name="FromTime" value="07:00" />
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label">Đến</label>
+        <input type="time" class="form-control" name="ToTime" value="09:00" />
+    </div>
+
+    <div class="col-md-2 align-self-end d-flex">
+        <button type="submit" class="btn btn-primary w-50">Tìm</button>
+    </div>
+</form>
+
+<!-- Hiển thị danh sách các khu phức hợp sân -->
+<div id="resultList">
+    @if (Model != null && Model.Any())
+    {
+        @foreach (var courtComplex in Model)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">@courtComplex.Name</h5>
+                    <p class="card-text">@courtComplex.Address</p>
+                    <a href="@Url.Action("Details", "CourtComplex", new { id = courtComplex.ComplexId })" class="btn btn-primary">Xem chi tiết</a>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <p>Không có khu phức hợp sân nào phù hợp.</p>
+    }
+</div>

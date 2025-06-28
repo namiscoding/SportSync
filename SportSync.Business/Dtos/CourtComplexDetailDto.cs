@@ -9,22 +9,21 @@ namespace SportSync.Business.Dtos
 
     public sealed record AmenityDto(string Name);
 
- 
 
 
 
-    public sealed class CourtComplexDetailDto
+
+    public class CourtComplexDetailDto
     {
-        public int ComplexId { get; init; }
-        public string Name { get; init; } = null!;
-        public string Address { get; init; } = null!;
-        public string? Description { get; init; }
-        public string? ThumbnailUrl { get; init; }
-        public decimal? Latitude { get; init; }
-        public decimal? Longitude { get; init; }
-        public string? ContactPhone { get; init; }
-        public string? ContactEmail { get; init; }
-
-        public IEnumerable<CourtDetailDto> Courts { get; init; } = [];
+        public int ComplexId { get; set; }
+        public string Name { get; set; }
+        public string Address { get; set; }
+        public string? Description { get; set; }  // Mô tả khu phức hợp
+        public string ContactPhoneNumber { get; set; }  // Số điện thoại liên hệ
+        public string ContactEmail { get; set; }  // Email liên hệ
+        public string SportTypeName { get; set; }
+        public string? GoogleMapsLink { get; set; }
+        public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();  // Tiện nghi
+        public List<CourtWithSlotsDto> Courts { get; set; } = new List<CourtWithSlotsDto>();  // Danh sách sân
     }
 }

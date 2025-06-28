@@ -1,479 +1,405 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using SportSync.Data.Entities; // Namespace chứa các entities của bạn
-using SportSync.Data.Enums; // Namespace chứa các enums của bạn
+using SportSync.Data.Entities;
+using SportSync.Data.Enums; // Đảm bảo bạn có các Enum này
 
 namespace SportSync.Data
 {
-    // Sử dụng IdentityDbContext với ApplicationUser, IdentityRole và string cho kiểu khóa chính của User/Role.
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
+    // Kế thừa từ IdentityDbContext để quản lý AspNetUsers và các bảng Identity khác
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        // Khai báo DbSet cho tất cả các entities của bạn
-        public DbSet<UserProfile> UserProfiles { get; set; }
-        public DbSet<SportType> SportTypes { get; set; }
-        public DbSet<Amenity> Amenities { get; set; }
-        public DbSet<CourtComplex> CourtComplexes { get; set; }
-        public DbSet<Court> Courts { get; set; }
-        public DbSet<CourtImage> CourtImages { get; set; }
-        public DbSet<CourtComplexImage> CourtComplexImages { get; set; }
-        public DbSet<CourtAmenity> CourtAmenities { get; set; } // Bảng join
-        public DbSet<TimeSlot> TimeSlots { get; set; }
-        public DbSet<Booking> Bookings { get; set; }
-        public DbSet<BookedSlot> BookedSlots { get; set; }
-        public DbSet<BlockedCourtSlot> BlockedCourtSlots { get; set; }
-        public DbSet<Notification> Notifications { get; set; }
-        public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
-
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        // --- DbSet Properties cho tất cả các Entities của bạn ---
+        public DbSet<UserProfile> UserProfiles { get; set; }
+        public DbSet<SportType> SportTypes { get; set; }
+        public DbSet<Amenity> Amenities { get; set; }
+        public DbSet<CourtComplex> CourtComplexes { get; set; }
+        public DbSet<Court> Courts { get; set; }
+        public DbSet<CourtComplexImage> CourtComplexImages { get; set; }
+        public DbSet<CourtComplexAmenity> CourtComplexAmenities { get; set; } // Bảng nối
+        public DbSet<ProductCategory> ProductCategories { get; set; } // Bảng mới
+        public DbSet<Product> Products { get; set; } // Bảng mới
+        public DbSet<BookingProduct> BookingProducts { get; set; } // Bảng mới
+        public DbSet<HourlyPriceRate> HourlyPriceRates { get; set; } // Bảng mới
+        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<BlockedCourtSlot> BlockedCourtSlots { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
+        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; } // Bảng mới
+        public DbSet<OwnerSubscription> OwnerSubscriptions { get; set; } // Bảng mới
+
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            base.OnModelCreating(modelBuilder); // Rất quan trọng khi kế thừa từ IdentityDbContext
+            base.OnModelCreating(builder);
 
-            // Cấu hình cho các bảng của ASP.NET Identity (tên bảng, schema, v.v.) nếu muốn
-            // Ví dụ:
-            // modelBuilder.Entity<ApplicationUser>().ToTable("Users", "security");
-            // modelBuilder.Entity<IdentityRole>().ToTable("Roles", "security");
-            // modelBuilder.Entity<IdentityUserRole<string>>().ToTable("UserRoles", "security");
-            // ... và các bảng khác của Identity ...
-            // Nếu không có cấu hình này, EF Core sẽ sử dụng tên mặc định (AspNetUsers, AspNetRoles, ...)
+            // Đổi tên bảng AspNetUsers nếu cần (mặc định IdentityDbContext đã có)
+            // builder.Entity<ApplicationUser>().ToTable("Users");
 
-            #region UserProfile Configuration
-            modelBuilder.Entity<UserProfile>(entity =>
+            // --- Cấu hình cho ApplicationUser (IdentityUser) ---
+            builder.Entity<ApplicationUser>(entity =>
             {
-                entity.ToTable("UserProfiles"); // Đảm bảo tên bảng đúng như thiết kế
+                // Cấu hình mối quan hệ 1-1 giữa ApplicationUser và CourtComplex
+                entity.HasOne(au => au.OwnedCourtComplex)
+                    .WithOne(cc => cc.OwnerUser)
+                    .HasForeignKey<CourtComplex>(cc => cc.OwnerUserId) // OwnerUserId là FK và cũng là unique key
+                    .IsRequired()
+                    .OnDelete(DeleteBehavior.Restrict); // Giữ nguyên Restrict
 
-                // Khóa chính UserId cũng là khóa ngoại trỏ tới AspNetUsers.Id
-                // Mối quan hệ 1-1 giữa ApplicationUser và UserProfile
-                entity.HasKey(up => up.UserId);
+                // Cấu hình mối quan hệ 1-nhiều với OwnerSubscriptions
+                entity.HasMany(au => au.OwnerSubscriptions)
+                    .WithOne(os => os.OwnerUser)
+                    .HasForeignKey(os => os.OwnerUserId)
+                    .OnDelete(DeleteBehavior.Restrict); // Không xóa subscriptions khi owner bị xóa
+            });
 
+            // --- Cấu hình UserProfile ---
+            builder.Entity<UserProfile>(entity =>
+            {
+                entity.ToTable("UserProfiles");
+                entity.HasKey(e => e.UserId); // UserId là PK
+                entity.Property(e => e.FullName).HasMaxLength(255);
+                entity.Property(e => e.RegisteredDate).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.AccountStatusByAdmin).HasConversion<int>().HasDefaultValue(AccountStatus.Active);
+
+                // Mối quan hệ 1-1 với ApplicationUser
                 entity.HasOne(up => up.ApplicationUser)
-                      .WithOne(au => au.UserProfile)
-                      .HasForeignKey<UserProfile>(up => up.UserId)
-                      .OnDelete(DeleteBehavior.Cascade); // Khi User bị xóa, Profile cũng bị xóa
-
-                entity.Property(up => up.FullName).HasMaxLength(255).IsRequired(false); // NULL
-                entity.Property(up => up.RegisteredDate).IsRequired().HasDefaultValueSql("GETDATE()");
-                entity.Property(up => up.LastLoginDate).IsRequired(false); // NULL
-                entity.Property(up => up.AccountStatusByAdmin)
-                      .IsRequired()
-                      .HasDefaultValue(AccountStatus.Active) // Sử dụng enum
-                      .HasConversion<int>(); // Lưu trữ dưới dạng int trong DB
+                    .WithOne(au => au.UserProfile)
+                    .HasForeignKey<UserProfile>(up => up.UserId)
+                    .OnDelete(DeleteBehavior.Cascade); // Xóa profile khi user bị xóa
             });
-            #endregion
 
-            #region ApplicationUser related configurations (cho các navigation properties đã thêm)
-            modelBuilder.Entity<ApplicationUser>(entity =>
-            {
-                // Mối quan hệ 1-nhiều: Một User (Owner) có thể sở hữu nhiều CourtComplexes
-                entity.HasMany(au => au.OwnedCourtComplexes)
-                      .WithOne(cc => cc.OwnerUser)
-                      .HasForeignKey(cc => cc.OwnerUserId)
-                      .OnDelete(DeleteBehavior.Restrict); // Không cho xóa User nếu đang sở hữu CourtComplex
-
-                // Mối quan hệ 1-nhiều: Một User (Booker) có thể có nhiều Bookings
-                entity.HasMany(au => au.Bookings)
-                      .WithOne(b => b.BookerUser)
-                      .HasForeignKey(b => b.BookerUserId)
-                      .OnDelete(DeleteBehavior.Restrict); // Không cho xóa User nếu có Bookings
-
-                // Mối quan hệ 1-nhiều: Một User (Admin/Owner) có thể tạo nhiều BlockedSlots
-                entity.HasMany(au => au.CreatedBlockedSlots)
-                      .WithOne(bs => bs.CreatedByUser)
-                      .HasForeignKey(bs => bs.CreatedByUserId)
-                      .OnDelete(DeleteBehavior.Restrict); // Không cho xóa User nếu đã tạo BlockedSlots
-
-                // Mối quan hệ 1-nhiều: Một User có nhiều Notifications
-                entity.HasMany(au => au.Notifications)
-                      .WithOne(n => n.RecipientUser)
-                      .HasForeignKey(n => n.RecipientUserId)
-                      .OnDelete(DeleteBehavior.Cascade); // Xóa Notifications của User nếu User bị xóa
-
-                // Mối quan hệ 1-nhiều: Một User (Admin) có thể duyệt nhiều CourtComplexes
-                // (ApprovedByAdminId trong CourtComplex là nullable)
-                entity.HasMany(au => au.ApprovedCourtComplexesByAdmin)
-                      .WithOne(cc => cc.ApprovedByAdmin)
-                      .HasForeignKey(cc => cc.ApprovedByAdminId)
-                      .IsRequired(false) // Khóa ngoại này là NULLABLE
-                      .OnDelete(DeleteBehavior.SetNull); // Nếu Admin bị xóa, ApprovedByAdminId trong CourtComplex thành NULL
-
-                // Mối quan hệ 1-nhiều: Một User (Admin) có thể cập nhật nhiều SystemConfigurations
-                // (UpdatedByAdminId trong SystemConfiguration là nullable)
-                entity.HasMany(au => au.UpdatedSystemConfigurationsByAdmin)
-                      .WithOne(sc => sc.UpdatedByAdmin)
-                      .HasForeignKey(sc => sc.UpdatedByAdminId)
-                      .IsRequired(false) // Khóa ngoại này là NULLABLE
-                      .OnDelete(DeleteBehavior.SetNull); // Nếu Admin bị xóa, UpdatedByAdminId trong SystemConfiguration thành NULL
-            });
-            #endregion
-
-            #region SportType Configuration
-            modelBuilder.Entity<SportType>(entity =>
+            // --- Cấu hình SportType ---
+            builder.Entity<SportType>(entity =>
             {
                 entity.ToTable("SportTypes");
-                entity.HasKey(st => st.SportTypeId);
-                entity.Property(st => st.SportTypeId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
-
-                entity.Property(st => st.Name).IsRequired().HasMaxLength(100);
-                entity.HasIndex(st => st.Name).IsUnique(); // UNIQUE constraint
-
-                entity.Property(st => st.Description).HasMaxLength(500).IsRequired(false);
-                entity.Property(st => st.IconCloudinaryPublicId).HasMaxLength(255).IsRequired(false);
-                entity.Property(st => st.IconCloudinaryUrl).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(st => st.IsActive).IsRequired().HasDefaultValue(true);
+                entity.HasKey(e => e.SportTypeId);
+                entity.Property(e => e.SportTypeId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.HasIndex(e => e.Name).IsUnique(); // Duy nhất
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
             });
-            #endregion
 
-            #region Amenity Configuration
-            modelBuilder.Entity<Amenity>(entity =>
+            // --- Cấu hình Amenity ---
+            builder.Entity<Amenity>(entity =>
             {
                 entity.ToTable("Amenities");
-                entity.HasKey(a => a.AmenityId);
-                entity.Property(a => a.AmenityId).ValueGeneratedOnAdd();
-
-                entity.Property(a => a.Name).IsRequired().HasMaxLength(150);
-                entity.HasIndex(a => a.Name).IsUnique();
-
-                entity.Property(a => a.Description).HasMaxLength(500).IsRequired(false);
-                entity.Property(a => a.IconCssClass).HasMaxLength(100).IsRequired(false);
-                entity.Property(a => a.IsActive).IsRequired().HasDefaultValue(true);
+                entity.HasKey(e => e.AmenityId);
+                entity.Property(e => e.AmenityId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
+                entity.HasIndex(e => e.Name).IsUnique(); // Duy nhất
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.IconCssClass).HasMaxLength(100);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
             });
-            #endregion
 
-            #region CourtComplex Configuration
-            modelBuilder.Entity<CourtComplex>(entity =>
+            // --- Cấu hình CourtComplex ---
+            builder.Entity<CourtComplex>(entity =>
             {
                 entity.ToTable("CourtComplexes");
-                entity.HasKey(cc => cc.CourtComplexId);
-                entity.Property(cc => cc.CourtComplexId).ValueGeneratedOnAdd();
+                entity.HasKey(e => e.CourtComplexId);
+                entity.Property(e => e.CourtComplexId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
 
-                entity.Property(cc => cc.OwnerUserId).IsRequired(); // Khóa ngoại đã cấu hình ở ApplicationUser
+                entity.Property(e => e.OwnerUserId).IsRequired().HasMaxLength(450); // FK
 
-                entity.Property(cc => cc.Name).IsRequired().HasMaxLength(255);
-                entity.Property(cc => cc.Address).IsRequired().HasMaxLength(500);
-                entity.Property(cc => cc.City).IsRequired().HasMaxLength(100);
-                entity.Property(cc => cc.District).IsRequired().HasMaxLength(100);
-                entity.Property(cc => cc.Ward).HasMaxLength(100).IsRequired(false);
+                // Mối quan hệ 1-1 với ApplicationUser (được định nghĩa ở ApplicationUser)
+                // builder.Entity<ApplicationUser>().HasOne(au => au.OwnedCourtComplex).WithOne(cc => cc.OwnerUser)
 
-                entity.Property(cc => cc.Latitude).HasColumnType("DECIMAL(9,6)").IsRequired(false);
-                entity.Property(cc => cc.Longitude).HasColumnType("DECIMAL(9,6)").IsRequired(false);
+                entity.Property(e => e.SportTypeId).IsRequired(); // FK
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Address).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.City).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.District).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Ward).HasMaxLength(100);
+                entity.Property(e => e.GoogleMapsLink).HasColumnType("nvarchar(MAX)"); // NVARCHAR(MAX)
+                entity.Property(e => e.Description).HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.MainImageCloudinaryPublicId).HasMaxLength(255);
+                entity.Property(e => e.MainImageCloudinaryUrl).HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.ContactPhoneNumber).HasMaxLength(20);
+                entity.Property(e => e.ContactEmail).HasMaxLength(255);
+                entity.Property(e => e.DefaultOpeningTime).HasColumnType("TIME");
+                entity.Property(e => e.DefaultClosingTime).HasColumnType("TIME");
+                entity.Property(e => e.IsActiveByOwner).HasDefaultValue(true);
 
-                entity.Property(cc => cc.Description).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(cc => cc.MainImageCloudinaryPublicId).HasMaxLength(255).IsRequired(false);
-                entity.Property(cc => cc.MainImageCloudinaryUrl).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(cc => cc.ContactPhoneNumber).HasMaxLength(20).IsRequired(false);
-                entity.Property(cc => cc.ContactEmail).HasMaxLength(255).IsRequired(false);
+                // Cấu hình thông tin ngân hàng
+                entity.Property(e => e.BankCode).HasMaxLength(50);
+                entity.Property(e => e.AccountNumber).HasMaxLength(50);
+                entity.Property(e => e.AccountName).HasMaxLength(255);
 
-                entity.Property(cc => cc.DefaultOpeningTime).HasColumnType("TIME").IsRequired(false);
-                entity.Property(cc => cc.DefaultClosingTime).HasColumnType("TIME").IsRequired(false);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable, không có default value SQL
 
-                entity.Property(cc => cc.ApprovalStatus)
-                      .IsRequired()
-                      .HasDefaultValue(ApprovalStatus.PendingApproval)
-                      .HasConversion<int>();
+                // Mối quan hệ Nhiều-một với SportType
+                entity.HasOne(cc => cc.SportType)
+                    .WithMany(st => st.CourtComplexes)
+                    .HasForeignKey(cc => cc.SportTypeId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                entity.Property(cc => cc.IsActiveByOwner).IsRequired().HasDefaultValue(true);
-                entity.Property(cc => cc.IsActiveByAdmin).IsRequired().HasDefaultValue(true);
-                entity.Property(cc => cc.CreatedAt).IsRequired().HasDefaultValueSql("GETDATE()");
-                entity.Property(cc => cc.UpdatedAt).IsRequired(false);
+                // Mối quan hệ Một-nhiều với Courts
+                entity.HasMany(cc => cc.Courts)
+                    .WithOne(c => c.CourtComplex)
+                    .HasForeignKey(c => c.CourtComplexId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-                entity.Property(cc => cc.ApprovedByAdminId).IsRequired(false); // Khóa ngoại đã cấu hình ở ApplicationUser
-                entity.Property(cc => cc.ApprovedAt).IsRequired(false);
-                entity.Property(cc => cc.RejectionReason).HasMaxLength(500).IsRequired(false);
+                // Mối quan hệ Một-nhiều với CourtComplexImages
+                entity.HasMany(cc => cc.CourtComplexImages)
+                    .WithOne(cci => cci.CourtComplex)
+                    .HasForeignKey(cci => cci.CourtComplexId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Mối quan hệ Một-nhiều với Bookings
+                entity.HasMany(cc => cc.Bookings)
+                    .WithOne(b => b.CourtComplex)
+                    .HasForeignKey(b => b.CourtComplexId)
+                    .OnDelete(DeleteBehavior.Restrict); // Không xóa bookings khi complex bị xóa
+
+                // Mối quan hệ Nhiều-nhiều với Amenities qua CourtComplexAmenities
+                entity.HasMany(cc => cc.CourtComplexAmenities)
+                    .WithOne(cca => cca.CourtComplex)
+                    .HasForeignKey(cca => cca.CourtComplexId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Mối quan hệ Một-nhiều với Products
+                entity.HasMany(cc => cc.Products)
+                    .WithOne(p => p.CourtComplex)
+                    .HasForeignKey(p => p.CourtComplexId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
-            #endregion
 
-            #region Court Configuration
-            modelBuilder.Entity<Court>(entity =>
+            // --- Cấu hình Court ---
+            builder.Entity<Court>(entity =>
             {
                 entity.ToTable("Courts");
-                entity.HasKey(c => c.CourtId);
-                entity.Property(c => c.CourtId).ValueGeneratedOnAdd();
+                entity.HasKey(e => e.CourtId);
+                entity.Property(e => e.CourtId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
 
-                entity.Property(c => c.CourtComplexId).IsRequired();
-                entity.HasOne(c => c.CourtComplex)
-                      .WithMany(cc => cc.Courts)
-                      .HasForeignKey(c => c.CourtComplexId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế: ON DELETE CASCADE
+                entity.Property(e => e.CourtComplexId).IsRequired(); // FK
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.StatusByOwner).HasConversion<int>().HasDefaultValue(CourtStatusByOwner.Available);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
 
-                entity.Property(c => c.SportTypeId).IsRequired();
-                entity.HasOne(c => c.SportType)
-                      .WithMany(st => st.Courts)
-                      .HasForeignKey(c => c.SportTypeId)
-                      .OnDelete(DeleteBehavior.Restrict); // Ngăn xóa SportType nếu có Court đang sử dụng
+                // Mối quan hệ Một-nhiều với HourlyPriceRates
+                entity.HasMany(c => c.HourlyPriceRates)
+                    .WithOne(hpr => hpr.Court)
+                    .HasForeignKey(hpr => hpr.CourtId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-                entity.Property(c => c.Name).IsRequired().HasMaxLength(100);
-                entity.Property(c => c.Description).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(c => c.DefaultSlotDurationMinutes).IsRequired();
-                entity.Property(c => c.AdvanceBookingDaysLimit).IsRequired().HasDefaultValue(7);
+                // Mối quan hệ Một-nhiều với Bookings
+                entity.HasMany(c => c.Bookings)
+                    .WithOne(b => b.Court)
+                    .HasForeignKey(b => b.CourtId)
+                    .OnDelete(DeleteBehavior.Restrict); // Không xóa bookings khi court bị xóa
 
-                entity.Property(c => c.OpeningTime).HasColumnType("TIME").IsRequired(false);
-                entity.Property(c => c.ClosingTime).HasColumnType("TIME").IsRequired(false);
-
-                entity.Property(c => c.StatusByOwner)
-                      .IsRequired()
-                      .HasDefaultValue(CourtStatusByOwner.Available)
-                      .HasConversion<int>();
-
-                entity.Property(c => c.IsActiveByAdmin).IsRequired().HasDefaultValue(true);
-                entity.Property(c => c.MainImageCloudinaryPublicId).HasMaxLength(255).IsRequired(false);
-                entity.Property(c => c.MainImageCloudinaryUrl).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(c => c.CreatedAt).IsRequired().HasDefaultValueSql("GETDATE()");
-                entity.Property(c => c.UpdatedAt).IsRequired(false);
+                // Mối quan hệ Một-nhiều với BlockedCourtSlots
+                entity.HasMany(c => c.BlockedCourtSlots)
+                    .WithOne(bcs => bcs.Court)
+                    .HasForeignKey(bcs => bcs.CourtId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
-            #endregion
 
-            #region CourtImage Configuration
-            modelBuilder.Entity<CourtImage>(entity =>
-            {
-                entity.ToTable("CourtImages");
-                entity.HasKey(ci => ci.CourtImageId);
-                entity.Property(ci => ci.CourtImageId).ValueGeneratedOnAdd();
-
-                entity.Property(ci => ci.CourtId).IsRequired();
-                entity.HasOne(ci => ci.Court)
-                      .WithMany(c => c.CourtImages)
-                      .HasForeignKey(ci => ci.CourtId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
-
-                entity.Property(ci => ci.CloudinaryPublicId).IsRequired().HasMaxLength(255);
-                entity.Property(ci => ci.CloudinaryUrl).IsRequired(); // NVARCHAR(MAX)
-                entity.Property(ci => ci.Caption).HasMaxLength(255).IsRequired(false);
-                entity.Property(ci => ci.IsPrimary).IsRequired().HasDefaultValue(false);
-            });
-            #endregion
-
-            #region CourtComplexImage Configuration
-            modelBuilder.Entity<CourtComplexImage>(entity =>
+            // --- Cấu hình CourtComplexImage ---
+            builder.Entity<CourtComplexImage>(entity =>
             {
                 entity.ToTable("CourtComplexImages");
-                entity.HasKey(cci => cci.CourtComplexImageId);
-                entity.Property(cci => cci.CourtComplexImageId).ValueGeneratedOnAdd();
-
-                entity.Property(cci => cci.CourtComplexId).IsRequired();
-                entity.HasOne(cci => cci.CourtComplex)
-                      .WithMany(cc => cc.CourtComplexImages)
-                      .HasForeignKey(cci => cci.CourtComplexId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
-
-                entity.Property(cci => cci.CloudinaryPublicId).IsRequired().HasMaxLength(255);
-                entity.Property(cci => cci.CloudinaryUrl).IsRequired(); // NVARCHAR(MAX)
-                entity.Property(cci => cci.Caption).HasMaxLength(255).IsRequired(false);
-                entity.Property(cci => cci.IsPrimary).IsRequired().HasDefaultValue(false);
+                entity.HasKey(e => e.CourtComplexImageId);
+                entity.Property(e => e.CourtComplexImageId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.CloudinaryPublicId).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.CloudinaryUrl).IsRequired().HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.Caption).HasMaxLength(255);
+                entity.Property(e => e.IsPrimary).HasDefaultValue(false);
             });
-            #endregion
 
-            #region CourtAmenity Configuration (Many-to-Many Join Table)
-            modelBuilder.Entity<CourtAmenity>(entity =>
+            // --- Cấu hình CourtComplexAmenity (Bảng nối) ---
+            builder.Entity<CourtComplexAmenity>(entity =>
             {
-                entity.ToTable("CourtAmenities");
-                // Khóa chính phức hợp
-                entity.HasKey(ca => new { ca.CourtId, ca.AmenityId });
-
-                entity.HasOne(ca => ca.Court)
-                      .WithMany(c => c.CourtAmenities)
-                      .HasForeignKey(ca => ca.CourtId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
-
-                entity.HasOne(ca => ca.Amenity)
-                      .WithMany(a => a.CourtAmenities)
-                      .HasForeignKey(ca => ca.AmenityId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
+                entity.ToTable("CourtComplexAmenities");
+                entity.HasKey(e => new { e.CourtComplexId, e.AmenityId }); // Composite PK
             });
-            #endregion
 
-            #region TimeSlot Configuration
-            modelBuilder.Entity<TimeSlot>(entity =>
+            // --- Cấu hình ProductCategory ---
+            builder.Entity<ProductCategory>(entity =>
             {
-                entity.ToTable("TimeSlots");
-                entity.HasKey(ts => ts.TimeSlotId);
-                entity.Property(ts => ts.TimeSlotId).ValueGeneratedOnAdd();
-
-                entity.Property(ts => ts.CourtId).IsRequired();
-                entity.HasOne(ts => ts.Court)
-                      .WithMany(c => c.TimeSlots)
-                      .HasForeignKey(ts => ts.CourtId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
-
-                entity.Property(ts => ts.StartTime).IsRequired().HasColumnType("TIME");
-                entity.Property(ts => ts.EndTime).IsRequired().HasColumnType("TIME");
-                entity.Property(ts => ts.Price).IsRequired().HasColumnType("DECIMAL(18,2)");
-
-                entity.Property(ts => ts.DayOfWeek)
-                      .IsRequired(false) // NULLABLE
-                      .HasConversion<int?>(); // Lưu trữ DayOfWeek? dưới dạng int?
-
-                entity.Property(ts => ts.IsActiveByOwner).IsRequired().HasDefaultValue(true);
-                entity.Property(ts => ts.Notes).HasMaxLength(255).IsRequired(false);
-
-                // UNIQUE (CourtId, StartTime, DayOfWeek)
-                // Lưu ý: DayOfWeek có thể NULL. Nếu DB của bạn (SQL Server) không cho phép NULL trong UNIQUE index
-                // theo cách này, bạn có thể cần một filtered index hoặc xử lý logic này ở tầng ứng dụng.
-                // Với EF Core, IsUnique() áp dụng cho cả trường hợp NULL nếu DB hỗ trợ.
-                // SQL Server xử lý NULL trong unique index là "NULL is not equal to NULL".
-                entity.HasIndex(ts => new { ts.CourtId, ts.StartTime, ts.DayOfWeek }).IsUnique();
+                entity.ToTable("ProductCategories");
+                entity.HasKey(e => e.ProductCategoryId);
+                entity.Property(e => e.ProductCategoryId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(150);
+                entity.HasIndex(e => e.Name).IsUnique(); // Duy nhất
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
             });
-            #endregion
 
-            #region Booking Configuration
-            modelBuilder.Entity<Booking>(entity =>
+            // --- Cấu hình Product ---
+            builder.Entity<Product>(entity =>
+            {
+                entity.ToTable("Products");
+                entity.HasKey(e => e.ProductId);
+                entity.Property(e => e.ProductId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.CourtComplexId).IsRequired(); // FK
+                entity.Property(e => e.ProductCategoryId).IsRequired(); // FK
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.UnitPrice).IsRequired().HasColumnType("DECIMAL(18,2)");
+                entity.Property(e => e.ProductType).HasConversion<int>(); // Lưu enum dưới dạng int
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.StockQuantity); // Nullable
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
+
+                // Mối quan hệ Nhiều-một với BookingProducts
+                entity.HasMany(p => p.BookingProducts)
+                    .WithOne(bp => bp.Product)
+                    .HasForeignKey(bp => bp.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict); // Không xóa booking products khi product bị xóa
+            });
+
+            // --- Cấu hình BookingProduct ---
+            builder.Entity<BookingProduct>(entity =>
+            {
+                entity.ToTable("BookingProducts");
+                entity.HasKey(e => e.BookingProductId);
+                entity.Property(e => e.BookingProductId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.BookingId).IsRequired(); // FK
+                entity.Property(e => e.ProductId).IsRequired(); // FK
+                entity.Property(e => e.Quantity).IsRequired();
+                entity.Property(e => e.UnitPriceAtTimeOfAddition).IsRequired().HasColumnType("DECIMAL(18,2)");
+                entity.Property(e => e.RentalStartTime); // Nullable
+                entity.Property(e => e.RentalEndTime); // Nullable
+                entity.Property(e => e.Subtotal).IsRequired().HasColumnType("DECIMAL(18,2)");
+                entity.Property(e => e.AddedAt).HasDefaultValueSql("GETDATE()");
+            });
+
+            // --- Cấu hình HourlyPriceRate ---
+            builder.Entity<HourlyPriceRate>(entity =>
+            {
+                entity.ToTable("HourlyPriceRates");
+                entity.HasKey(e => e.HourlyPriceRateId);
+                entity.Property(e => e.HourlyPriceRateId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.CourtId).IsRequired(); // FK
+                entity.Property(e => e.DayOfWeek).HasConversion<int>(); // Lưu enum DayOfWeek dưới dạng int, nullable
+                entity.Property(e => e.StartTime).IsRequired().HasColumnType("TIME");
+                entity.Property(e => e.EndTime).IsRequired().HasColumnType("TIME");
+                entity.Property(e => e.PricePerHour).IsRequired().HasColumnType("DECIMAL(18,2)");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
+
+                // Unique index for (CourtId, DayOfWeek, StartTime)
+                entity.HasIndex(e => new { e.CourtId, e.DayOfWeek, e.StartTime }).IsUnique();
+            });
+
+            // --- Cấu hình Booking ---
+            builder.Entity<Booking>(entity =>
             {
                 entity.ToTable("Bookings");
-                entity.HasKey(b => b.BookingId);
-                entity.Property(b => b.BookingId).ValueGeneratedOnAdd(); // BIGINT IDENTITY
-
-                entity.Property(b => b.BookerUserId).IsRequired(); // FK đã cấu hình ở ApplicationUser
-
-                entity.Property(b => b.CourtComplexId).IsRequired();
-                entity.HasOne(b => b.CourtComplex)
-                      .WithMany(cc => cc.Bookings)
-                      .HasForeignKey(b => b.CourtComplexId)
-                      .OnDelete(DeleteBehavior.Restrict); // Không cho xóa CourtComplex nếu có Booking
-
-                entity.Property(b => b.CourtId).IsRequired();
-                entity.HasOne(b => b.Court)
-                      .WithMany(c => c.Bookings)
-                      .HasForeignKey(b => b.CourtId)
-                      .OnDelete(DeleteBehavior.Restrict); // Không cho xóa Court nếu có Booking
-
-                entity.Property(b => b.BookingDate).IsRequired().HasColumnType("DATE");
-                entity.Property(b => b.TotalPrice).IsRequired().HasColumnType("DECIMAL(18,2)");
-
-                entity.Property(b => b.BookingStatus)
-                      .IsRequired()
-                      .HasDefaultValue(BookingStatusType.Confirmed) // Theo thảo luận mới
-                      .HasConversion<int>();
-
-                entity.Property(b => b.PaymentType) // Đổi tên enum thành PaymentMethodType cho rõ nghĩa
-                      .IsRequired()
-                      .HasColumnName("PaymentType") // Giữ tên cột PaymentType như trong DB design
-                      .HasDefaultValue(PaymentMethodType.PayAtCourt)
-                      .HasConversion<int>();
-
-                entity.Property(b => b.PaymentStatus) // Đổi tên enum thành PaymentStatusType
-                      .IsRequired()
-                      .HasColumnName("PaymentStatus") // Giữ tên cột PaymentStatus
-                      .HasDefaultValue(PaymentStatusType.Unpaid)
-                      .HasConversion<int>();
-
-                entity.Property(b => b.BookingSource) // Đổi tên enum thành BookingSourceType
-                      .IsRequired()
-                      .HasColumnName("BookingSource") // Giữ tên cột BookingSource
-                      .HasDefaultValue(BookingSourceType.Website)
-                      .HasConversion<int>();
-
-                entity.Property(b => b.ManualBookingCustomerName).HasMaxLength(255).IsRequired(false);
-                entity.Property(b => b.ManualBookingCustomerPhone).HasMaxLength(20).IsRequired(false);
-                entity.Property(b => b.NotesFromBooker).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(b => b.NotesFromOwner).IsRequired(false); // NVARCHAR(MAX)
-                entity.Property(b => b.CreatedAt).IsRequired().HasDefaultValueSql("GETDATE()");
-                entity.Property(b => b.UpdatedAt).IsRequired(false);
+                entity.HasKey(e => e.BookingId);
+                entity.Property(e => e.BookingId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.BookerUserId).IsRequired().HasMaxLength(450); // FK
+                entity.Property(e => e.CourtComplexId).IsRequired(); // FK
+                entity.Property(e => e.CourtId).IsRequired(); // FK
+                entity.Property(e => e.BookedStartTime).IsRequired(); // DateTime
+                entity.Property(e => e.BookedEndTime).IsRequired(); // DateTime
+                entity.Property(e => e.TotalPrice).IsRequired().HasColumnType("DECIMAL(18,2)");
+                entity.Property(e => e.BookingStatus).HasConversion<int>().HasDefaultValue(BookingStatusType.Confirmed);
+                entity.Property(e => e.ManualBookingCustomerName).HasMaxLength(255);
+                entity.Property(e => e.ManualBookingCustomerPhone).HasMaxLength(20);
+                entity.Property(e => e.NotesFromBooker).HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.NotesFromOwner).HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
             });
-            #endregion
 
-            #region BookedSlot Configuration
-            modelBuilder.Entity<BookedSlot>(entity =>
-            {
-                entity.ToTable("BookedSlots");
-                entity.HasKey(bs => bs.BookedSlotId);
-                entity.Property(bs => bs.BookedSlotId).ValueGeneratedOnAdd(); // BIGINT IDENTITY
-
-                entity.Property(bs => bs.BookingId).IsRequired();
-                entity.HasOne(bs => bs.Booking)
-                      .WithMany(b => b.BookedSlots)
-                      .HasForeignKey(bs => bs.BookingId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
-
-                entity.Property(bs => bs.TimeSlotId).IsRequired();
-                entity.HasOne(bs => bs.TimeSlot)
-                      .WithMany(ts => ts.BookedSlots)
-                      .HasForeignKey(bs => bs.TimeSlotId)
-                      .OnDelete(DeleteBehavior.Restrict); // Quan trọng: Ngăn xóa TimeSlot nếu đã được đặt
-
-                entity.Property(bs => bs.SlotDate).IsRequired().HasColumnType("DATE");
-                entity.Property(bs => bs.ActualStartTime).IsRequired().HasColumnType("TIME");
-                entity.Property(bs => bs.ActualEndTime).IsRequired().HasColumnType("TIME");
-                entity.Property(bs => bs.PriceAtBookingTime).IsRequired().HasColumnType("DECIMAL(18,2)");
-
-                // UNIQUE (TimeSlotId, SlotDate, ActualStartTime)
-                entity.HasIndex(bs => new { bs.TimeSlotId, bs.SlotDate, bs.ActualStartTime }).IsUnique();
-            });
-            #endregion
-
-            #region BlockedCourtSlot Configuration
-            modelBuilder.Entity<BlockedCourtSlot>(entity =>
+            // --- Cấu hình BlockedCourtSlot ---
+            builder.Entity<BlockedCourtSlot>(entity =>
             {
                 entity.ToTable("BlockedCourtSlots");
-                entity.HasKey(bcs => bcs.BlockedSlotId);
-                entity.Property(bcs => bcs.BlockedSlotId).ValueGeneratedOnAdd();
+                entity.HasKey(e => e.BlockedSlotId);
+                entity.Property(e => e.BlockedSlotId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.CourtId).IsRequired(); // FK
+                entity.Property(e => e.BlockDate).IsRequired().HasColumnType("DATE");
+                entity.Property(e => e.StartTime).IsRequired().HasColumnType("TIME");
+                entity.Property(e => e.EndTime).IsRequired().HasColumnType("TIME");
+                entity.Property(e => e.Reason).HasMaxLength(500);
+                entity.Property(e => e.CreatedByUserId).IsRequired().HasMaxLength(450); // FK
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
-                entity.Property(bcs => bcs.CourtId).IsRequired();
-                entity.HasOne(bcs => bcs.Court)
-                      .WithMany(c => c.BlockedCourtSlots)
-                      .HasForeignKey(bcs => bcs.CourtId)
-                      .OnDelete(DeleteBehavior.Cascade); // Theo thiết kế
-
-                entity.Property(bcs => bcs.BlockDate).IsRequired().HasColumnType("DATE");
-                entity.Property(bcs => bcs.StartTime).IsRequired().HasColumnType("TIME");
-                entity.Property(bcs => bcs.EndTime).IsRequired().HasColumnType("TIME");
-                entity.Property(bcs => bcs.Reason).HasMaxLength(500).IsRequired(false);
-                entity.Property(bcs => bcs.CreatedByUserId).IsRequired(); // FK đã cấu hình ở ApplicationUser
-                entity.Property(bcs => bcs.CreatedAt).IsRequired().HasDefaultValueSql("GETDATE()");
-
-                // UNIQUE (CourtId, BlockDate, StartTime)
-                entity.HasIndex(bcs => new { bcs.CourtId, bcs.BlockDate, bcs.StartTime }).IsUnique();
+                // Unique index for (CourtId, BlockDate, StartTime)
+                entity.HasIndex(e => new { e.CourtId, e.BlockDate, e.StartTime }).IsUnique();
             });
-            #endregion
 
-            #region Notification Configuration
-            modelBuilder.Entity<Notification>(entity =>
+            // --- Cấu hình Notification ---
+            builder.Entity<Notification>(entity =>
             {
                 entity.ToTable("Notifications");
-                entity.HasKey(n => n.NotificationId);
-                entity.Property(n => n.NotificationId).ValueGeneratedOnAdd(); // BIGINT IDENTITY
-
-                entity.Property(n => n.RecipientUserId).IsRequired(); // FK đã cấu hình ở ApplicationUser
-
-                entity.Property(n => n.Title).IsRequired().HasMaxLength(255);
-                entity.Property(n => n.Message).IsRequired(); // NVARCHAR(MAX)
-
-                entity.Property(n => n.NotificationType) // Đổi tên enum thành NotificationContentType
-                      .IsRequired()
-                      .HasColumnName("NotificationType") // Giữ tên cột NotificationType
-                      .HasConversion<int>();
-
-                entity.Property(n => n.ReferenceId).HasMaxLength(100).IsRequired(false);
-                entity.Property(n => n.ReferenceType).HasMaxLength(50).IsRequired(false);
-                entity.Property(n => n.IsRead).IsRequired().HasDefaultValue(false);
-                entity.Property(n => n.ReadAt).IsRequired(false);
-
-                entity.Property(n => n.DeliveryMethod) // Đổi tên enum thành DeliveryMethodType
-                      .IsRequired()
-                      .HasColumnName("DeliveryMethod") // Giữ tên cột DeliveryMethod
-                      .HasDefaultValue(DeliveryMethodType.InApp)
-                      .HasConversion<int>();
-
-                entity.Property(n => n.CreatedAt).IsRequired().HasDefaultValueSql("GETDATE()");
+                entity.HasKey(e => e.NotificationId);
+                entity.Property(e => e.NotificationId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.RecipientUserId).IsRequired().HasMaxLength(450); // FK
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.Message).IsRequired().HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.NotificationType).HasConversion<int>(); // Lưu enum dưới dạng int
+                entity.Property(e => e.ReferenceId).HasMaxLength(100);
+                entity.Property(e => e.ReferenceType).HasMaxLength(50);
+                entity.Property(e => e.IsRead).HasDefaultValue(false);
+                entity.Property(e => e.ReadAt); // Nullable
+                entity.Property(e => e.DeliveryMethod).HasConversion<int>().HasDefaultValue(DeliveryMethodType.InApp);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             });
-            #endregion
 
-            #region SystemConfiguration Configuration
-            modelBuilder.Entity<SystemConfiguration>(entity =>
+            // --- Cấu hình SystemConfiguration ---
+            builder.Entity<SystemConfiguration>(entity =>
             {
                 entity.ToTable("SystemConfigurations");
-                entity.HasKey(sc => sc.ConfigurationKey); // Khóa chính
-
-                entity.Property(sc => sc.ConfigurationKey).HasMaxLength(100);
-                entity.Property(sc => sc.ConfigurationValue).IsRequired(); // NVARCHAR(MAX)
-                entity.Property(sc => sc.Description).HasMaxLength(500).IsRequired(false);
-                entity.Property(sc => sc.LastUpdatedAt).IsRequired().HasDefaultValueSql("GETDATE()");
-                entity.Property(sc => sc.UpdatedByAdminId).IsRequired(false); // FK đã cấu hình ở ApplicationUser
+                entity.HasKey(e => e.ConfigurationKey); // PK là chuỗi
+                entity.Property(e => e.ConfigurationKey).HasMaxLength(100);
+                entity.Property(e => e.ConfigurationValue).IsRequired().HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.LastUpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedByAdminId).HasMaxLength(450); // FK, nullable
             });
-            #endregion
+
+            // --- Cấu hình SubscriptionPlan (MỚI) ---
+            builder.Entity<SubscriptionPlan>(entity =>
+            {
+                entity.ToTable("SubscriptionPlans");
+                entity.HasKey(e => e.PlanId);
+                entity.Property(e => e.PlanId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.HasIndex(e => e.Name).IsUnique(); // Duy nhất
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.MonthlyPrice).IsRequired().HasColumnType("DECIMAL(18,2)");
+                entity.Property(e => e.Features).HasColumnType("nvarchar(MAX)");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
+            });
+
+            // --- Cấu hình OwnerSubscription (MỚI) ---
+            builder.Entity<OwnerSubscription>(entity =>
+            {
+                entity.ToTable("OwnerSubscriptions");
+                entity.HasKey(e => e.OwnerSubscriptionId);
+                entity.Property(e => e.OwnerSubscriptionId).ValueGeneratedOnAdd(); // IDENTITY(1,1)
+                entity.Property(e => e.OwnerUserId).IsRequired().HasMaxLength(450); // FK
+                entity.Property(e => e.PlanId).IsRequired(); // FK
+                entity.Property(e => e.StartDate).IsRequired();
+                entity.Property(e => e.EndDate); // Nullable
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.PaymentStatus).HasConversion<int>(); // Lưu enum dưới dạng int
+                entity.Property(e => e.LastPaymentDate); // Nullable
+                entity.Property(e => e.NextBillingDate); // Nullable
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt); // Nullable
+
+                // Mối quan hệ Nhiều-một với SubscriptionPlan
+                entity.HasOne(os => os.Plan)
+                    .WithMany(sp => sp.OwnerSubscriptions)
+                    .HasForeignKey(os => os.PlanId)
+                    .OnDelete(DeleteBehavior.Restrict); // Không xóa subscriptions khi plan bị xóa
+            });
         }
     }
 }
