@@ -1,21 +1,101 @@
 ﻿@model IReadOnlyList<SportSync.Business.Dtos.CourtComplexResultDto>
-
 @{
     ViewBag.Title = "Tìm sân";
 }
 
-<h2>Tìm sân</h2>
+<!-- ====== CSS NHÚNG TRỰC TIẾP ====== -->
+<style>
+    /* Card cơ bản */
+    .card {
+        display: flex;
+        flex-direction: column;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        background: #fff;
+        transition: .3s;
+        cursor: pointer
+    }
 
-<!-- Hiển thị thông báo nếu không tìm thấy kết quả -->
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(0,128,0,.2),0 1.5px 12px rgba(0,0,0,.1);
+            transform: translateY(-3px) scale(1.02)
+        }
+    /* Header */
+    .card-header {
+        position: relative;
+        height: 200px;
+        width: 100%;
+        background-size: cover;
+        background-position: center;
+        transition: background-size .3s
+    }
+
+    .card:hover .card-header {
+        background-size: 110%
+    }
+
+    .card-header h5 a {
+        color: #000;
+        text-decoration: none;
+        font-size: 18px
+    }
+
+    .card-header small {
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center
+    }
+
+        .card-header small i {
+            margin-right: 8px;
+            font-size: 16px
+        }
+    /* Body & court info */
+    .card-body {
+        padding: 20px
+    }
+
+    .court-info {
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,.1);
+        transition: .3s
+    }
+
+        .court-info + .court-info {
+            margin-top: 10px
+        }
+
+    .amenities {
+        font-size: 14px;
+        color: #666;
+        margin-top: 10px
+    }
+    /* Slot badge */
+    .card-slot {
+        margin: .15rem;
+        display: inline-block;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 5px;
+        background: rgba(0,123,255,.1);
+        color: #007bff
+    }
+</style>
+
+<h2 class="mb-3">Tìm sân</h2>
+
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger">
-        @TempData["ErrorMessage"]
-    </div>
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
 }
 
-<!-- Form tìm kiếm -->
-<form id="filterForm" class="row g-3 mb-2">
+<!-- ========== FORM LỌC ========== -->
+<form method="get" class="row g-3 mb-2">
     <div class="col-md-3">
         <label class="form-label">Loại sân</label>
         <select class="form-select" name="SportTypeId">
@@ -26,58 +106,147 @@
             }
         </select>
     </div>
-
     <div class="col-md-3">
         <label class="form-label">Thành phố</label>
         <select class="form-control" name="City" id="CitySelect" onchange="loadDistricts()">
             <option value="">-- Chọn Thành phố --</option>
         </select>
     </div>
-
     <div class="col-md-3">
         <label class="form-label">Quận/Huyện</label>
         <select class="form-control" name="District" id="DistrictSelect">
             <option value="">-- Chọn Quận/Huyện --</option>
         </select>
     </div>
-
     <div class="col-md-3">
         <label class="form-label">Ngày</label>
-        <input type="date" class="form-control" name="Date" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        <input type="date" class="form-control" name="Date"
+               value="@(ViewContext.HttpContext.Request.Query["Date"].FirstOrDefault()
+               ?? DateTime.Today.ToString("yyyy-MM-dd"))" />
     </div>
-
     <div class="col-md-2">
         <label class="form-label">Từ</label>
-        <input type="time" class="form-control" name="FromTime" value="07:00" />
+        <input type="time" class="form-control" name="FromTime"
+               value="@(ViewContext.HttpContext.Request.Query["FromTime"].FirstOrDefault() ?? "07:00")" />
     </div>
-
     <div class="col-md-2">
         <label class="form-label">Đến</label>
-        <input type="time" class="form-control" name="ToTime" value="09:00" />
+        <input type="time" class="form-control" name="ToTime"
+               value="@(ViewContext.HttpContext.Request.Query["ToTime"].FirstOrDefault() ?? "09:00")" />
     </div>
-
-    <div class="col-md-2 align-self-end d-flex">
-        <button type="submit" class="btn btn-primary w-50">Tìm</button>
+    <div class="col-md-2 align-self-end">
+        <button type="submit" class="btn btn-primary w-100">Tìm</button>
     </div>
 </form>
 
-<!-- Hiển thị danh sách các khu phức hợp sân -->
-<div id="resultList">
-    @if (Model != null && Model.Any())
-    {
-        @foreach (var courtComplex in Model)
-        {
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">@courtComplex.Name</h5>
-                    <p class="card-text">@courtComplex.Address</p>
-                    <a href="@Url.Action("Details", "CourtComplex", new { id = courtComplex.ComplexId })" class="btn btn-primary">Xem chi tiết</a>
+<!-- ========== KẾT QUẢ ========== -->
+@foreach (var cpx in Model ?? Enumerable.Empty<SportSync.Business.Dtos.CourtComplexResultDto>())
+{
+    /* fallback cho ảnh nền  */
+    var bgUrl = string.IsNullOrWhiteSpace(cpx.ThumbnailUrl)
+                ? Url.Content("~/assets/sportsync-background.png")
+                : cpx.ThumbnailUrl;
+
+    <div class="card shadow-sm">
+
+        <!-- Header có ảnh nền -->
+        <div class="card-header bg-light" style="background-image:url('@bgUrl');">
+            <h5 class="mb-0 court-name">
+                <a asp-controller="CourtComplex"
+                   asp-action="Details"
+                   asp-route-id="@cpx.ComplexId">
+                    @cpx.Name
+                </a>
+            </h5>
+            <small class="text-muted">
+                <i class="fas fa-map-marker-alt"></i> @cpx.Address
+            </small>
+        </div>
+
+        <div class="card-body">
+
+            @* Amenities *@
+            @if (cpx.Amenities?.Any() == true)
+            {
+                <div class="amenities mb-2">
+                    <strong>Tiện nghi:</strong>
+                    @string.Join(", ", cpx.Amenities.Select(a => a.Name))
                 </div>
+            }
+
+            @* Courts và khung giờ *@
+            @foreach (var co in cpx.Courts ?? Enumerable.Empty<SportSync.Business.Dtos.CourtWithSlotsDto>())
+            {
+                <div class="court-info">
+                    <div><strong>@co.Name</strong></div>
+
+                    @foreach (var hr in co.HourlyPriceRates)
+                    {
+                        <span class="card-slot">
+                            @hr.Start.ToString("HH\\:mm")-@hr.End.ToString("HH\\:mm")
+                        </span>
+                    }
+
+                    @{
+                        var firstRate = co.HourlyPriceRates.FirstOrDefault();
+                    }
+                    @if (firstRate != null)
+                    {
+                        <br />
+                        <small class="text-muted">
+                            Giá/giờ: @firstRate.PricePerHour.ToString("N0") đ
+                        </small>
+                    }
+                </div>
+            }
+
+            @* Nút xem chi tiết *@
+            <div class="mt-2 text-end">
+                <a asp-controller="CourtComplex"
+                   asp-action="Details"
+                   asp-route-id="@cpx.ComplexId"
+                   asp-route-date="@(ViewContext.HttpContext.Request.Query["Date"].FirstOrDefault()
+               ?? DateTime.Today.ToString("yyyy-MM-dd"))"
+                   class="btn btn-sm btn-outline-primary">
+                    Xem chi tiết
+                </a>
             </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const currentCity='@(ViewContext.HttpContext.Request.Query["City"].FirstOrDefault() ?? "")',
+              currentDistrict='@(ViewContext.HttpContext.Request.Query["District"].FirstOrDefault() ?? "")';
+
+        window.onload=()=>fetch('https://provinces.open-api.vn/api/?depth=1')
+         .then(r=>r.json()).then(p=>{
+            const citySel=document.getElementById('CitySelect');
+            p.forEach(c=>{
+              const o=document.createElement('option');
+              o.value=c.name;o.textContent=c.name;o.dataset.code=c.code;
+              citySel.appendChild(o);
+            });
+            if(currentCity){citySel.value=currentCity;loadDistricts(currentCity);}
+         });
+
+        function loadDistricts(preCity=null){
+          const selOpt=preCity
+                ?[...document.querySelectorAll('#CitySelect option')].find(o=>o.value===preCity)
+                :document.querySelector('#CitySelect option:checked');
+          const code=selOpt?.dataset.code;
+          const disSel=document.getElementById('DistrictSelect');
+          disSel.innerHTML='<option value="">-- Chọn Quận/Huyện --</option>';
+          if(!code) return;
+          fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
+            .then(r=>r.json()).then(d=>{
+               d.districts.forEach(ds=>{
+                 const o=document.createElement('option');
+                 o.value=ds.name;o.textContent=ds.name;disSel.appendChild(o);
+               });
+               if(currentDistrict) disSel.value=currentDistrict;
+            });
         }
-    }
-    else
-    {
-        <p>Không có khu phức hợp sân nào phù hợp.</p>
-    }
-</div>
+    </script>
+}

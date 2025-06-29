@@ -121,19 +121,21 @@ namespace SportSync.Business.Services
             // Tìm kiếm CourtComplex theo CourtComplexId
             var courtComplex = await _context.CourtComplexes
                 .AsNoTracking()
-                .Include(c => c.SportType)  // Bao gồm loại thể thao
-                .Include(c => c.CourtComplexAmenities)  // Bao gồm tiện nghi của khu phức hợp
-                    .ThenInclude(cca => cca.Amenity)  // Bao gồm các tiện nghi
-                .Include(c => c.Courts)  // Bao gồm các sân trong khu phức hợp
-                    .ThenInclude(co => co.HourlyPriceRates)  // Bao gồm thông tin khung giờ của các sân
+                .Include(c => c.SportType)  
+                .Include(c => c.CourtComplexAmenities)  
+                    .ThenInclude(cca => cca.Amenity)  
+                .Include(c => c.Courts)  
+                    .ThenInclude(co => co.HourlyPriceRates) 
                 .FirstOrDefaultAsync(c => c.CourtComplexId == complexId, ct);
 
-            if (courtComplex == null) return null;  // Trả về null nếu không tìm thấy khu phức hợp
-
+            if (courtComplex == null) return null;  
+            var thumbnail = string.IsNullOrWhiteSpace(courtComplex.MainImageCloudinaryUrl)
+                   ? "/assets/sportsync-background.png"             
+                   : courtComplex.MainImageCloudinaryUrl;
             // Lấy thông tin tiện nghi cho khu phức hợp
             var amenities = courtComplex.CourtComplexAmenities
                 .Where(cca => cca.Amenity != null)
-                .Select(cca => new AmenityDto(cca.Amenity.Name))  // Chuyển thành DTO Amenity
+                .Select(cca => new AmenityDto(cca.Amenity.Name)) 
                 .ToList();
 
             // Lấy danh sách sân trong khu phức hợp và các giờ giá
@@ -142,16 +144,14 @@ namespace SportSync.Business.Services
                 {
                     CourtId = co.CourtId,
                     Name = co.Name,
-                    SportTypeName = courtComplex.SportType.Name,  // Lấy tên loại thể thao từ khu phức hợp
-                    StatusByOwner = co.StatusByOwner.ToString(),  // Trạng thái của sân
-
+                    SportTypeName = courtComplex.SportType.Name,  
                     HourlyPriceRates = co.HourlyPriceRates
                         .Select(hr => new HourlyPriceRateDto
                         {
                             HourlyPriceRateId = hr.HourlyPriceRateId,
-                            Start = TimeOnly.FromTimeSpan(hr.StartTime),  // Chuyển từ TimeSpan sang TimeOnly
-                            End = TimeOnly.FromTimeSpan(hr.EndTime),  // Chuyển từ TimeSpan sang TimeOnly
-                            PricePerHour = hr.PricePerHour  // Giá theo giờ
+                            Start = TimeOnly.FromTimeSpan(hr.StartTime),  
+                            End = TimeOnly.FromTimeSpan(hr.EndTime),  
+                            PricePerHour = hr.PricePerHour  
                         })
                         .ToList()
                 })
@@ -163,86 +163,87 @@ namespace SportSync.Business.Services
                 ComplexId = courtComplex.CourtComplexId,
                 Name = courtComplex.Name,
                 Address = courtComplex.Address,
-                Description = courtComplex.Description,  // Mô tả khu phức hợp
-                ContactPhoneNumber = courtComplex.ContactPhoneNumber,  // Số điện thoại liên hệ
-                ContactEmail = courtComplex.ContactEmail,  // Email liên hệ
-                SportTypeName = courtComplex.SportType.Name,  // Tên loại thể thao
-                GoogleMapsLink = courtComplex.GoogleMapsLink,  // Liên kết đến Google Maps
-                Amenities = amenities,  // Tiện nghi của khu phức hợp
-                Courts = courts  // Danh sách sân và khung giờ
+                Description = courtComplex.Description,  
+                ContactPhoneNumber = courtComplex.ContactPhoneNumber,  
+                ContactEmail = courtComplex.ContactEmail,  
+                SportTypeName = courtComplex.SportType.Name, 
+                GoogleMapsLink = courtComplex.GoogleMapsLink,
+                MainImageUrl = thumbnail,
+                Amenities = amenities,  
+                Courts = courts  
             };
         }
 
-        public async Task<IReadOnlyList<CourtComplexResultDto>> SearchAsync(CourtSearchRequest rq, CancellationToken ct = default)
+        public async Task<IReadOnlyList<CourtComplexResultDto>> SearchAsync(
+                    CourtSearchRequest rq, CancellationToken ct = default)
         {
+          
             var complexesQ = _context.CourtComplexes
                 .AsNoTracking()
                 .Include(c => c.SportType)
+                .Include(c => c.CourtComplexAmenities)
+                    .ThenInclude(cca => cca.Amenity)
                 .Include(c => c.Courts)
+                    .ThenInclude(co => co.HourlyPriceRates)
                 .Where(c => c.IsActiveByOwner);
 
-            // Lọc theo SportType nếu có
-            if (rq.SportTypeId.HasValue)
-            {
+          
+            if (rq.SportTypeId is not null)
                 complexesQ = complexesQ.Where(c => c.SportTypeId == rq.SportTypeId);
-            }
 
-            // Lọc theo Thành phố nếu có
             if (!string.IsNullOrWhiteSpace(rq.City))
             {
                 var city = rq.City.Trim().ToLower();
                 complexesQ = complexesQ.Where(c =>
-                    c.City != null &&
-                    EF.Functions.Like(c.City.ToLower(), $"%{city}%"));
+                    c.City != null && EF.Functions.Like(c.City.ToLower(), $"%{city}%"));
             }
 
-            // Lọc theo Quận huyện nếu có
             if (!string.IsNullOrWhiteSpace(rq.District))
             {
                 var district = rq.District.Trim().ToLower();
                 complexesQ = complexesQ.Where(c =>
-                    c.District != null &&
-                    EF.Functions.Like(c.District.ToLower(), $"%{district}%"));
+                    c.District != null && EF.Functions.Like(c.District.ToLower(), $"%{district}%"));
             }
 
-            var raw = await complexesQ
-                .Select(cpx => new
-                {
-                    cpx.CourtComplexId,
-                    cpx.Name,
-                    cpx.Address,
-                    cpx.GoogleMapsLink,
-                    SportTypeName = cpx.SportType.Name,
-                    Courts = cpx.Courts
-                        .Where(co => co.StatusByOwner == CourtStatusByOwner.Available)
-                        .Take(2)
-                        .Select(co => new
-                        {
-                            co.CourtId,
-                            co.Name
-                        })
-                })
-                .ToListAsync(ct);
+            var complexes = await complexesQ.ToListAsync(ct);
 
-            var list = raw
-                .Select(c => new CourtComplexResultDto
-                {
-                    ComplexId = c.CourtComplexId,
-                    Name = c.Name,
-                    Address = c.Address,
-                    GoogleMapsLink = c.GoogleMapsLink,
-                    SportTypeName = c.SportTypeName,
-                    Courts = c.Courts
+        
+            var result = complexes.Select(cpx => new CourtComplexResultDto
+            {
+                ComplexId = cpx.CourtComplexId,
+                Name = cpx.Name,
+                Address = cpx.Address,
+                SportTypeName = cpx.SportType.Name,
+                ThumbnailUrl = cpx.MainImageCloudinaryUrl,
+                Amenities = cpx.CourtComplexAmenities
+                             .Select(cca => new AmenityDto(cca.Amenity!.Name))
+                             .ToList(),
+
+                Courts = cpx.Courts
+                        .Where(co => co.StatusByOwner == CourtStatusByOwner.Available && co.HourlyPriceRates.Any())
+                        .Take(2)                                       
                         .Select(co => new CourtWithSlotsDto
                         {
                             CourtId = co.CourtId,
                             Name = co.Name,
 
+                            HourlyPriceRates = co.HourlyPriceRates          
+                                                 .OrderBy(hr => hr.StartTime)
+                                                 .Take(2)
+                                                 .Select(hr => new HourlyPriceRateDto
+                                                 {
+                                                     HourlyPriceRateId = hr.HourlyPriceRateId,
+                                                     Start = TimeOnly.FromTimeSpan(hr.StartTime),
+                                                     End = TimeOnly.FromTimeSpan(hr.EndTime),
+                                                     PricePerHour = hr.PricePerHour
+                                                 })
+                                                 .ToList()
                         })
-                })
-                .ToList();
+                        .ToList()
+            })
+            .ToList();
 
-            return list;
+            return result;
         }
     }
 }

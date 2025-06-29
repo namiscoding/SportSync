@@ -27,17 +27,6 @@ namespace SportSync.Business.Dtos
         public TimeOnly? ToTime { get; init; }
     }
 
-    public class CourtWithSlotsDto
-    {
-        public int CourtId { get; set; }
-        public string Name { get; set; }
-        public string SportTypeName { get; set; }
-        public string StatusByOwner { get; set; }  // Trạng thái của sân
-        public bool IsActiveByAdmin { get; set; }  // Trạng thái bởi admin
-
-        public List<HourlyPriceRateDto> HourlyPriceRates { get; set; } = new List<HourlyPriceRateDto>();  // Khung giờ
-    }
-
     public class HourlyPriceRateDto
     {
         public int HourlyPriceRateId { get; set; }
@@ -46,16 +35,26 @@ namespace SportSync.Business.Dtos
         public decimal PricePerHour { get; set; }
     }
 
+    public class CourtWithSlotsDto
+    {
+        public int CourtId { get; set; }
+        public string Name { get; set; } = null!;
+        public string SportTypeName { get; set; }
+        public IEnumerable<HourlyPriceRateDto> HourlyPriceRates { get; set; }
+                          = Enumerable.Empty<HourlyPriceRateDto>();
+    }
+
     public sealed class CourtComplexResultDto
     {
         public int ComplexId { get; init; }
         public string Name { get; init; } = null!;
         public string Address { get; init; } = null!;
-        public string? ThumbnailUrl { get; init; }
-        public double? DistanceKm { get; init; }
-        public string? GoogleMapsLink { get; init; }
         public string SportTypeName { get; init; } = null!;
-        public IEnumerable<CourtWithSlotsDto> Courts { get; init; } = Enumerable.Empty<CourtWithSlotsDto>();
+        public string? ThumbnailUrl { get; init; }
+        public IEnumerable<AmenityDto> Amenities { get; init; }
+                            = Enumerable.Empty<AmenityDto>();
+        public IEnumerable<CourtWithSlotsDto> Courts { get; init; }
+                            = Enumerable.Empty<CourtWithSlotsDto>();
     }
 
 }

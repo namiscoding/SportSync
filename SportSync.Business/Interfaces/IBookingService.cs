@@ -10,9 +10,8 @@ namespace SportSync.Business.Interfaces
 {
     public interface IBookingService
     {
-        Task<(bool, string?, long?)> CreateAsync(CreateBookingDto dto,
-                                        CancellationToken ct = default);
+        Task<BookingResultDto> CreateBookingAsync(CreateBookingRequestDto request, string bookerUserId, CancellationToken ct = default);
 
-        Task<BookingInvoiceDto?> GetInvoiceAsync(long bookingId, CancellationToken ct = default);
+        Task<BookingDetailDto?> GetBookingDetailAsync(long bookingId, string userId, CancellationToken ct = default);
     }
 }

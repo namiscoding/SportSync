@@ -28,6 +28,10 @@ builder.Services.AddSession(options =>
 builder.Services.AddControllersWithViews();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddHttpClient();
+builder.Services.Configure<VietQrOptions>(
+    builder.Configuration.GetSection("VietQr"));
+
+builder.Services.AddHttpClient<IVietQrService, VietQrService>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
     {

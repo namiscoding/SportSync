@@ -129,17 +129,14 @@ namespace SportSync.Web.Controllers
         }
 
 
-        public async Task<IActionResult> Details(int complexId)
+        public async Task<IActionResult> Details(int id, DateOnly? date, CancellationToken ct = default)
         {
-       
-            var courtComplex = await _courtComplexService.GetDetailAsync(complexId);
+            var courtComplex = await _courtComplexService.GetDetailAsync(id, ct);
+            if (courtComplex == null) return NotFound("Khu phức hợp không tìm thấy.");
+            var selectedDate = date ?? DateOnly.FromDateTime(DateTime.Today);
 
-            if (courtComplex == null)
-            {
-                return NotFound("Khu phức hợp không tìm thấy.");
-            }
-
-            return View(courtComplex); 
+            ViewBag.SelectedDate = selectedDate;
+            return View(courtComplex);
         }
     }
 }

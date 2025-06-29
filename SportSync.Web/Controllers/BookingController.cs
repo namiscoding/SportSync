@@ -8,59 +8,59 @@ using SportSync.Data.Entities;
 namespace SportSync.Web.Controllers
 {
     [Authorize]
+    [Route("Bookings")]
     public class BookingController : Controller
     {
         private readonly IBookingService _svc;
         private readonly UserManager<ApplicationUser> _userMgr;
-
-        public BookingController(IBookingService svc,
-                                 UserManager<ApplicationUser> userMgr)
+        private readonly ILogger<BookingController> _log;
+        public BookingController(IBookingService svc, UserManager<ApplicationUser> userMgr, ILogger<BookingController> log)
         {
             _svc = svc;
             _userMgr = userMgr;
+            _log = log;
+        }
+        [HttpPost("Create")]
+        [ValidateAntiForgeryToken]
+        [Produces("application/json")]
+        public async Task<IActionResult> Create([FromForm] CreateBookingRequestDto dto,
+                                          CancellationToken ct = default)
+        {
+            var userId = _userMgr.GetUserId(User);
+            if (userId == null) return Json(new { ok = false, message = "Bạn chưa đăng nhập!" });
+            dto = dto with { BookerUserId = userId };
+
+            try
+            {
+                var rs = await _svc.CreateBookingAsync(dto, userId, ct);
+
+                return Json(new
+                {
+                    ok = true,
+                    redirect = Url.Action("Success", "Bookings", new { id = rs.BookingId })
+                });
+            }
+            catch (Exception ex) 
+            {
+                _log.LogWarning(ex, "Đặt sân lỗi");
+                return Json(new { ok = false, message = ex.Message });
+            }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(int courtId,
-                                                DateOnly date,
-                                                List<int> selectedSlotIds,
-                                                CancellationToken ct)
+        [HttpGet("success/{id:long}")]
+        public async Task<IActionResult> Success(long id, CancellationToken ct = default)
         {
-            if (selectedSlotIds.Count == 0)
+            var userId = _userMgr.GetUserId(User)
+                         ?? throw new InvalidOperationException("Không xác định người dùng.");
+
+            var dto = await _svc.GetBookingDetailAsync(id, userId, ct);
+            if (dto == null)
             {
-                TempData["Error"] = "Bạn chưa chọn slot nào.";
-                return RedirectToAction("Details", "Court",
-                                        new { id = courtId, date });
+                TempData["ErrorMessage"] = "Không tìm thấy đơn đặt hoặc bạn không có quyền xem.";
+                return RedirectToAction("Index", "Courts");
             }
 
-            var dto = new CreateBookingDto
-            {
-                CourtId = courtId,
-                Date = date,
-                SlotIds = selectedSlotIds,
-                BookerUserId = _userMgr.GetUserId(User)!
-            };
-
-            var (ok, err, bookingId) = await _svc.CreateAsync(dto, ct);
-
-            if (!ok)
-            {
-                TempData["Error"] = err ?? "Đặt sân thất bại.";
-                return RedirectToAction("Details", "Court",
-                                        new { id = courtId, date });
-            }
-
-            // thành công
-            TempData["Success"] = "Đặt sân thành công!";
-            return RedirectToAction(nameof(Success), new { id = bookingId });
-        }
-
-        // GET  /Booking/Success/{id}
-        public async Task<IActionResult> Success(long id)
-        {
-            var invoice = await _svc.GetInvoiceAsync(id);   // DTO gồm Complex, Court, slot, total…
-            if (invoice == null) return NotFound();
-            return View(invoice);                           // /Views/Booking/Success.cshtml
+            return View("Success", dto);   
         }
     }
 }

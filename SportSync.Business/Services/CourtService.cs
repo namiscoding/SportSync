@@ -97,6 +97,62 @@ namespace SportSync.Business.Services
             }
         }
 
+        public async Task<CourtDetailDto?> GetCourtDetailAsync(int courtId,
+                                                       CancellationToken ct = default)
+        {
+            var court = await _context.Courts
+                .AsNoTracking()
+                .Include(c => c.CourtComplex)
+                    .ThenInclude(cc => cc.SportType)
+                .Include(c => c.HourlyPriceRates)
+                .FirstOrDefaultAsync(c => c.CourtId == courtId, ct);
+
+            if (court == null) return null;
+
+            var products = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.CourtComplexId == court.CourtComplexId && p.IsActive)
+                .Include(p => p.ProductCategory)
+                .Select(p => new ProductListDto
+                {
+                    ProductId = p.ProductId,
+                    Name = p.Name,
+                    CategoryName = p.ProductCategory.Name,
+                    ProductType = p.ProductType,
+                    UnitPrice = p.UnitPrice,
+                    StockQuantity = p.StockQuantity
+                })
+                .ToListAsync(ct);
+
+
+            var rates = court.HourlyPriceRates
+                        .OrderBy(r => r.DayOfWeek).ThenBy(r => r.StartTime)
+                        .Select(r => new HourlyPriceRateDto
+                        {
+                            HourlyPriceRateId = r.HourlyPriceRateId,
+                            Start = TimeOnly.FromTimeSpan(r.StartTime),
+                            End = TimeOnly.FromTimeSpan(r.EndTime),
+                            PricePerHour = r.PricePerHour,
+                        })
+                        .ToList();
+
+            return new CourtDetailDto
+            {
+                CourtId = court.CourtId,
+                Name = court.Name,
+                Description = court.Description,
+                StatusByOwner = court.StatusByOwner,
+
+                ComplexId = court.CourtComplexId,
+                ComplexName = court.CourtComplex.Name,
+                ComplexAddress = court.CourtComplex.Address,
+                SportTypeName = court.CourtComplex.SportType.Name,
+                HourlyPriceRates = rates,
+                Products = products
+            };
+        }
+
+
         public Task<Court> GetCourtByIdAsync(int courtId)
         {
             throw new NotImplementedException();

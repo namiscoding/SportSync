@@ -22,6 +22,8 @@ namespace SportSync.Business.Dtos
         public string ContactPhoneNumber { get; set; }  // Số điện thoại liên hệ
         public string ContactEmail { get; set; }  // Email liên hệ
         public string SportTypeName { get; set; }
+
+        public string? MainImageUrl { get; set; }
         public string? GoogleMapsLink { get; set; }
         public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();  // Tiện nghi
         public List<CourtWithSlotsDto> Courts { get; set; } = new List<CourtWithSlotsDto>();  // Danh sách sân
