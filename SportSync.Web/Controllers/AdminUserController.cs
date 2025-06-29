@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization; // Thêm namespace
 using Microsoft.AspNetCore.Mvc;
 using SportSync.Business.Services;
+using SportSync.Data.Enums;
 using SportSync.Web.Models.ViewModels;
 using SportSync.Web.Models.ViewModels.Admin;
 using System.Linq;
@@ -29,8 +30,8 @@ namespace SportSync.Web.Controllers
                 UserId = u.Id,
                 UserName = u.UserName,
                 Email = u.Email,
-                FullName = u.UserProfile?.FullName,
-                AccountStatus = u.UserProfile?.AccountStatusByAdmin.ToString(),
+                FullName = u.UserProfile?.FullName ?? "Chưa có tên",
+                AccountStatus = u.UserProfile != null ? ((AccountStatus)u.UserProfile.AccountStatusByAdmin).ToString() : "Không xác định",
                 RegisteredDate = u.UserProfile?.RegisteredDate ?? DateTime.MinValue,
                 LastLoginDate = u.UserProfile?.LastLoginDate
             }).ToList();

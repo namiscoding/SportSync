@@ -1,5 +1,6 @@
 ﻿using SportSync.Business.Interfaces;
 using SportSync.Data.Entities;
+using SportSync.Data.Enums;
 using System;
 using System.Threading.Tasks;
 
@@ -27,7 +28,10 @@ namespace SportSync.Business.Services
                 throw new Exception("Court not found.");
             }
 
-            court.IsActiveByAdmin = !court.IsActiveByAdmin;
+            // Toggle giữa Available (0) và Suspended (1)
+            court.StatusByOwner = court.StatusByOwner == (int)CourtStatusByOwner.Available 
+                ? (int)CourtStatusByOwner.Suspended 
+                : (int)CourtStatusByOwner.Available;
             court.UpdatedAt = DateTime.UtcNow;
 
             await _courtService.UpdateCourtAsync(court);

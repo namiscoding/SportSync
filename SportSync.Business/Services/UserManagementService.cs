@@ -34,9 +34,9 @@ namespace SportSync.Business.Services
                 throw new Exception("User not found.");
             }
 
-            user.UserProfile.AccountStatusByAdmin = user.UserProfile.AccountStatusByAdmin == AccountStatus.Active
-                ? AccountStatus.SuspendedByAdmin
-                : AccountStatus.Active;
+            user.UserProfile.AccountStatusByAdmin = user.UserProfile.AccountStatusByAdmin == (int)AccountStatus.Active
+                ? (int)AccountStatus.SuspendedByAdmin
+                : (int)AccountStatus.Active;
 
             await _userService.UpdateUserAsync(user);
         }

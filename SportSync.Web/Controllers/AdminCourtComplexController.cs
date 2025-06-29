@@ -36,8 +36,8 @@ namespace SportSync.Web.Controllers
                 Address = cc.Address,
                 City = cc.City,
                 District = cc.District,
-                ApprovalStatus = cc.ApprovalStatus.ToString(),
-                IsActiveByAdmin = cc.IsActiveByAdmin
+                SportTypeName = cc.SportType?.Name,
+                IsActiveByOwner = cc.IsActiveByOwner
             }).ToList();
 
             return View(courtComplexViewModels);
@@ -61,51 +61,28 @@ namespace SportSync.Web.Controllers
                 City = courtComplex.City,
                 District = courtComplex.District,
                 Ward = courtComplex.Ward,
-                Latitude = courtComplex.Latitude,
-                Longitude = courtComplex.Longitude,
+                GoogleMapsLink = courtComplex.GoogleMapsLink,
                 Description = courtComplex.Description,
                 ContactPhoneNumber = courtComplex.ContactPhoneNumber,
                 ContactEmail = courtComplex.ContactEmail,
                 DefaultOpeningTime = courtComplex.DefaultOpeningTime,
                 DefaultClosingTime = courtComplex.DefaultClosingTime,
-                ApprovalStatus = courtComplex.ApprovalStatus.ToString(),
-                IsActiveByAdmin = courtComplex.IsActiveByAdmin,
-                RejectionReason = courtComplex.RejectionReason,
+                SportTypeName = courtComplex.SportType?.Name,
+                IsActiveByOwner = courtComplex.IsActiveByOwner,
+                MainImageUrl = courtComplex.MainImageCloudinaryUrl,
+                CreatedAt = courtComplex.CreatedAt,
+                UpdatedAt = courtComplex.UpdatedAt,
                 Courts = courtComplex.Courts?.Select(c => new CourtViewModel
                 {
                     CourtId = c.CourtId,
                     Name = c.Name,
-                    SportTypeName = c.SportType?.Name,
+                    SportTypeName = courtComplex.SportType?.Name,
                     StatusByOwner = c.StatusByOwner.ToString(),
-                    IsActiveByAdmin = c.IsActiveByAdmin
+                    IsActiveByOwner = c.StatusByOwner == (int)CourtStatusByOwner.Available
                 }).ToList() ?? new List<CourtViewModel>()
             };
 
             return View(viewModel);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Approve(int courtComplexId)
-        {
-            string adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(adminId))
-            {
-                return Unauthorized();
-            }
-            await _courtComplexManagementService.ApproveCourtComplexAsync(courtComplexId, adminId);
-            return RedirectToAction("Index");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Reject(int courtComplexId, string rejectionReason)
-        {
-            string adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(adminId))
-            {
-                return Unauthorized();
-            }
-            await _courtComplexManagementService.RejectCourtComplexAsync(courtComplexId, adminId, rejectionReason);
-            return RedirectToAction("Index");
         }
 
         [HttpPost]

@@ -31,39 +31,6 @@ namespace SportSync.Business.Services
             return await _courtComplexService.GetCourtComplexByIdAsync(courtComplexId);
         }
 
-        public async Task ApproveCourtComplexAsync(int courtComplexId, string adminId)
-        {
-            var courtComplex = await _courtComplexService.GetCourtComplexByIdAsync(courtComplexId);
-            if (courtComplex == null)
-            {
-                throw new Exception("Court complex not found.");
-            }
-
-            courtComplex.ApprovalStatus = ApprovalStatus.Approved;
-            courtComplex.ApprovedByAdminId = adminId;
-            courtComplex.ApprovedAt = DateTime.UtcNow;
-            courtComplex.IsActiveByAdmin = true;
-
-            await _courtComplexService.UpdateCourtComplexAsync(courtComplex);
-        }
-
-        public async Task RejectCourtComplexAsync(int courtComplexId, string adminId, string rejectionReason)
-        {
-            var courtComplex = await _courtComplexService.GetCourtComplexByIdAsync(courtComplexId);
-            if (courtComplex == null)
-            {
-                throw new Exception("Court complex not found.");
-            }
-
-            courtComplex.ApprovalStatus = ApprovalStatus.RejectedByAdmin;
-            courtComplex.ApprovedByAdminId = adminId;
-            courtComplex.ApprovedAt = DateTime.UtcNow;
-            courtComplex.RejectionReason = rejectionReason;
-            courtComplex.IsActiveByAdmin = false;
-
-            await _courtComplexService.UpdateCourtComplexAsync(courtComplex);
-        }
-
         public async Task ToggleCourtComplexStatusAsync(int courtComplexId)
         {
             var courtComplex = await _courtComplexService.GetCourtComplexByIdAsync(courtComplexId);
@@ -72,7 +39,7 @@ namespace SportSync.Business.Services
                 throw new Exception("Court complex not found.");
             }
 
-            courtComplex.IsActiveByAdmin = !courtComplex.IsActiveByAdmin;
+            courtComplex.IsActiveByOwner = !courtComplex.IsActiveByOwner;
             courtComplex.UpdatedAt = DateTime.UtcNow;
 
             await _courtComplexService.UpdateCourtComplexAsync(courtComplex);

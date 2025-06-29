@@ -10,16 +10,21 @@
     <p><strong>Tên:</strong> @Model.Name</p>
     <p><strong>Chủ sân:</strong> @Model.OwnerFullName (SĐT: @Model.OwnerPhoneNumber)</p>
     <p><strong>Địa chỉ:</strong> @Model.Address, @Model.District, @Model.City@(string.IsNullOrEmpty(Model.Ward) ? "" : ", " + Model.Ward)</p>
-    <p><strong>Tọa độ:</strong> @(Model.Latitude.HasValue ? $"{Model.Latitude}, {Model.Longitude}" : "Chưa có")</p>
+    <p><strong>Google Maps:</strong> @(string.IsNullOrEmpty(Model.GoogleMapsLink) ? "Chưa có" : Model.GoogleMapsLink)</p>
+    <p><strong>Loại sân:</strong> @Model.SportTypeName</p>
     <p><strong>Mô tả:</strong> @(string.IsNullOrEmpty(Model.Description) ? "Chưa có" : Model.Description)</p>
     <p><strong>Liên hệ:</strong> SĐT: @(string.IsNullOrEmpty(Model.ContactPhoneNumber) ? "Chưa có" : Model.ContactPhoneNumber), Email: @(string.IsNullOrEmpty(Model.ContactEmail) ? "Chưa có" : Model.ContactEmail)</p>
     <p><strong>Giờ hoạt động mặc định:</strong> @(Model.DefaultOpeningTime.HasValue ? $"{Model.DefaultOpeningTime.Value.ToString("HH:mm")} - {Model.DefaultClosingTime.Value.ToString("HH:mm")}" : "Chưa thiết lập")</p>
-    <p><strong>Trạng thái duyệt:</strong> @Model.ApprovalStatus</p>
-    @if (!string.IsNullOrEmpty(Model.RejectionReason))
+    <p><strong>Hoạt động:</strong> @(Model.IsActiveByOwner ? "Có" : "Không")</p>
+    <p><strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+    @if (Model.UpdatedAt.HasValue)
     {
-        <p><strong>Lý do từ chối:</strong> @Model.RejectionReason</p>
+        <p><strong>Ngày cập nhật:</strong> @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
     }
-    <p><strong>Hoạt động:</strong> @(Model.IsActiveByAdmin ? "Có" : "Không")</p>
+    @if (!string.IsNullOrEmpty(Model.MainImageUrl))
+    {
+        <p><strong>Hình ảnh chính:</strong> <img src="@Model.MainImageUrl" alt="Hình ảnh chính" style="max-width: 200px;" /></p>
+    }
 </div>
 
 <h4>Danh sách sân</h4>
@@ -40,11 +45,11 @@
                 <td>@court.Name</td>
                 <td>@court.SportTypeName</td>
                 <td>@court.StatusByOwner</td>
-                <td>@(court.IsActiveByAdmin ? "Có" : "Không")</td>
+                <td>@(court.IsActiveByOwner ? "Có" : "Không")</td>
                 <td>
                     <form asp-action="ToggleCourtStatus" method="post" style="display:inline;">
                         <input type="hidden" name="courtId" value="@court.CourtId" />
-                        <button type="submit">@(court.IsActiveByAdmin ? "Gỡ" : "Khôi phục")</button>
+                        <button type="submit">@(court.IsActiveByOwner ? "Tạm ngưng" : "Kích hoạt")</button>
                     </form>
                 </td>
             </tr>
