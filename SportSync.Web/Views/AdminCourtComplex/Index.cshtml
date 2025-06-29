@@ -20,7 +20,7 @@
             <th>Địa chỉ</th>
             <th>Thành phố</th>
             <th>Quận</th>
-            <th>Trạng thái duyệt</th>
+            <th>Loại sân</th>
             <th>Hoạt động</th>
             <th>Hành động</th>
         </tr>
@@ -35,24 +35,12 @@
                 <td>@cc.Address</td>
                 <td>@cc.City</td>
                 <td>@cc.District</td>
-                <td>@cc.ApprovalStatus</td>
-                <td>@(cc.IsActiveByAdmin ? "Có" : "Không")</td>
+                <td>@cc.SportTypeName</td>
+                <td>@(cc.IsActiveByOwner ? "Có" : "Không")</td>
                 <td>
-                    @if (cc.ApprovalStatus == "PendingApproval")
-                    {
-                        <form asp-action="Approve" method="post" style="display:inline;">
-                            <input type="hidden" name="courtComplexId" value="@cc.CourtComplexId" />
-                            <button type="submit">Duyệt</button>
-                        </form>
-                        <form asp-action="Reject" method="post" style="display:inline;">
-                            <input type="hidden" name="courtComplexId" value="@cc.CourtComplexId" />
-                            <input type="text" name="rejectionReason" placeholder="Lý do từ chối" />
-                            <button type="submit">Từ chối</button>
-                        </form>
-                    }
                     <form asp-action="ToggleCourtComplexStatus" method="post" style="display:inline;">
                         <input type="hidden" name="courtComplexId" value="@cc.CourtComplexId" />
-                        <button type="submit">@(cc.IsActiveByAdmin ? "Gỡ" : "Khôi phục")</button>
+                        <button type="submit">@(cc.IsActiveByOwner ? "Gỡ" : "Khôi phục")</button>
                     </form>
                 </td>
             </tr>

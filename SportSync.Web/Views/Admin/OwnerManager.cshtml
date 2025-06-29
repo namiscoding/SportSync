@@ -5,8 +5,13 @@
 
 <h2>Quản lý chủ sân</h2>
 
-<form asp-action="Index" method="get">
-    <input type="text" name="searchTerm" placeholder="Tìm kiếm..." />
+<form asp-action="OwnerManager" method="get">
+    <input type="text" name="searchTerm" placeholder="Tìm kiếm theo họ tên..." value="@ViewBag.SearchTerm" />
+    <select name="selectedRole" asp-items="@(new SelectList(ViewBag.Roles, ViewBag.SelectedRole))">
+        <option value="All">Tất cả vai trò</option>
+        <option value="StandardCourtOwner">StandardCourtOwner</option>
+        <option value="ProCourtOwner">ProCourtOwner</option>
+    </select>
     <button type="submit">Tìm</button>
 </form>
 
@@ -16,6 +21,7 @@
             <th>Tên người dùng</th>
             <th>Email</th>
             <th>Họ tên</th>
+            <th>Vai trò</th>
             <th>Trạng thái</th>
             <th>Ngày đăng ký</th>
             <th>Đăng nhập cuối</th>
@@ -26,28 +32,29 @@
         @foreach (var owner in Model)
         {
             <tr>
-                <td>@owner.UserName</td>
-                <td>@owner.Email</td>
-                <td>@owner.FullName</td>
-                <td>@owner.AccountStatus</td>
+                <td>@(owner.UserName ?? "N/A")</td>
+                <td>@(owner.Email ?? "N/A")</td>
+                <td>@(owner.FullName ?? "Chưa có tên")</td>
+                <td>@(owner.Role ?? "Không xác định")</td>
+                <td>@(owner.AccountStatus ?? "Không xác định")</td>
                 <td>@owner.RegisteredDate.ToString("dd/MM/yyyy")</td>
                 <td>@(owner.LastLoginDate?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</td>
                 <td>
-                    @if (owner.AccountStatus == "SuspendedByAdmin")
-                    {
-                        <form asp-action="Approve" method="post" style="display:inline;">
-                            <input type="hidden" name="userId" value="@owner.UserId" />
-                            <button type="submit">Duyệt</button>
-                        </form>
-                    }
-                    @if (owner.AccountStatus == "Active")
-                    {
-                        <form asp-action="Reject" method="post" style="display:inline;">
-                            <input type="hidden" name="userId" value="@owner.UserId" />
-                            <input type="text" name="rejectionReason" placeholder="Lý do từ chối" />
-                            <button type="submit">Từ chối</button>
-                        </form>
-                    }
+                    @* @if (owner.AccountStatus == "SuspendedByAdmin") *@
+                    @* { *@
+                    @*     <form asp-action="Approve" method="post" style="display:inline;"> *@
+                    @*         <input type="hidden" name="userId" value="@owner.UserId" /> *@
+                    @*         <button type="submit">Duyệt</button> *@
+                    @*     </form> *@
+                    @* } *@
+                    @* @if (owner.AccountStatus == "Active") *@
+                    @* { *@
+                    @*     <form asp-action="Reject" method="post" style="display:inline;"> *@
+                    @*         <input type="hidden" name="userId" value="@owner.UserId" /> *@
+                    @*         <input type="text" name="rejectionReason" placeholder="Lý do từ chối" /> *@
+                    @*         <button type="submit">Từ chối</button> *@
+                    @*     </form> *@
+                    @* } *@
                     <form asp-action="ToggleStatus" method="post" style="display:inline;">
                         <input type="hidden" name="userId" value="@owner.UserId" />
                         <button type="submit">@(owner.AccountStatus == "Active" ? "Vô hiệu hóa" : "Kích hoạt")</button>

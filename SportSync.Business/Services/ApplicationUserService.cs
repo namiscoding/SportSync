@@ -24,6 +24,10 @@ namespace SportSync.Business.Services
         public async Task<IEnumerable<ApplicationUser>> GetUsersByRoleAsync(string role)
         {
             var users = await _userManager.GetUsersInRoleAsync(role);
+            foreach (var user in users)
+            {
+                await _dbContext.Entry(user).Reference(u => u.UserProfile).LoadAsync();
+            }
             return users;
         }
 
@@ -41,10 +45,7 @@ namespace SportSync.Business.Services
             }
 
             searchTerm = searchTerm.ToLower();
-            return users.Where(u =>
-                (u.UserProfile?.FullName?.ToLower().Contains(searchTerm) ?? false) ||
-                u.Email.ToLower().Contains(searchTerm) ||
-                u.UserName.ToLower().Contains(searchTerm));
+            return users.Where(u => u.UserProfile?.FullName?.ToLower().Contains(searchTerm) ?? false);
         }
 
         public async Task<ApplicationUser> GetUserByIdAsync(string userId)
