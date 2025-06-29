@@ -1,4 +1,5 @@
-﻿using SportSync.Web.Models.ViewModels.Court;
+using SportSync.Business.Dtos;
+using SportSync.Web.Models.ViewModels.Court;
 using System;
 using System.Collections.Generic;
 
@@ -19,11 +20,15 @@ namespace SportSync.Web.Models.ViewModels
         public string Description { get; set; }
         public string ContactPhoneNumber { get; set; }
         public string ContactEmail { get; set; }
-        public TimeOnly? DefaultOpeningTime { get; set; } // Sửa từ TimeSpan thành TimeOnly
-        public TimeOnly? DefaultClosingTime { get; set; } // Sửa từ TimeSpan thành TimeOnly
+        public TimeOnly? DefaultOpeningTime { get; set; } 
+        public TimeOnly? DefaultClosingTime { get; set; } 
         public string ApprovalStatus { get; set; }
         public bool IsActiveByAdmin { get; set; }
         public string RejectionReason { get; set; }
-        public List<CourtViewModel> Courts { get; set; }
+
+        // Các trường mới
+        public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();  
+        public List<CourtViewModel> Courts { get; set; } = new List<CourtViewModel>(); 
+
     }
 }

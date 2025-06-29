@@ -27,22 +27,21 @@ namespace SportSync.Business.Dtos
         public TimeOnly? ToTime { get; init; }
     }
 
-    public sealed class CourtWithSlotsDto
+    public class HourlyPriceRateDto
     {
-        public int CourtId { get; init; }
-        public string Name { get; init; } = null!;
-        public string SportTypeName { get; init; } = null!;
-        public string? ImageUrl { get; init; }
+        public int HourlyPriceRateId { get; set; }
+        public TimeOnly Start { get; set; }
+        public TimeOnly End { get; set; }
+        public decimal PricePerHour { get; set; }
+    }
 
-
-        public IEnumerable<string> Amenities { get; init; } = Enumerable.Empty<string>();
-
- 
-        public decimal MinPrice => AvailableSlots.Any()
-                                    ? AvailableSlots.Min(s => s.Price)
-                                    : 0;
-
-        public IEnumerable<TimeSlotDto> AvailableSlots { get; init; } = [];
+    public class CourtWithSlotsDto
+    {
+        public int CourtId { get; set; }
+        public string Name { get; set; } = null!;
+        public string SportTypeName { get; set; }
+        public IEnumerable<HourlyPriceRateDto> HourlyPriceRates { get; set; }
+                          = Enumerable.Empty<HourlyPriceRateDto>();
     }
 
     public sealed class CourtComplexResultDto
@@ -50,15 +49,12 @@ namespace SportSync.Business.Dtos
         public int ComplexId { get; init; }
         public string Name { get; init; } = null!;
         public string Address { get; init; } = null!;
+        public string SportTypeName { get; init; } = null!;
         public string? ThumbnailUrl { get; init; }
-
-
-        public double? DistanceKm { get; init; }
-        public decimal? Latitude { get; set; }
-        public decimal? Longitude { get; set; } 
-
-    
-        public IEnumerable<CourtWithSlotsDto> Courts { get; init; } = [];
+        public IEnumerable<AmenityDto> Amenities { get; init; }
+                            = Enumerable.Empty<AmenityDto>();
+        public IEnumerable<CourtWithSlotsDto> Courts { get; init; }
+                            = Enumerable.Empty<CourtWithSlotsDto>();
     }
 
 }

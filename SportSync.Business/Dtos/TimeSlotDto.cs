@@ -12,5 +12,6 @@ namespace SportSync.Business.Dtos
         public TimeOnly Start { get; init; }
         public TimeOnly End { get; init; }
         public decimal Price { get; init; }
+        public decimal PriceLowest { get; init; }
     }
 }

@@ -81,8 +81,11 @@ namespace SportSync.Business.Services
             {
                 return courtComplexes;
             }
+            searchTerm = searchTerm.ToLower(); // Moved this line inside the if block for efficiency if searchTerm is null/empty
 
-            searchTerm = searchTerm.ToLower();
+            // The 'return complex;' line here seems to be a leftover from the 'develop' branch.
+            // Based on your instruction to keep 'customer/update', it should be removed.
+            // And the search logic from 'customer/update' should be applied to 'courtComplexes'.
             return courtComplexes.Where(cc =>
                 cc.Name.ToLower().Contains(searchTerm) ||
                 cc.Address.ToLower().Contains(searchTerm) ||
@@ -104,7 +107,6 @@ namespace SportSync.Business.Services
             await _context.SaveChangesAsync();
         }
 
-
         public Task<(bool Success, CourtComplex CreatedComplex, IEnumerable<string> Errors)> CreateCourtComplexAsync(CreateCourtComplexDto dto, string ownerUserId)
         {
             throw new NotImplementedException();
@@ -115,9 +117,134 @@ namespace SportSync.Business.Services
             throw new NotImplementedException();
         }
 
-        public Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, DateOnly? date = null, CancellationToken ct = default)
+        public async Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            // Tìm kiếm CourtComplex theo CourtComplexId
+            var courtComplex = await _context.CourtComplexes
+                .AsNoTracking()
+                .Include(c => c.SportType)  
+                .Include(c => c.CourtComplexAmenities)  
+                    .ThenInclude(cca => cca.Amenity)  
+                .Include(c => c.Courts)  
+                    .ThenInclude(co => co.HourlyPriceRates) 
+                .FirstOrDefaultAsync(c => c.CourtComplexId == complexId, ct);
+
+            if (courtComplex == null) return null;  
+            var thumbnail = string.IsNullOrWhiteSpace(courtComplex.MainImageCloudinaryUrl)
+                   ? "/assets/sportsync-background.png"             
+                   : courtComplex.MainImageCloudinaryUrl;
+            // Lấy thông tin tiện nghi cho khu phức hợp
+            var amenities = courtComplex.CourtComplexAmenities
+                .Where(cca => cca.Amenity != null)
+                .Select(cca => new AmenityDto(cca.Amenity.Name)) 
+                .ToList();
+
+            // Lấy danh sách sân trong khu phức hợp và các giờ giá
+            var courts = courtComplex.Courts
+                .Select(co => new CourtWithSlotsDto
+                {
+                    CourtId = co.CourtId,
+                    Name = co.Name,
+                    SportTypeName = courtComplex.SportType.Name,  
+                    HourlyPriceRates = co.HourlyPriceRates
+                        .Select(hr => new HourlyPriceRateDto
+                        {
+                            HourlyPriceRateId = hr.HourlyPriceRateId,
+                            Start = TimeOnly.FromTimeSpan(hr.StartTime),  
+                            End = TimeOnly.FromTimeSpan(hr.EndTime),  
+                            PricePerHour = hr.PricePerHour  
+                        })
+                        .ToList().Take(2)
+                })
+                .ToList();
+
+            // Trả về DTO chi tiết khu phức hợp
+            return new CourtComplexDetailDto
+            {
+                ComplexId = courtComplex.CourtComplexId,
+                Name = courtComplex.Name,
+                Address = courtComplex.Address,
+                Description = courtComplex.Description,  
+                ContactPhoneNumber = courtComplex.ContactPhoneNumber,  
+                ContactEmail = courtComplex.ContactEmail,  
+                SportTypeName = courtComplex.SportType.Name, 
+                GoogleMapsLink = courtComplex.GoogleMapsLink,
+                MainImageUrl = thumbnail,
+                Amenities = amenities,  
+                Courts = courts  
+            };
+        }
+
+        public async Task<IReadOnlyList<CourtComplexResultDto>> SearchAsync(
+                    CourtSearchRequest rq, CancellationToken ct = default)
+        {
+          
+            var complexesQ = _context.CourtComplexes
+                .AsNoTracking()
+                .Include(c => c.SportType)
+                .Include(c => c.CourtComplexAmenities)
+                    .ThenInclude(cca => cca.Amenity)
+                .Include(c => c.Courts)
+                    .ThenInclude(co => co.HourlyPriceRates)
+                .Where(c => c.IsActiveByOwner);
+
+          
+            if (rq.SportTypeId is not null)
+                complexesQ = complexesQ.Where(c => c.SportTypeId == rq.SportTypeId);
+
+            if (!string.IsNullOrWhiteSpace(rq.City))
+            {
+                var city = rq.City.Trim().ToLower();
+                complexesQ = complexesQ.Where(c =>
+                    c.City != null && EF.Functions.Like(c.City.ToLower(), $"%{city}%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(rq.District))
+            {
+                var district = rq.District.Trim().ToLower();
+                complexesQ = complexesQ.Where(c =>
+                    c.District != null && EF.Functions.Like(c.District.ToLower(), $"%{district}%"));
+            }
+
+            var complexes = await complexesQ.ToListAsync(ct);
+
+        
+            var result = complexes.Select(cpx => new CourtComplexResultDto
+            {
+                ComplexId = cpx.CourtComplexId,
+                Name = cpx.Name,
+                Address = cpx.Address,
+                SportTypeName = cpx.SportType.Name,
+                ThumbnailUrl = cpx.MainImageCloudinaryUrl,
+                Amenities = cpx.CourtComplexAmenities
+                             .Select(cca => new AmenityDto(cca.Amenity!.Name))
+                             .ToList(),
+
+                Courts = cpx.Courts
+                        .Where(co => co.StatusByOwner == CourtStatusByOwner.Available && co.HourlyPriceRates.Any())
+                        .Take(2)                                       
+                        .Select(co => new CourtWithSlotsDto
+                        {
+                            CourtId = co.CourtId,
+                            Name = co.Name,
+
+                            HourlyPriceRates = co.HourlyPriceRates          
+                                                 .OrderBy(hr => hr.StartTime)
+                                                 .Take(2)
+                                                 .Select(hr => new HourlyPriceRateDto
+                                                 {
+                                                     HourlyPriceRateId = hr.HourlyPriceRateId,
+                                                     Start = TimeOnly.FromTimeSpan(hr.StartTime),
+                                                     End = TimeOnly.FromTimeSpan(hr.EndTime),
+                                                     PricePerHour = hr.PricePerHour
+                                                 })
+                                                 .ToList()
+                        })
+                        .ToList()
+            })
+            .ToList();
+
+            return result;
         }
     }
 }

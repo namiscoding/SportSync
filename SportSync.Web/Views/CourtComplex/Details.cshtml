@@ -1,194 +1,208 @@
 ﻿@model SportSync.Business.Dtos.CourtComplexDetailDto
+
 @{
-    ViewBag.Title = Model.Name;
-    var dateStr = ((DateOnly)ViewBag.SelectedDate).ToString("dd/MM/yyyy");
+    var selectedDate = (DateOnly?)ViewBag.SelectedDate
+                       ?? DateOnly.FromDateTime(DateTime.Today);
+    var dateStr = selectedDate.ToString("dd/MM/yyyy");
+    ViewData["Title"] = $"Chi tiết - {Model.Name}";
 }
 
-<link rel="stylesheet"
-      href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" />
+<style>
+    /* =======  BIẾN & PHỔ BIẾN  ======= */
+    .detail-page {
+        --ss-blue: #0069ff;
+        --ss-blue-light: #4da5ff;
+        --ss-bg: #f6f9ff;
+        --ss-yellow: #ffc107;
+    }
 
-<div class="detail-page">
-    <!--  *****  TẤT CẢ NỘI DUNG ĐỀU BỌC TRONG DIV NÀY  ***** -->
-
-    <style>
-        /* =======  BIẾN & PHỔ BIẾN  ======= */
-        .detail-page {
-            --ss-blue: #0069ff;
-            --ss-blue-light: #4da5ff;
-            --ss-bg: #f6f9ff;
-            --ss-yellow: #ffc107;
+        .detail-page a {
+            color: var(--ss-blue);
+            text-decoration: none
         }
 
-            .detail-page a {
-                color: var(--ss-blue);
-                text-decoration: none
+            .detail-page a:hover {
+                color: var(--ss-blue-light)
             }
 
-                .detail-page a:hover {
-                    color: var(--ss-blue-light)
-                }
+        /* =======  BACK  ======= */
+        .detail-page .back-btn {
+            background: #fff;
+            border: 2px solid var(--ss-blue);
+            color: var(--ss-blue);
+            font-weight: 600;
+            border-radius: 40px;
+            padding: .45rem 1.5rem;
+            transition: .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
+        }
 
-            /* =======  BACK  ======= */
-            .detail-page .back-btn {
-                background: #fff;
-                border: 2px solid var(--ss-blue);
-                color: var(--ss-blue);
-                font-weight: 600;
-                border-radius: 40px;
-                padding: .45rem 1.5rem;
-                transition: .15s;
-                display: inline-flex;
-                align-items: center;
-                gap: .25rem;
-            }
-
-                .detail-page .back-btn:hover {
-                    background: var(--ss-blue);
-                    color: #fff;
-                    box-shadow: 0 4px 12px rgb(0 105 255 /.3);
-                }
-
-            /* =======  HERO  ======= */
-            .detail-page .hero-wrap {
-                position: relative;
-                border-radius: 1rem;
-                overflow: hidden;
-                max-height: 300px
-            }
-
-            .detail-page .hero-img {
-                width: 100%;
-                height: 300px;
-                object-fit: cover;
-                filter: brightness(.7)
-            }
-
-            .detail-page .hero-text {
-                position: absolute;
-                inset: 0;
-                padding: 1.5rem;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-                color: #fff
-            }
-
-            /* =======  MAP  ======= */
-            .detail-page #miniMap {
-                height: 340px;
-                border-radius: 1rem;
-                margin-bottom: 2rem
-            }
-
-            .detail-page .court-card {
-                position: relative;
-                overflow: hidden;
-                border: none;
-                border-radius: .75rem;
-                transition: filter .25s, opacity .25s; /* bỏ translate  */
-            }
-
-                .detail-page .court-card:hover .court-inner,
-                .detail-page .court-card:hover img {
-                    opacity: .25; /* ↓ mờ hơn */
-                    filter: blur(2px);
-                }
-
-            /* =======================================================
-           2.  NÚT “Đặt sân” NỔI BẬT HƠN
-           ======================================================= */
-            .detail-page .book-btn {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%,-50%) scale(.3);
-                opacity: 0;
-                padding: .6rem 2.8rem;
-                border-radius: 60px;
-                /* màu nổi hơn – cam-đỏ gradient */
-                background: linear-gradient(135deg,#ff9d00 0%,#ff4d00 100%);
-                color: #fff;
-                font-weight: 900;
-                font-size: 1.05rem;
-                z-index: 1000;
-                box-shadow: 0 4px 12px rgb(255 77 0 /.28);
-                border: none;
-                transition: opacity .3s, transform .3s, box-shadow .3s;
-            }
-
-            .detail-page .court-card:hover .book-btn {
-                opacity: 1;
-                transform: translate(-50%,-50%) scale(1);
-                box-shadow: 0 14px 34px rgb(255 77 0 /.45);
-            }
-
-            .detail-page .book-btn:hover {
-                transform: translate(-50%,-50%) scale(1.10);
-                color: black;
-            }
-            /* Ẩn outline khi click */
-            .detail-page .book-btn:focus {
-                outline: none
-            }
-            /*   badge time / price   */
-            .detail-page .badge-time {
+            .detail-page .back-btn:hover {
                 background: var(--ss-blue);
                 color: #fff;
-                font-size: .82rem
+                box-shadow: 0 4px 12px rgb(0 105 255 /.3);
             }
 
-            .detail-page .badge-price {
-                background: var(--ss-yellow);
-                color: #000;
-                font-size: .82rem
+        /* =======  HERO  ======= */
+        .detail-page .hero-wrap {
+            position: relative;
+            border-radius: 1rem;
+            overflow: hidden;
+            max-height: 300px
+        }
+
+        .detail-page .hero-img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            filter: brightness(.7)
+        }
+
+        .detail-page .hero-text {
+            position: absolute;
+            inset: 0;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            color: #fff
+        }
+
+        /* =======  MAP  ======= */
+        .detail-page #miniMap {
+            height: 340px;
+            border-radius: 1rem;
+            margin-bottom: 2rem
+        }
+
+        .detail-page .court-card {
+            position: relative;
+            overflow: hidden;
+            border: none;
+            border-radius: .75rem;
+            transition: filter .25s, opacity .25s; /* bỏ translate  */
+        }
+
+            .detail-page .court-card:hover .court-inner,
+            .detail-page .court-card:hover img {
+                opacity: .25; /* ↓ mờ hơn */
+                filter: blur(2px);
             }
 
-            .detail-page .slot-wrap {
-                margin: .15rem .25rem .15rem 0
+        /* =======================================================
+               2.  NÚT “Đặt sân” NỔI BẬT HƠN
+               ======================================================= */
+        .detail-page .book-btn {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%,-50%) scale(.3);
+            opacity: 0;
+            padding: .6rem 2.8rem;
+            border-radius: 60px;
+            /* màu nổi hơn – cam-đỏ gradient */
+            background: linear-gradient(135deg,#ff9d00 0%,#ff4d00 100%);
+            color: #fff;
+            font-weight: 900;
+            font-size: 1.05rem;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgb(255 77 0 /.28);
+            border: none;
+            transition: opacity .3s, transform .3s, box-shadow .3s;
+        }
+
+        .detail-page .court-card:hover .book-btn {
+            opacity: 1;
+            transform: translate(-50%,-50%) scale(1);
+            box-shadow: 0 14px 34px rgb(255 77 0 /.45);
+        }
+
+        .detail-page .book-btn:hover {
+            transform: translate(-50%,-50%) scale(1.10);
+            color: black;
+        }
+        /* Ẩn outline khi click */
+        .detail-page .book-btn:focus {
+            outline: none
+        }
+        /*   badge time / price   */
+        .detail-page .badge-time {
+            background: var(--ss-blue);
+            color: #fff;
+            font-size: .82rem
+        }
+
+        .detail-page .badge-price {
+            background: var(--ss-yellow);
+            color: #000;
+            font-size: .82rem
+        }
+
+        .detail-page .slot-wrap {
+            margin: .15rem .25rem .15rem 0
+        }
+
+        /*   danh sách cuộn   */
+        .detail-page .court-list {
+            max-height: 72vh;
+            overflow: auto;
+            padding-right: .5rem
+        }
+
+            .detail-page .court-list::-webkit-scrollbar {
+                width: .45rem
             }
 
-            /*   danh sách cuộn   */
-            .detail-page .court-list {
-                max-height: 72vh;
-                overflow: auto;
-                padding-right: .5rem
+            .detail-page .court-list::-webkit-scrollbar-thumb {
+                background: #cdd5f0;
+                border-radius: 4px
             }
 
-                .detail-page .court-list::-webkit-scrollbar {
-                    width: .45rem
-                }
+        .detail-page a.map-btn {
+            background: linear-gradient(135deg,#00c853 0%,#00b0ff 100%);
+            color: #f5f5f5 !important; /* chữ trắng khói */
+            border: none;
+            border-radius: 50px;
+            padding: .55rem 1.6rem;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(0,176,255,.35);
+            transition: .25s;
+        }
 
-                .detail-page .court-list::-webkit-scrollbar-thumb {
-                    background: #cdd5f0;
-                    border-radius: 4px
-                }
-    </style>
+            .detail-page a.map-btn:hover {
+                box-shadow: 0 8px 26px rgba(0,176,255,.55);
+                transform: translateY(-2px);
+                color: #f5f5f5 !important; /* giữ nguyên khi hover */
+            }
 
-    <!-- ===== BACK BUTTON ===== -->
-    <a asp-controller="Courts" asp-action="Index" class="back-btn mb-3">
+            .detail-page a.map-btn:focus {
+                outline: none;
+            }
+</style>
+
+<div class="detail-page">
+    <a asp-controller="CourtComplex" asp-action="SearchCourtComplexes" class="back-btn mb-3"
+       asp-route-SportTypeId=""
+       asp-route-City=""
+       asp-route-District=""
+       asp-route-Date="@DateTime.Today.ToString("yyyy-MM-dd")">
         <i class="bi bi-arrow-left"></i> Quay lại
     </a>
 
-    <!-- ===== HERO ===== -->
-    @if (!string.IsNullOrWhiteSpace(Model.ThumbnailUrl))
-    {
-        <div class="hero-wrap shadow-sm mb-4">
-            <img src="@Model.ThumbnailUrl" class="hero-img" alt="cover" />
-            <div class="hero-text">
-                <h2 class="fw-bold mb-1">@Model.Name</h2>
-                <span><i class="bi bi-geo-alt"></i> @Model.Address</span>
-            </div>
+    <div class="hero-wrap mb-4">
+        <img src="@Model.MainImageUrl" class="hero-img"
+             alt="Ảnh khu phức hợp @Model.Name" />
+        <div class="hero-text">
+            <h1 class="display-6 fw-bold">@Model.Name</h1>
+            <p class="mb-0">
+                <i class="bi bi-geo-alt"></i> @Model.Address
+            </p>
         </div>
-    }
-    else
-    {
-        <h2 class="fw-bold">@Model.Name</h2>
-        <p class="text-muted"><i class="bi bi-geo-alt"></i> @Model.Address</p>
-    }
 
+    </div>
     <div class="row">
-
-        <!-- ==== COURT LIST ==== -->
         <div class="col-lg-7 court-list pe-lg-4">
 
             @if (!string.IsNullOrWhiteSpace(Model.Description))
@@ -202,61 +216,30 @@
             @foreach (var c in Model.Courts)
             {
                 <div class="card shadow-sm mb-4 court-card">
-                    <!--  NÚT ĐẶT SÂN  -->
-                    <a class="book-btn"
-                       asp-controller="Court" asp-action="Details"
-                       asp-route-id="@c.CourtId"
-                       asp-route-date="@(ViewBag.SelectedDate)">
-                        Đặt sân
-                    </a>
-                  <div class="court-inner">   
-                    <div class="row g-0">
-                        @if (!string.IsNullOrWhiteSpace(c.ImageUrl))
-                        {
-                            <div class="col-md-4">
-                                <img src="@c.ImageUrl" class="w-100 rounded-start" />
-                            </div>
-                        }
-                        <div class="col">
-                            <div class="card-body">
-                                <h5 class="card-title mb-1">
-                                    @c.Name <small class="text-muted fst-italic">(@c.SportTypeName)</small>
-                                </h5>
-
-                                @if (c.Amenities.Any())
-                                {
-                                    <div class="mb-2">
-                                        @foreach (var a in c.Amenities)
-                                        {
-                                            <span class="badge bg-info-subtle text-info me-1">@a.Name</span>
-                                        }
-                                    </div>
-                                }
-
-                                    @if (c.AvailableSlots.Any())
+                   <a class="book-btn"
+   asp-controller="Courts"          
+   asp-action="Details"
+   asp-route-id="@c.CourtId"
+   asp-route-date="@selectedDate.ToString("yyyy-MM-dd")">
+   Đặt sân
+</a>
+                    <div class="court-inner">
+                        <div class="row g-0">
+                            <div class="col">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-1">
+                                        @c.Name <small class="text-muted fst-italic">(@c.SportTypeName)</small>
+                                    </h5>
+                                    <h6 class="mt-3">Khung giờ mở cửa và đóng cửa</h6>
+                                    @foreach (var hr in c.HourlyPriceRates)
                                     {
-                                        var lowestPrice = c.AvailableSlots.Min(slot => slot.Price); // Get the lowest price from the available slots
-
                                         <div>
-
-                                            @foreach (var s in c.AvailableSlots.Take(5))
-                                            {
-                                                <span class="badge badge-time slot-wrap">
-                                                    @($"{s.Start:hh\\:mm}-{s.End:hh\\:mm}")
-                                                </span>
-
-
-
-                                            }
+                                            <span class="badge badge-time slot-wrap">
+                                                @($"{hr.Start:HH\\:mm} - {hr.End:HH\\:mm}")
+                                            </span>
                                         </div>
-                                        <span class="badge badge-price slot-wrap">
-                                            Chỉ từ @lowestPrice.ToString("N0")đ
-                                        </span>
                                     }
-                                    else
-                                    {
-                                        <div class="text-danger fw-semibold">Hết slot trống</div>
-                                    }
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -265,18 +248,23 @@
             }
         </div>
 
-        <!-- ==== MAP + CONTACT ==== -->
         <div class="col-lg-5 sticky-top" style="top:80px;">
-            @if (Model.Latitude is not null && Model.Longitude is not null)
-            {
-                <div id="miniMap" class="shadow-sm"></div>
-            }
-
+            <h4 class="fw-semibold mb-3">Tiện nghi</h4>
             <ul class="list-group shadow-sm">
-                @if (!string.IsNullOrWhiteSpace(Model.ContactPhone))
+                @foreach (var amenity in Model.Amenities)
                 {
                     <li class="list-group-item">
-                        <i class="bi bi-telephone me-2 text-primary"></i>@Model.ContactPhone
+                        <i class="bi bi-check-circle me-2 text-success"></i>@amenity.Name
+                    </li>
+                }
+            </ul>
+
+            <h4 class="fw-semibold mt-4 mb-3">Thông tin liên hệ</h4>
+            <ul class="list-group shadow-sm">
+                @if (!string.IsNullOrWhiteSpace(Model.ContactPhoneNumber))
+                {
+                    <li class="list-group-item">
+                        <i class="bi bi-telephone me-2 text-primary"></i>@Model.ContactPhoneNumber
                     </li>
                 }
                 @if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
@@ -285,22 +273,19 @@
                         <i class="bi bi-envelope me-2 text-primary"></i>@Model.ContactEmail
                     </li>
                 }
+
             </ul>
+            <!-- NÚT GOOGLE MAP  -->
+            @if (!string.IsNullOrWhiteSpace(Model.GoogleMapsLink))
+            {
+                <div class="text-end mt-3">
+                    <a href="@Model.GoogleMapsLink"
+                       target="_blank" rel="noopener"
+                       class="btn map-btn d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-geo-alt-fill fs-5" ></i><span>Xem bản đồ</span>
+                    </a>
+                </div>
+            }
         </div>
     </div>
 </div><!-- /detail-page -->
-@section Scripts {
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
-    @if (Model.Latitude is not null && Model.Longitude is not null)
-    {
-        <script>
-            mapboxgl.accessToken = 'pk.eyJ1IjoiYW5ocHJvMTIzIiwiYSI6ImNtYjNrY2F2bDBuc2Uya3MzOHNiejI5emgifQ.-UDOpaQLTgv2G_BH7DyLeQ';
-            new mapboxgl.Map({
-                container:'miniMap',
-                style:'mapbox://styles/mapbox/streets-v12',
-                center:[@Model.Longitude,@Model.Latitude], zoom:15
-            })
-            .addControl(new mapboxgl.Marker().setLngLat([@Model.Longitude,@Model.Latitude]));
-        </script>
-    }
-}

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using SportSync.Business.Interfaces;
 using SportSync.Business.Dtos;
 using System.IO;
+using SportSync.Data.Interfaces;
 
 namespace SportSync.Web.Controllers
 {
@@ -17,15 +18,18 @@ namespace SportSync.Web.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICourtComplexService _courtComplexService;
         private readonly ILogger<CourtComplexController> _logger;
+        private readonly ISportTypeService _sportTypeService;
 
         public CourtComplexController(
             UserManager<ApplicationUser> userManager,
             ICourtComplexService courtComplexService,
-            ILogger<CourtComplexController> logger)
+            ILogger<CourtComplexController> logger,
+            ISportTypeService sportTypeService)
         {
             _userManager = userManager;
             _courtComplexService = courtComplexService;
             _logger = logger;
+            _sportTypeService = sportTypeService;
         }
 
 
@@ -99,16 +103,40 @@ namespace SportSync.Web.Controllers
             return View(model);
         }
 
-      
-
-        [HttpGet("/CourtComplex/Details/{id:int}")]
-        public async Task<IActionResult> Details(int id, DateOnly? date)
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchCourtComplexes([FromQuery] CourtSearchRequest request, CancellationToken ct = default)
         {
-            var dto = await _courtComplexService.GetDetailAsync(id, date);
-            if (dto == null) return NotFound();
 
-            ViewBag.SelectedDate = date ?? DateOnly.FromDateTime(DateTime.Today);
-            return View(dto);    // /Views/CourtComplex/Details.cshtml
+            if (request.Date == default)
+            {
+                TempData["ErrorMessage"] = "Ngày không hợp lệ.";
+                return View();
+            }
+            var sportTypes = await _sportTypeService.GetSportTypesAsync();
+
+            ViewBag.SportTypes = sportTypes;
+
+            var result = await _courtComplexService.SearchAsync(request, ct);
+
+ 
+            if (result == null || result.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Không có khu phức hợp sân nào phù hợp.";
+                return View();
+            }
+
+            return View(result);
+        }
+
+
+        public async Task<IActionResult> Details(int id, DateOnly? date, CancellationToken ct = default)
+        {
+            var courtComplex = await _courtComplexService.GetDetailAsync(id, ct);
+            if (courtComplex == null) return NotFound("Khu phức hợp không tìm thấy.");
+            var selectedDate = date ?? DateOnly.FromDateTime(DateTime.Today);
+
+            ViewBag.SelectedDate = selectedDate;
+            return View(courtComplex);
         }
     }
 }

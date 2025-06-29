@@ -20,8 +20,8 @@ namespace SportSync.Business.Interfaces
         Task<IEnumerable<CourtComplex>> SearchCourtComplexesAsync(string searchTerm);
         Task<CourtComplex> GetCourtComplexByIdAsync(int courtComplexId);
         Task UpdateCourtComplexAsync(CourtComplex courtComplex);
-        Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, DateOnly? date = null, CancellationToken ct = default);
-
+        Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, CancellationToken ct = default);
+        Task<IReadOnlyList<CourtComplexResultDto>> SearchAsync(CourtSearchRequest rq, CancellationToken ct = default);
 
     }
 }

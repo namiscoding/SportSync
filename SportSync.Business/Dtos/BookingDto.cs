@@ -7,36 +7,67 @@ using System.Threading.Tasks;
 
 namespace SportSync.Business.Dtos
 {
-    public sealed record CreateBookingDto
+    public sealed record CreateBookingRequestDto
     {
-        public string BookerUserId { get; init; } = null!;  // bắt buộc
         public int CourtId { get; init; }
-        public DateOnly Date { get; init; }
 
-        public IReadOnlyList<int> SlotIds { get; init; } = Array.Empty<int>();
+        /* Người đặt – sẽ được so khớp với user đăng nhập */
+        public string BookerUserId { get; init; } = null!;
 
-        /* tuỳ chọn */
+        /* Thời gian */
+        public DateOnly PlayDate { get; init; }   // yyyy-MM-dd
+        public TimeOnly StartTime { get; init; }   // HH:mm
+        public TimeOnly EndTime { get; init; }
         public string? NotesFromBooker { get; init; }
-        public PaymentMethodType PaymentType { get; init; } = PaymentMethodType.BankTransfer;
     }
-    public sealed class BookingInvoiceDto
+    public sealed record BookingResultDto
     {
         public long BookingId { get; init; }
 
+        /* Thông tin sân/cụm */
         public string ComplexName { get; init; } = null!;
         public string CourtName { get; init; } = null!;
-        public string? CourtAddress { get; init; }   // tuỳ thích
+        public string? CourtAddress { get; init; }
+
+        /* Thời gian */
         public DateOnly BookingDate { get; init; }
+        public DateTime StartUtc { get; init; }
+        public DateTime EndUtc { get; init; }
 
-        public string? PhoneNumber { get; set; } 
-        public IReadOnlyList<InvoiceSlotDto> Slots { get; init; } = [];
+        /* Chi phí */
+        public decimal CourtSubtotal { get; init; }
 
-        public decimal TotalPrice { get; init; }
+        /* Người đặt */
+        public string BookerUserId { get; init; } = null!;
+        public string? PhoneNumber { get; init; }
     }
-
-    public sealed class InvoiceSlotDto
+    public sealed record BookingSlotDto
     {
-        public string TimeRange { get; init; } = null!; // “07:00-08:00”
-        public decimal Price { get; init; }
+        public string TimeRange { get; init; } = null!;   // "16:45 - 17:45"
+        public decimal Price { get; init; }            // tiền của đoạn này
     }
-}
+
+    public sealed record BookingDetailDto          // dùng cho trang Success
+    {
+        public long BookingId { get; init; }
+
+        // cụm & sân
+        public string ComplexName { get; init; } = null!;
+        public string CourtName { get; init; } = null!;
+        public string? CourtAddress { get; init; }
+
+        // thời gian
+        public DateOnly BookingDate { get; init; }
+        public DateTime StartUtc { get; init; }
+        public DateTime EndUtc { get; init; }
+
+        // chi phí
+        public decimal TotalPrice { get; init; }
+        public IReadOnlyList<BookingSlotDto> Slots { get; init; } = Array.Empty<BookingSlotDto>();
+
+        // liên hệ
+        public string? PhoneNumber { get; init; }
+        public string QrUrl { get; set; } = default!;
+    }
+
+    }

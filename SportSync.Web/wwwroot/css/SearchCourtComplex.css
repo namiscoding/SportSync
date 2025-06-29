@@ -1,0 +1,141 @@
+﻿/* Card cơ bản */
+.card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    background-color: #fff;
+    transition: transform 0.3s, box-shadow 0.3s; /* Thêm hiệu ứng hover */
+    cursor: pointer; /* Thêm con trỏ chuột để chỉ ra là clickable */
+}
+
+/* Background của card */
+.card-header {
+    position: relative;
+    height: 200px; /* Chiều cao của background */
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: background-size 0.3s; /* Hiệu ứng phóng đại background khi hover */
+}
+
+/* Round Tag trong header */
+.background-tag {
+    position: absolute;
+    top: 10px;
+   left: 10px;
+    width: 20px;
+    height: 20px;
+    background-color: #000000b3;
+    border-radius: 50%;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Body của card */
+.card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Phần thông tin Court Complex */
+.court-complex-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+/* Phần chứa thông tin về CourtComplex */
+.court-info-section {
+    width: 60%;
+}
+
+/* Phần chứa thông tin về các Court */
+.court-details-section {
+    width: 40%;
+}
+
+/* Amenities */
+.amenities {
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+}
+
+/* Các thẻ Court */
+.court-info {
+    margin-bottom: 15px;
+    border: 1px solid #ddd; /* Thêm viền cho các thẻ Court */
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Thêm box-shadow */
+    transition: transform 0.3s, box-shadow 0.3s; /* Hiệu ứng hover */
+}
+
+    /* Định dạng các thẻ Court */
+    .court-info div {
+        font-size: 14px;
+    }
+
+/* Tên của CourtComplex */
+.card-header h5 a {
+    color: black;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+/* Địa chỉ trong header */
+.card-header small {
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+}
+
+    .card-header small i {
+        margin-right: 8px;
+        font-size: 16px;
+    }
+
+/* Mờ và thu nhỏ phần "/Slot" */
+.card-info .slot-text {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.5); /* Làm mờ chữ */
+}
+
+/* Hiệu ứng hover cho thẻ Court */
+.card:hover {
+    box-shadow: 0px 8px 24px rgba(0, 128, 0, 0.2), 0px 1.5px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px) scale(1.02);
+}
+
+    /* Hiệu ứng hover cho phần background */
+    .card:hover .card-header {
+        background-size: 110%; /* Phóng đại ảnh nền khi hover */
+    }
+
+    /* Hiệu ứng hover cho phần tên CourtComplex */
+    .card:hover .court-name {
+        color: #19bc69 !important; /* Màu xanh lá cây */
+    }
+
+/* Thêm màu xanh dương cho các Slot */
+.court-info .highlight-slot {
+    font-size: 12px;
+    color: #007bff; /* Màu xanh dương */
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 5px;
+    background-color: rgba(0, 123, 255, 0.1);
+    margin-right: 5px;
+}
+
+    /* Tối đa 2 thẻ Slot, các slot tiếp theo không được hiển thị */
+    .court-info .highlight-slot:nth-child(3) {
+        display: none;
+    }
+
+/* Thêm khoảng cách giữa các thẻ Court */
+.court-info + .court-info {
+    margin-top: 10px;
+}

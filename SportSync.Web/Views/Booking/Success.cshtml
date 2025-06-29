@@ -1,4 +1,4 @@
-﻿@model SportSync.Business.Dtos.BookingInvoiceDto
+@model SportSync.Business.Dtos.BookingDetailDto
 @{
     ViewBag.Title = "Đặt sân thành công";
     Layout = "_Layout";
@@ -80,8 +80,9 @@
                     Bước&nbsp;1&nbsp;&ndash;&nbsp;Quét&nbsp;mã&nbsp;thanh&nbsp;toán
                 </div>
                 <div class="card-body text-center">
-                    <img src="~/images/payment-qr.png" alt="QR thanh toán"
-                         class="img-fluid" />
+                    <img src="@Model.QrUrl"
+                         alt="QR thanh toán"
+                         class="img-fluid border rounded shadow-sm" />
                     <p class="small text-muted mt-2 mb-0">
                         * Quét bằng ứng dụng ngân&nbsp;hàng / e-wallet
                     </p>
