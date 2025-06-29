@@ -9,7 +9,7 @@
         public string Address { get; set; }
         public string City { get; set; }
         public string District { get; set; }
-        public string ApprovalStatus { get; set; }
-        public bool IsActiveByAdmin { get; set; }
+        public string SportTypeName { get; set; }
+        public bool IsActiveByOwner { get; set; }
     }
 }

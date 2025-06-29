@@ -30,5 +30,19 @@ namespace SportSync.Business.Services
         {
             return await _courtComplexService.GetCourtComplexByIdAsync(courtComplexId);
         }
+
+        public async Task ToggleCourtComplexStatusAsync(int courtComplexId)
+        {
+            var courtComplex = await _courtComplexService.GetCourtComplexByIdAsync(courtComplexId);
+            if (courtComplex == null)
+            {
+                throw new Exception("Court complex not found.");
+            }
+
+            courtComplex.IsActiveByOwner = !courtComplex.IsActiveByOwner;
+            courtComplex.UpdatedAt = DateTime.UtcNow;
+
+            await _courtComplexService.UpdateCourtComplexAsync(courtComplex);
+        }
     }
 }
