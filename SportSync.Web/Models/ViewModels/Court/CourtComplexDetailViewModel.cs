@@ -1,4 +1,4 @@
-﻿using SportSync.Business.Dtos;
+using SportSync.Business.Dtos;
 using SportSync.Web.Models.ViewModels.Court;
 using System;
 using System.Collections.Generic;
@@ -29,5 +29,6 @@ namespace SportSync.Web.Models.ViewModels
         // Các trường mới
         public List<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();  
         public List<CourtViewModel> Courts { get; set; } = new List<CourtViewModel>(); 
+
     }
 }

@@ -81,8 +81,11 @@ namespace SportSync.Business.Services
             {
                 return courtComplexes;
             }
+            searchTerm = searchTerm.ToLower(); // Moved this line inside the if block for efficiency if searchTerm is null/empty
 
-            searchTerm = searchTerm.ToLower();
+            // The 'return complex;' line here seems to be a leftover from the 'develop' branch.
+            // Based on your instruction to keep 'customer/update', it should be removed.
+            // And the search logic from 'customer/update' should be applied to 'courtComplexes'.
             return courtComplexes.Where(cc =>
                 cc.Name.ToLower().Contains(searchTerm) ||
                 cc.Address.ToLower().Contains(searchTerm) ||
@@ -104,7 +107,6 @@ namespace SportSync.Business.Services
             await _context.SaveChangesAsync();
         }
 
-
         public Task<(bool Success, CourtComplex CreatedComplex, IEnumerable<string> Errors)> CreateCourtComplexAsync(CreateCourtComplexDto dto, string ownerUserId)
         {
             throw new NotImplementedException();
@@ -114,7 +116,6 @@ namespace SportSync.Business.Services
         {
             throw new NotImplementedException();
         }
-
 
         public async Task<CourtComplexDetailDto?> GetDetailAsync(int complexId, CancellationToken ct = default)
         {

@@ -152,7 +152,6 @@ namespace SportSync.Business.Services
             };
         }
 
-
         public Task<Court> GetCourtByIdAsync(int courtId)
         {
             throw new NotImplementedException();

@@ -1,3 +1,4 @@
+
 ﻿using SportSync.Data.Enums;
 using System;
 using System.Collections.Generic;
@@ -28,5 +29,4 @@ namespace SportSync.Business.Dtos
         public IReadOnlyList<ProductListDto> Products { get; init; }
           = Array.Empty<ProductListDto>();
     }
-
 }

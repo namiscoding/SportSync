@@ -60,7 +60,7 @@ namespace SportSync.Web.Controllers
                 return RedirectToAction("Index", "Courts");
             }
 
-            return View("Success", dto);   
+            return View("Success", dto); 
         }
     }
 }

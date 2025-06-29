@@ -483,5 +483,3 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 appsettings.Development.json
-SportSync.Web/firebase-adminsdk.json
-SportSync.Web/firebase-adminsdk.json

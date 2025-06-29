@@ -40,7 +40,6 @@ public sealed class CourtsController : Controller
         return View();               
     }
 
-
     [HttpGet("Details/{id:int}")]
     public async Task<IActionResult> Details(int id, DateOnly? date)
     {
@@ -51,5 +50,4 @@ public sealed class CourtsController : Controller
         ViewBag.SelectedDate = date ?? DateOnly.FromDateTime(DateTime.Today);
         return View(dto);
     }
-
 }

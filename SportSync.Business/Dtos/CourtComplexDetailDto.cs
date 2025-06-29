@@ -8,11 +8,6 @@ namespace SportSync.Business.Dtos
 {
 
     public sealed record AmenityDto(string Name);
-
-
-
-
-
     public class CourtComplexDetailDto
     {
         public int ComplexId { get; set; }
