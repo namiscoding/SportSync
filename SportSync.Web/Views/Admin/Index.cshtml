@@ -1,0 +1,101 @@
+﻿﻿@{
+    ViewData["Title"] = "Trang Chủ";
+    Layout = "_AdminLayout"; // Sử dụng layout chính
+}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans:wght@300;400;500;700&display=swap">
+
+<div class="home-container">
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Chào mừng đến với SportSync!</h1>
+            <p class="hero-subtitle">Nền tảng đặt sân thể thao trực tuyến tiện lợi và nhanh chóng</p>
+            <div class="hero-buttons">
+                <a asp-controller="Courts" asp-action="Index" class="btn btn-primary btn-lg">Tìm Sân Ngay</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="section-title">
+            <h2>Dịch vụ của chúng tôi</h2>
+            <p>Dễ dàng tìm kiếm, đặt lịch và quản lý sân thể thao yêu thích của bạn</p>
+        </div>
+
+        <div class="sport-cards">
+            <div class="sport-card">
+                <div class="card-image">
+                    <img src="/assets/football.png" alt="Sân bóng đá" />
+                    <div class="card-overlay">
+                        <a href="/Search?type=Football" class="card-link">Đặt ngay</a>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3>Sân Bóng Đá</h3>
+                    <p>Tìm và đặt sân bóng đá 5, 7, 11 người với nhiều lựa chọn.</p>
+                </div>
+            </div>
+
+            <div class="sport-card">
+                <div class="card-image">
+                    <img src="/assets/badminton-court.png" alt="Sân cầu lông" />
+                    <div class="card-overlay">
+                        <a href="/Search?type=Badminton" class="card-link">Đặt ngay</a>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3>Sân Cầu Lông</h3>
+                    <p>Đặt sân cầu lông chất lượng cao cho những trận đấu sôi nổi.</p>
+                </div>
+            </div>
+
+            <div class="sport-card">
+                <div class="card-image">
+                    <img src="/assets/pickleball-court.png" alt="Sân pickleball" />
+                    <div class="card-overlay">
+                        <a href="/Search?type=Pickleball" class="card-link">Đặt ngay</a>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3>Sân Pickleball</h3>
+                    <p>Khám phá và đặt sân pickleball, môn thể thao đang thịnh hành.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="advantages-section">
+        <div class="section-title">
+            <h2>Tại sao chọn SportSync?</h2>
+        </div>
+        <div class="advantages-grid">
+            <div class="advantage-item">
+                <div class="advantage-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3>Tiết kiệm thời gian</h3>
+                <p>Đặt sân nhanh chóng chỉ trong vài phút</p>
+            </div>
+            <div class="advantage-item">
+                <div class="advantage-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Dễ dàng tìm kiếm</h3>
+                <p>Tìm kiếm sân theo vị trí, giá cả và thời gian</p>
+            </div>
+            <div class="advantage-item">
+                <div class="advantage-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Đảm bảo an toàn</h3>
+                <p>Thanh toán an toàn và đảm bảo giữ sân</p>
+            </div>
+            <div class="advantage-item">
+                <div class="advantage-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>Đánh giá chất lượng</h3>
+                <p>Tham khảo đánh giá từ người chơi khác</p>
+            </div>
+        </div>
+    </div>
+</div>

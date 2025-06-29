@@ -1,0 +1,69 @@
+﻿﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+    var bookings = ViewBag.RecentBookings as List<dynamic> ?? new List<dynamic>(); // chống null
+}
+
+<h2>📊 Hiệu Suất Website</h2>
+
+<div>
+    <p><strong>Tổng số người dùng:</strong> @ViewBag.TotalUsers</p>
+    <p><strong>Số người từng đặt sân:</strong> @ViewBag.TotalBookers</p>
+    <p><strong>Tỉ lệ chuyển đổi:</strong> @ViewBag.ConversionRate.ToString("0.00") %</p>
+    <p><strong>Thời gian phản hồi trung bình:</strong> @ViewBag.AvgResponseTimeSeconds.ToString("0.00") giây</p>
+</div>
+
+<hr />
+
+<h3>📅 Biểu đồ: Lượt đặt sân 7 ngày gần nhất</h3>
+<canvas id="bookingChart" width="600" height="300"></canvas>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const labels = [
+        @foreach (var item in bookings)
+        {
+            <text>"@(((DateTime)item.Date).ToString("dd/MM"))",</text>
+        }
+        ];
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: 'Lượt đặt sân',
+                data: [
+        @foreach (var item in bookings)
+        {
+            <text>@item.Count,</text>
+        }
+                ],
+                fill: true,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                tension: 0.3
+            }]
+        };
+
+        const config = {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Số lượt' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Ngày' }
+                    }
+                }
+            }
+        };
+
+        const bookingChart = new Chart(
+            document.getElementById('bookingChart'),
+            config
+        );
+    </script>
+}
