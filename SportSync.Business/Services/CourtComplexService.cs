@@ -153,7 +153,7 @@ namespace SportSync.Business.Services
                             End = TimeOnly.FromTimeSpan(hr.EndTime),  
                             PricePerHour = hr.PricePerHour  
                         })
-                        .ToList()
+                        .ToList().Take(2)
                 })
                 .ToList();
 
