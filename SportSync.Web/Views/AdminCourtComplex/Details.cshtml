@@ -1,4 +1,3 @@
-﻿
 ﻿@model SportSync.Web.Models.ViewModels.CourtComplexDetailViewModel
 
 @{
@@ -15,7 +14,7 @@
     <p><strong>Loại sân:</strong> @Model.SportTypeName</p>
     <p><strong>Mô tả:</strong> @(string.IsNullOrEmpty(Model.Description) ? "Chưa có" : Model.Description)</p>
     <p><strong>Liên hệ:</strong> SĐT: @(string.IsNullOrEmpty(Model.ContactPhoneNumber) ? "Chưa có" : Model.ContactPhoneNumber), Email: @(string.IsNullOrEmpty(Model.ContactEmail) ? "Chưa có" : Model.ContactEmail)</p>
-    <p><strong>Giờ hoạt động mặc định:</strong> @(Model.DefaultOpeningTime.HasValue ? $"{Model.DefaultOpeningTime.Value.ToString("HH:mm")} - {Model.DefaultClosingTime.Value.ToString("HH:mm")}" : "Chưa thiết lập")</p>
+    <p><strong>Giờ hoạt động mặc định:</strong> @(Model.DefaultOpeningTime.HasValue ? $"{Model.DefaultOpeningTime.Value.ToString(@"hh\:mm")} - {Model.DefaultClosingTime.Value.ToString(@"hh\:mm")}" : "Chưa thiết lập")</p>
     <p><strong>Hoạt động:</strong> @(Model.IsActiveByOwner ? "Có" : "Không")</p>
     <p><strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
     @if (Model.UpdatedAt.HasValue)

@@ -1,4 +1,3 @@
-
 using SportSync.Web.Models.ViewModels.Court;
 using System;
 using System.Collections.Generic;
@@ -19,8 +18,8 @@ namespace SportSync.Web.Models.ViewModels
         public string Description { get; set; }
         public string ContactPhoneNumber { get; set; }
         public string ContactEmail { get; set; }
-        public TimeOnly? DefaultOpeningTime { get; set; }
-        public TimeOnly? DefaultClosingTime { get; set; }
+        public TimeSpan? DefaultOpeningTime { get; set; }
+        public TimeSpan? DefaultClosingTime { get; set; }
         public string SportTypeName { get; set; }
         public bool IsActiveByOwner { get; set; }
         public string MainImageUrl { get; set; }
