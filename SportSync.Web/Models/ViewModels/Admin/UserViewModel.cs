@@ -10,5 +10,6 @@
         public string AccountStatus { get; set; }
         public DateTime RegisteredDate { get; set; }
         public DateTime? LastLoginDate { get; set; }
+        public string Role { get; set; }
     }
 }

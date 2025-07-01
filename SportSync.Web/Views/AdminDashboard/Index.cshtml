@@ -1,5 +1,6 @@
 ﻿﻿@{
     ViewData["Title"] = "Admin Dashboard";
+    Layout = "_AdminLayout"; // Sử dụng layout chính
     var bookings = ViewBag.RecentBookings as List<dynamic> ?? new List<dynamic>(); // chống null
 }
 

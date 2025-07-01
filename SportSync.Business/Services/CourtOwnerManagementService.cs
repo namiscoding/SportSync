@@ -19,9 +19,7 @@ namespace SportSync.Business.Services
 
         public async Task<IEnumerable<ApplicationUser>> GetCourtOwnersAsync()
         {
-            var standardCourtOwners = await _userService.GetUsersByRoleAsync("StandardCourtOwner");
-            var proCourtOwners = await _userService.GetUsersByRoleAsync("ProCourtOwner");
-            return standardCourtOwners.Concat(proCourtOwners);
+            return await _userService.GetUsersByRoleAsync("CourtOwner");
         }
 
         public async Task<IEnumerable<ApplicationUser>> SearchCourtOwnersAsync(string searchTerm, string selectedRole)
@@ -29,19 +27,13 @@ namespace SportSync.Business.Services
             IEnumerable<ApplicationUser> courtOwners;
 
             // Lọc theo vai trò
-            if (selectedRole == "StandardCourtOwner")
+            if (selectedRole == "CourtOwner")
             {
-                courtOwners = await _userService.SearchUsersByRoleAsync("StandardCourtOwner", searchTerm);
-            }
-            else if (selectedRole == "ProCourtOwner")
-            {
-                courtOwners = await _userService.SearchUsersByRoleAsync("ProCourtOwner", searchTerm);
+                courtOwners = await _userService.SearchUsersByRoleAsync("CourtOwner", searchTerm);
             }
             else
             {
-                var standardCourtOwners = await _userService.SearchUsersByRoleAsync("StandardCourtOwner", searchTerm);
-                var proCourtOwners = await _userService.SearchUsersByRoleAsync("ProCourtOwner", searchTerm);
-                courtOwners = standardCourtOwners.Concat(proCourtOwners);
+                courtOwners = await _userService.SearchUsersByRoleAsync("CourtOwner", searchTerm);
             }
 
             return courtOwners;
@@ -81,7 +73,7 @@ namespace SportSync.Business.Services
 
             user.UserProfile.AccountStatusByAdmin = user.UserProfile.AccountStatusByAdmin == AccountStatus.Active
                 ? AccountStatus.SuspendedByAdmin
-                : AccountStatus.Active;
+                : (int)AccountStatus.Active;
 
             await _userService.UpdateUserAsync(user);
         }

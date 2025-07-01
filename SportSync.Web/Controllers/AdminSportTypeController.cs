@@ -26,7 +26,9 @@ namespace SportSync.Web.Controllers
                 SportTypeId = st.SportTypeId,
                 Name = st.Name,
                 Description = st.Description,
-                IsActive = st.IsActive
+                IsActive = st.IsActive,
+                //CreatedAt = st.CreatedAt,
+                //UpdatedAt = st.UpdatedAt
             }).ToList();
 
             return View(viewModels);
@@ -63,7 +65,9 @@ namespace SportSync.Web.Controllers
                 SportTypeId = sportType.SportTypeId,
                 Name = sportType.Name,
                 Description = sportType.Description,
-                IsActive = sportType.IsActive
+                IsActive = sportType.IsActive,
+                //CreatedAt = sportType.CreatedAt,
+                //UpdatedAt = sportType.UpdatedAt
             };
 
             return View(viewModel);

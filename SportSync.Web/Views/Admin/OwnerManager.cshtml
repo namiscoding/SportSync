@@ -2,69 +2,205 @@
 
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý chủ sân";
 }
 
-<h2>Quản lý chủ sân</h2>
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="fas fa-crown text-warning me-2"></i>
+                Quản lý chủ sân
+            </h2>
+            <p class="text-muted mb-0">Quản lý danh sách chủ sân và trạng thái tài khoản</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-warning fs-6 me-3">
+                <i class="fas fa-crown me-1"></i>
+                @Model.Count() chủ sân
+            </span>
+        </div>
+    </div>
 
-<form asp-action="OwnerManager" method="get">
-    <input type="text" name="searchTerm" placeholder="Tìm kiếm theo họ tên..." value="@ViewBag.SearchTerm" />
-    <select name="selectedRole" asp-items="@(new SelectList(ViewBag.Roles, ViewBag.SelectedRole))">
-        <option value="All">Tất cả vai trò</option>
-        <option value="StandardCourtOwner">StandardCourtOwner</option>
-        <option value="ProCourtOwner">ProCourtOwner</option>
-    </select>
-    <button type="submit">Tìm</button>
-</form>
+    <!-- Search Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form asp-action="OwnerManager" method="get" class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="searchTerm" class="form-control" placeholder="Tìm kiếm theo họ tên..." value="@ViewBag.SearchTerm" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="selectedRole" asp-items="@(new SelectList(ViewBag.Roles, ViewBag.SelectedRole))" class="form-select">
+                        <option value="All">Tất cả vai trò</option>
+                        <option value="CourtOwner">CourtOwner</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Tìm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Tên người dùng</th>
-            <th>Email</th>
-            <th>Họ tên</th>
-            <th>Vai trò</th>
-            <th>Trạng thái</th>
-            <th>Ngày đăng ký</th>
-            <th>Đăng nhập cuối</th>
-            <th>Hành động</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var owner in Model)
-        {
-            <tr>
-                <td>@(owner.UserName ?? "N/A")</td>
-                <td>@(owner.Email ?? "N/A")</td>
-                <td>@(owner.FullName ?? "Chưa có tên")</td>
-                <td>@(owner.Role ?? "Không xác định")</td>
-                <td>@(owner.AccountStatus ?? "Không xác định")</td>
-                <td>@owner.RegisteredDate.ToString("dd/MM/yyyy")</td>
-                <td>@(owner.LastLoginDate?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</td>
-                <td>
-                    @* @if (owner.AccountStatus == "SuspendedByAdmin") *@
-                    @* { *@
-                    @*     <form asp-action="Approve" method="post" style="display:inline;"> *@
-                    @*         <input type="hidden" name="userId" value="@owner.UserId" /> *@
-                    @*         <button type="submit">Duyệt</button> *@
-                    @*     </form> *@
-                    @* } *@
-                    @* @if (owner.AccountStatus == "Active") *@
-                    @* { *@
-                    @*     <form asp-action="Reject" method="post" style="display:inline;"> *@
-                    @*         <input type="hidden" name="userId" value="@owner.UserId" /> *@
-                    @*         <input type="text" name="rejectionReason" placeholder="Lý do từ chối" /> *@
-                    @*         <button type="submit">Từ chối</button> *@
-                    @*     </form> *@
-                    @* } *@
-                    <form asp-action="ToggleStatus" method="post" style="display:inline;">
-                        <input type="hidden" name="userId" value="@owner.UserId" />
-                        <button type="submit">@(owner.AccountStatus == "Active" ? "Vô hiệu hóa" : "Kích hoạt")</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- Table Section -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>
+                Danh sách chủ sân
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0">
+                                <i class="fas fa-user me-2"></i>Tên người dùng
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-envelope me-2"></i>Email
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-id-card me-2"></i>Họ tên
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-user-tag me-2"></i>Vai trò
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-circle me-2"></i>Trạng thái
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-calendar-plus me-2"></i>Ngày đăng ký
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-clock me-2"></i>Đăng nhập cuối
+                            </th>
+                            <th class="border-0 text-center">
+                                <i class="fas fa-cogs me-2"></i>Hành động
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var owner in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-warning rounded-circle d-flex align-items-center justify-content-center me-3">
+                                            <i class="fas fa-crown text-white"></i>
+                                        </div>
+                                        <span class="fw-medium">@(owner.UserName ?? "N/A")</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted">@(owner.Email ?? "N/A")</span>
+                                </td>
+                                <td>
+                                    <span class="fw-medium">@(owner.FullName ?? "Chưa có tên")</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-crown me-1"></i>@(owner.Role ?? "Không xác định")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (owner.AccountStatus == "Active")
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Vô hiệu hóa
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="text-muted">@owner.RegisteredDate.ToString("dd/MM/yyyy")</span>
+                                </td>
+                                <td>
+                                    @if (owner.LastLoginDate.HasValue)
+                                    {
+                                        <span class="text-muted">@owner.LastLoginDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa đăng nhập</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <form asp-action="ToggleStatus" method="post" style="display:inline;">
+                                            <input type="hidden" name="userId" value="@owner.UserId" />
+                                            @if (owner.AccountStatus == "Active")
+                                            {
+                                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Vô hiệu hóa tài khoản">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Kích hoạt tài khoản">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            }
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-crown fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Không có chủ sân nào</h5>
+            <p class="text-muted">Hãy thử tìm kiếm với từ khóa khác</p>
+        </div>
+    }
+</div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
