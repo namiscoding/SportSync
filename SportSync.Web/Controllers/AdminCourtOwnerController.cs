@@ -47,7 +47,7 @@ namespace SportSync.Web.Controllers
             }
 
             // Truyền danh sách vai trò cho dropdown
-            ViewBag.Roles = new[] { "All", "StandardCourtOwner", "ProCourtOwner" };
+            ViewBag.Roles = new[] { "All", "CourtOwner" };
             ViewBag.SelectedRole = selectedRole;
 
             return View("~/Views/Admin/OwnerManager.cshtml", courtOwnerViewModels);

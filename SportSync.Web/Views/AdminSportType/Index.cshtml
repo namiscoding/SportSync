@@ -1,38 +1,179 @@
 ﻿@model IEnumerable<SportSync.Web.Models.ViewModels.SportType.SportTypeViewModel>
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-}   
-<h2>Quản lý loại sân</h2>
+    ViewData["Title"] = "Quản lý loại sân";
+}
 
-<a asp-action="Create">Thêm loại sân</a>
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="fas fa-futbol text-success me-2"></i>
+                Quản lý loại sân
+            </h2>
+            <p class="text-muted mb-0">Quản lý danh sách các loại sân thể thao</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-success fs-6 me-3">
+                <i class="fas fa-futbol me-1"></i>
+                @Model.Count() loại sân
+            </span>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Thêm loại sân
+            </a>
+        </div>
+    </div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Tên loại sân</th>
-            <th>Mô tả</th>
-            <th>Hoạt động</th>
-            <th>Hành động</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var sportType in Model)
-        {
-            <tr>
-                <td>@sportType.Name</td>
-                <td>@sportType.Description</td>
-                <td>@(sportType.IsActive ? "Có" : "Không")</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@sportType.SportTypeId">Sửa</a>
-                    <form asp-action="Delete" method="post" style="display:inline;">
-                        <input type="hidden" name="sportTypeId" value="@sportType.SportTypeId" />
-                        <button type="submit" onclick="return confirm('Bạn có chắc muốn xóa loại sân này?')">Xóa</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Table Section -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>
+                Danh sách loại sân
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0">
+                                <i class="fas fa-futbol me-2"></i>Loại sân
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-align-left me-2"></i>Mô tả
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-circle me-2"></i>Trạng thái
+                            </th>
+                            <th class="border-0">
+                                <i class="fas fa-calendar me-2"></i>Ngày tạo
+                            </th>
+                            <th class="border-0 text-center">
+                                <i class="fas fa-cogs me-2"></i>Hành động
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sportType in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-success rounded-circle d-flex align-items-center justify-content-center me-3">
+                                            <i class="fas fa-futbol text-white"></i>
+                                        </div>
+                                        <span class="fw-medium">@sportType.Name</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted">@(string.IsNullOrEmpty(sportType.Description) ? "Chưa có mô tả" : sportType.Description)</span>
+                                </td>
+                                <td>
+                                    @if (sportType.IsActive)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Vô hiệu hóa
+                                        </span>
+                                    }
+                                </td>
+                                @* <td> *@
+                                @*     <span class="text-muted">@sportType.CreatedAt.ToString("dd/MM/yyyy")</span> *@
+                                @* </td> *@
+                                <td>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a asp-action="Edit" asp-route-id="@sportType.SportTypeId" class="btn btn-outline-primary btn-sm" title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form asp-action="ToggleStatus" method="post" style="display:inline;">
+                                            <input type="hidden" name="sportTypeId" value="@sportType.SportTypeId" />
+                                            @if (sportType.IsActive)
+                                            {
+                                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Vô hiệu hóa">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Kích hoạt">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            }
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-futbol fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Chưa có loại sân nào</h5>
+            <p class="text-muted">Hãy thêm loại sân đầu tiên</p>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Thêm loại sân
+            </a>
+        </div>
+    }
+</div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

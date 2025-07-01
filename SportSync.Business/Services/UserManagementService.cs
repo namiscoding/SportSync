@@ -18,12 +18,22 @@ namespace SportSync.Business.Services
 
         public async Task<IEnumerable<ApplicationUser>> GetUsersAsync()
         {
-            return await _userService.GetUsersByRoleAsync("User");
+            return await _userService.GetUsersByRoleAsync("Customer");
         }
 
         public async Task<IEnumerable<ApplicationUser>> SearchUsersAsync(string searchTerm)
         {
-            return await _userService.SearchUsersByRoleAsync("User", searchTerm);
+            return await _userService.SearchUsersByRoleAsync("Customer", searchTerm);
+        }
+
+        public async Task<IEnumerable<ApplicationUser>> GetCustomersAsync()
+        {
+            return await _userService.GetUsersByRoleAsync("Customer");
+        }
+
+        public async Task<IEnumerable<ApplicationUser>> SearchCustomersAsync(string searchTerm)
+        {
+            return await _userService.SearchUsersByRoleAsync("Customer", searchTerm);
         }
 
         public async Task ToggleUserAccountStatusAsync(string userId)
@@ -36,7 +46,7 @@ namespace SportSync.Business.Services
 
             user.UserProfile.AccountStatusByAdmin = user.UserProfile.AccountStatusByAdmin == AccountStatus.Active
                 ? AccountStatus.SuspendedByAdmin
-                : AccountStatus.Active;
+                : (int)AccountStatus.Active;
 
             await _userService.UpdateUserAsync(user);
         }

@@ -31,7 +31,8 @@ namespace SportSync.Business.Services
             {
                 Name = name,
                 Description = description,
-                IsActive = true
+                IsActive = true,
+                //CreatedAt = DateTime.Now
             };
             await _sportTypeService.AddSportTypeAsync(sportType);
         }
@@ -47,6 +48,7 @@ namespace SportSync.Business.Services
             sportType.Name = name;
             sportType.Description = description;
             sportType.IsActive = isActive;
+            //sportType.UpdatedAt = DateTime.Now;
             await _sportTypeService.UpdateSportTypeAsync(sportType);
         }
 
