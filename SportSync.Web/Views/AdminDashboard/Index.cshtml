@@ -1,30 +1,94 @@
-﻿﻿@{
+﻿@{
     ViewData["Title"] = "Admin Dashboard";
     Layout = "_AdminLayout"; // Sử dụng layout chính
-    var bookings = ViewBag.RecentBookings as List<dynamic> ?? new List<dynamic>(); // chống null
+    var bookings = ViewBag.RecentBookings as IEnumerable<dynamic> ?? new List<dynamic>(); // chống null
+                                                                                          // Đảm bảo luôn có 7 phần tử, nếu thiếu thì bổ sung ngày và count = 0
+    var bookingList = bookings.ToList();
+    int missing = 7 - bookingList.Count;
+    if (missing > 0)
+    {
+        var lastDate = bookingList.Count > 0 ? (DateTime)bookingList.Last().Date : DateTime.Today;
+        for (int i = 1; i <= missing; i++)
+        {
+            bookingList.Add(new { Date = lastDate.AddDays(i), Count = 0 });
+        }
+    }
 }
 
-<h2>📊 Hiệu Suất Website</h2>
+<div class="container py-4">
+    <h2 class="mb-4 text-primary"><i class="fas fa-tachometer-alt me-2"></i>Hiệu Suất Website</h2>
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-users fa-2x text-info"></i></div>
+                    <h5 class="card-title">Tổng số người dùng</h5>
+                    <p class="card-text fs-4 fw-bold">@ViewBag.TotalUsers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-user-friends fa-2x text-success"></i></div>
+                    <h5 class="card-title">Tổng số khách hàng</h5>
+                    <p class="card-text fs-4 fw-bold">@ViewBag.TotalCustomers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-user-tie fa-2x text-warning"></i></div>
+                    <h5 class="card-title">Tổng số chủ sân</h5>
+                    <p class="card-text fs-4 fw-bold">@ViewBag.TotalOwners</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-percentage fa-2x text-primary"></i></div>
+                    <h5 class="card-title">Tỉ lệ chuyển đổi</h5>
+                    <p class="card-text fs-4 fw-bold">@ViewBag.ConversionRate.ToString("0.00") %</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-stopwatch fa-2x text-secondary"></i></div>
+                    <h5 class="card-title">Thời gian phản hồi TB</h5>
+                    <p class="card-text fs-4 fw-bold">@ViewBag.AvgResponseTimeSeconds.ToString("0.00") <span class="fs-6">giây</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div>
-    <p><strong>Tổng số người dùng:</strong> @ViewBag.TotalUsers</p>
-    <p><strong>Số người từng đặt sân:</strong> @ViewBag.TotalBookers</p>
-    <p><strong>Tỉ lệ chuyển đổi:</strong> @ViewBag.ConversionRate.ToString("0.00") %</p>
-    <p><strong>Thời gian phản hồi trung bình:</strong> @ViewBag.AvgResponseTimeSeconds.ToString("0.00") giây</p>
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white d-flex align-items-center justify-content-between">
+            <h4 class="mb-0 text-primary"><i class="fas fa-chart-line me-2"></i>Biểu đồ: Lượt đặt sân 7 ngày liên tục</h4>
+            <form method="get" asp-action="Index" class="d-flex align-items-center gap-2">
+                <label for="selectedDate" class="mb-0 fw-bold">Chọn ngày mốc:</label>
+                <input type="date" id="selectedDate" name="selectedDate" value="@ViewBag.SelectedDate" class="form-control" style="width:180px;" />
+                <button type="submit" class="btn btn-outline-primary">Xem</button>
+            </form>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="position:relative; min-height:350px;">
+                <canvas id="bookingChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
-
-<hr />
-
-<h3>📅 Biểu đồ: Lượt đặt sân 7 ngày gần nhất</h3>
-<canvas id="bookingChart" width="600" height="300"></canvas>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const labels = [
-        @foreach (var item in bookings)
+        @for (int i = 0; i < 7; i++)
         {
-            <text>"@(((DateTime)item.Date).ToString("dd/MM"))",</text>
+            <text>"@(((DateTime)bookingList[i].Date).ToString("dd/MM"))",</text>
         }
         ];
 
@@ -33,15 +97,18 @@
             datasets: [{
                 label: 'Lượt đặt sân',
                 data: [
-        @foreach (var item in bookings)
+        @for (int i = 0; i < 7; i++)
         {
-            <text>@item.Count,</text>
+            <text>@bookingList[i].Count,</text>
         }
                 ],
                 fill: true,
                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 borderColor: 'rgba(54, 162, 235, 1)',
-                tension: 0.3
+                tension: 0.3,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                borderWidth: 3
             }]
         };
 
@@ -50,13 +117,39 @@
             data: data,
             options: {
                 responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { size: 16 }
+                        }
+                    },
+                    title: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                return ' ' + context.parsed.y + ' lượt';
+                            }
+                        }
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: 'Số lượt' }
+                        title: { display: true, text: 'Số lượt', font: { size: 16 } },
+                        ticks: {
+                            stepSize: 1,
+                            font: { size: 14 }
+                        },
+                        grid: { color: '#e0e0e0' }
                     },
                     x: {
-                        title: { display: true, text: 'Ngày' }
+                        title: { display: true, text: 'Ngày', font: { size: 16 } },
+                        ticks: { font: { size: 14 } },
+                        grid: { color: '#f0f0f0' }
                     }
                 }
             }
@@ -68,3 +161,25 @@
         );
     </script>
 }
+
+<style>
+    .card {
+        border-radius: 1rem;
+    }
+
+    .card-header {
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+
+    .chart-container {
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 1.5rem;
+    }
+
+    .btn-outline-primary {
+        border-radius: 0.5rem;
+    }
+</style>
